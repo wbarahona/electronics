@@ -1,7 +1,8 @@
-import { PARTS } from '../components.js';
-import { pinKey } from '../nets.js';
-import { solve } from './linear.js';
-import { MODELS } from './models.js';
+import { PARTS } from '../components.ts';
+import type { Circuit } from '../model.ts';
+import { pinKey, type Nets } from '../nets.ts';
+import { solve } from './linear.ts';
+import { MODELS, type Element, type PartState, type Result, type Stamper } from './models.ts';
 
 // Modified Nodal Analysis, stepped through time.
 //
@@ -40,12 +41,14 @@ const STEPS_PER_ADVANCE = 2000;
 const BUDGET_MS = 10;
 const AVERAGE_TAU = 0.1; // s
 
-const settled = (prev, next) =>
+const settled = (prev: Float64Array, next: Float64Array) =>
   next.every((v, i) => Math.abs(v - prev[i]) <= 1e-6 + 1e-6 * Math.abs(v));
 
-export function createEngine(circuit) {
-  let elements = [];
-  let refs = []; // one reference net per separate circuit
+export type Engine = ReturnType<typeof createEngine>;
+
+export function createEngine(circuit: Circuit) {
+  let elements: Element[] = [];
+  let refs: number[] = []; // one reference net per separate circuit
   let nodeCount = 0;
   let size = 0;
   let x = new Float64Array(0);
@@ -53,10 +56,10 @@ export function createEngine(circuit) {
   let pending = 0; // time asked for but shorter than a step, carried over
   // Per-part memory (heat, last diode voltage, later capacitor charge), kept by
   // part id so it survives rebuilds while the circuit is being edited.
-  const state = new Map();
+  const state = new Map<string, PartState>();
   const engine = {
-    results: new Map(),
-    error: null,
+    results: new Map<string, Result>(),
+    error: null as string | null,
     dynamic: false,
     heating: false,
     rebuild,
@@ -66,7 +69,8 @@ export function createEngine(circuit) {
     },
   };
 
-  function stamper(A, b, xs, dt) {
+  // A and b are null when only reading the solution (after it converged).
+  function stamper(A: Float64Array[] | null, b: Float64Array | null, xs: Float64Array, dt: number): Stamper {
     return {
       t,
       dt,
@@ -77,51 +81,51 @@ export function createEngine(circuit) {
       x: (k) => xs[k],
       // Conductance g between nodes a and b.
       conductance(a, c, g) {
-        A[a][a] += g;
-        A[c][c] += g;
-        A[a][c] -= g;
-        A[c][a] -= g;
+        A![a][a] += g;
+        A![c][c] += g;
+        A![a][c] -= g;
+        A![c][a] -= g;
       },
       // Fixed current i flowing through the part from a to c.
       current(a, c, i) {
-        b[a] -= i;
-        b[c] += i;
+        b![a] -= i;
+        b![c] += i;
       },
       // V(a) − V(c) = volts; unknown k carries its current from a through it to c.
       voltage(a, c, k, volts) {
-        A[a][k] += 1;
-        A[c][k] -= 1;
-        A[k][a] += 1;
-        A[k][c] -= 1;
-        b[k] = volts;
+        A![a][k] += 1;
+        A![c][k] -= 1;
+        A![k][a] += 1;
+        A![k][c] -= 1;
+        b![k] = volts;
       },
       // Pin an unused branch current to zero (a failed source).
       idle(k) {
-        A[k][k] += 1;
+        A![k][k] += 1;
       },
     };
   }
 
   // Re-read the circuit after any edit. `nets` comes from buildNets().
-  function rebuild({ nets, netOf }) {
+  function rebuild({ nets, netOf }: Nets) {
     nodeCount = nets.length;
     let next = nodeCount;
     elements = circuit.components.map((c) => {
       const model = MODELS[c.type];
       const branches = model.branches?.(c.props) ?? 0;
-      const el = {
+      if (!state.has(c.id)) state.set(c.id, {});
+      const el: Element = {
         id: c.id,
         props: c.props,
         model,
         broken: !!c.broken,
         // A failed part that now conducts nothing.
         open: !!c.broken && !!model.failure?.open,
-        nodes: PARTS[c.type].pins.map((_, i) => netOf.get(pinKey(c.id, i))),
+        nodes: PARTS[c.type].pins.map((_, i) => netOf.get(pinKey(c.id, i))!),
         branch: branches ? next : -1,
+        state: state.get(c.id)!,
       };
       next += branches;
-      if (!state.has(c.id)) state.set(c.id, {});
-      el.state = state.get(c.id);
       // A replaced part starts cold.
       if (el.state.broken && !el.broken) el.state.heat = 0;
       el.state.broken = el.broken;
@@ -139,13 +143,13 @@ export function createEngine(circuit) {
   // each to tie to the reference, preferring a battery's − terminal.
   function referenceNets() {
     const parent = Array.from({ length: nodeCount }, (_, n) => n);
-    const find = (n) => (parent[n] === n ? n : (parent[n] = find(parent[n])));
+    const find = (n: number): number => (parent[n] === n ? n : (parent[n] = find(parent[n])));
     for (const el of elements) {
       for (const n of el.nodes.slice(1)) parent[find(n)] = find(el.nodes[0]);
     }
-    const chosen = new Map(); // circuit root -> reference net
+    const chosen = new Map<number, number>(); // circuit root -> reference net
     for (const el of elements) {
-      if (el.id && circuit.get(el.id)?.type === 'battery' && !chosen.has(find(el.nodes[1]))) {
+      if (circuit.part(el.id)?.type === 'battery' && !chosen.has(find(el.nodes[1]))) {
         chosen.set(find(el.nodes[1]), el.nodes[1]);
       }
     }
@@ -154,7 +158,7 @@ export function createEngine(circuit) {
   }
 
   // Solve the circuit at time t, the end of a step of length dt.
-  function step(dt) {
+  function step(dt: number): boolean {
     const nonlinear = elements.some((el) => el.model.nonlinear);
     for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
       const A = Array.from({ length: size }, () => new Float64Array(size));
@@ -175,14 +179,14 @@ export function createEngine(circuit) {
     return fail('The simulation did not converge.');
   }
 
-  function finish(dt) {
+  function finish(dt: number): boolean {
     const s = stamper(null, null, x, dt);
     engine.results.clear();
     for (const el of elements) {
       if (!el.open) el.model.accept?.(el, s);
       const v = s.v(el.nodes[0]) - s.v(el.nodes[1]);
       const i = el.open ? 0 : el.model.current(el, s);
-      const r = { v, i, p: v * i, heat: el.state.heat ?? 0, ac: engine.dynamic };
+      const r: Result = { v, i, p: v * i, vrms: 0, irms: 0, pavg: 0, heat: el.state.heat ?? 0, load: 0, ac: engine.dynamic };
       r.load = el.model.thermal && !el.broken ? el.model.thermal.load(r, el.props) : 0;
       average(el, r, dt);
       engine.results.set(el.id, r);
@@ -194,7 +198,7 @@ export function createEngine(circuit) {
 
   // Fold this step into the part's running averages. In a DC circuit nothing
   // changes over time, so the averages are simply the present values.
-  function average(el, r, dt) {
+  function average(el: Element, r: Result, dt: number) {
     const k = engine.dynamic ? 1 - Math.exp(-dt / AVERAGE_TAU) : 1;
     const m = (el.state.avg ??= { v2: r.v * r.v, i2: r.i * r.i, p: r.p });
     m.v2 += k * (r.v * r.v - m.v2);
@@ -207,8 +211,8 @@ export function createEngine(circuit) {
 
   // Let every part's heat follow its load for `dt` seconds. Returns the ids of
   // parts that failed.
-  function heatUp(dt) {
-    const failed = [];
+  function heatUp(dt: number): string[] {
+    const failed: string[] = [];
     for (const el of elements) {
       const thermal = el.model.thermal;
       const r = engine.results.get(el.id);
@@ -225,11 +229,11 @@ export function createEngine(circuit) {
   function checkHeating() {
     engine.heating = elements.some((el) => {
       const r = engine.results.get(el.id);
-      return el.model.thermal && !el.broken && r && Math.abs(r.load - (el.state.heat ?? 0)) > 0.005;
+      return !!el.model.thermal && !el.broken && !!r && Math.abs(r.load - (el.state.heat ?? 0)) > 0.005;
     });
   }
 
-  function fail(message) {
+  function fail(message: string): boolean {
     engine.results.clear();
     engine.error = message;
     return false;
@@ -240,7 +244,7 @@ export function createEngine(circuit) {
   // time-dependent parts the solution can't change, so only heat moves.
   // Otherwise time goes in whole steps: in slow motion one call can be shorter
   // than a step, so the remainder carries over to the next call.
-  function advance(seconds) {
+  function advance(seconds: number): string[] {
     if (!engine.dynamic) {
       t += seconds;
       return engine.error ? [] : heatUp(seconds);

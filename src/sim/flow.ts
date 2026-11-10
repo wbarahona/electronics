@@ -1,6 +1,15 @@
-import { keyOf, pinKey } from '../nets.js';
-import { wirePoints } from '../wires.js';
-import { solve } from './linear.js';
+import type { Circuit } from '../model.ts';
+import { keyOf, pinKey, type Nets } from '../nets.ts';
+import { wirePoints } from '../wires.ts';
+import { solve } from './linear.ts';
+import type { Result } from './models.ts';
+
+interface Edge {
+  a: string;
+  b: string;
+  g: number;
+  wire?: string;
+}
 
 // Pins or joints that touch directly are joined almost perfectly.
 const LINK_CONDUCTANCE = 1e3;
@@ -13,8 +22,8 @@ const LINK_CONDUCTANCE = 1e3;
 // resistance proportional to its length, which decides how current shares
 // between parallel wires. Returns Map(wire id -> amps, positive from w.from
 // towards w.to).
-export function wireCurrents(circuit, nets, results) {
-  const edges = circuit.wires.map((w) => {
+export function wireCurrents(circuit: Circuit, nets: Nets, results: Map<string, Result>): Map<string, number> {
+  const edges: Edge[] = circuit.wires.map((w) => {
     const pts = wirePoints(circuit, w);
     let length = 0;
     for (let k = 1; k < pts.length; k++) {
@@ -25,8 +34,8 @@ export function wireCurrents(circuit, nets, results) {
   for (const [a, b] of nets.links) edges.push({ a, b, g: LINK_CONDUCTANCE });
 
   // Current a part's current i (pin 0 → pin 1 through it) feeds into each net.
-  const inflow = new Map();
-  const add = (key, i) => inflow.set(key, (inflow.get(key) ?? 0) + i);
+  const inflow = new Map<string, number>();
+  const add = (key: string, i: number) => inflow.set(key, (inflow.get(key) ?? 0) + i);
   for (const c of circuit.components) {
     const r = results.get(c.id);
     if (!r) continue;
@@ -34,18 +43,18 @@ export function wireCurrents(circuit, nets, results) {
     add(pinKey(c.id, 1), r.i);
   }
 
-  const byNet = new Map();
+  const byNet = new Map<number, Edge[]>();
   for (const e of edges) {
-    const n = nets.netOf.get(e.a);
+    const n = nets.netOf.get(e.a)!;
     if (!byNet.has(n)) byNet.set(n, []);
-    byNet.get(n).push(e);
+    byNet.get(n)!.push(e);
   }
 
-  const currents = new Map();
+  const currents = new Map<string, number>();
   for (const [n, netEdges] of byNet) {
     // Node potentials within the net, with its first point as the reference.
     const keys = nets.nets[n];
-    const index = new Map(keys.slice(1).map((k, i) => [k, i]));
+    const index = new Map(keys.slice(1).map((k, i): [string, number] => [k, i]));
     const size = index.size;
     const A = Array.from({ length: size }, () => new Float64Array(size));
     const b = new Float64Array(size);
@@ -62,7 +71,10 @@ export function wireCurrents(circuit, nets, results) {
     for (const [k, i] of index) b[i] = inflow.get(k) ?? 0;
     const phi = size ? solve(A, b) : new Float64Array(0);
     if (!phi) continue;
-    const at = (k) => (index.has(k) ? phi[index.get(k)] : 0);
+    const at = (k: string) => {
+      const i = index.get(k);
+      return i === undefined ? 0 : phi[i];
+    };
     for (const e of netEdges) if (e.wire) currents.set(e.wire, e.g * (at(e.a) - at(e.b)));
   }
   return currents;

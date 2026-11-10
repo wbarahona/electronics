@@ -1,7 +1,7 @@
 // Solve A·x = b by Gaussian elimination with partial pivoting. A and b are
 // overwritten. Returns x, or null if the system is singular.
 // Circuits here have tens of nodes, so a dense solver is plenty.
-export function solve(A, b) {
+export function solve(A: Float64Array[], b: Float64Array): Float64Array | null {
   const n = b.length;
   for (let k = 0; k < n; k++) {
     let p = k;

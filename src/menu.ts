@@ -1,13 +1,23 @@
+import type { MdMenu } from '@material/web/menu/menu.js';
+
+export interface MenuItem {
+  label: string;
+  icon: string; // Material Symbols name
+  shortcut?: string;
+  enabled: boolean;
+  danger?: boolean;
+  action: () => void;
+}
+
 // The right-click menu, an M3 <md-menu>. open(x, y, items) shows it at a
-// screen point; items are { label, icon, shortcut?, enabled, danger?, action }
-// or 'separator'. md-menu closes itself on choosing an item, pressing outside
+// screen point. md-menu closes itself on choosing an item, pressing outside
 // or Esc; scrolling and resizing close it too.
-export function createMenu(menu, anchor) {
+export function createMenu(menu: MdMenu, anchor: HTMLElement) {
   function close() {
     menu.close();
   }
 
-  function open(x, y, items) {
+  function open(x: number, y: number, items: (MenuItem | 'separator')[]) {
     menu.replaceChildren(
       ...items.map((item) => {
         if (item === 'separator') {

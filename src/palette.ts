@@ -1,4 +1,7 @@
-import { CATEGORIES, PARTS, defaults, symbolMarkup } from './components.js';
+import type { Board } from './board.ts';
+import { CATEGORIES, PARTS, defaults, symbolMarkup, type CategoryId } from './components.ts';
+import type { Editor } from './editor.ts';
+import type { PartType } from './types.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DRAG_THRESHOLD = 4; // px before a press counts as a drag rather than a click
@@ -7,7 +10,7 @@ const DRAG_THRESHOLD = 4; // px before a press counts as a drag rather than a cl
 // parts. Drag a part from the flyout onto the board, or click it to drop it in
 // the middle of the view. The flyout gets out of the way as soon as a drag
 // starts. While one flyout is open, hovering another category switches to it.
-export function createPalette(container, board, editor) {
+export function createPalette(container: HTMLElement, board: Board, editor: Editor) {
   const { svg, world } = board;
   const ghost = document.createElementNS(SVG_NS, 'g');
   ghost.classList.add('part', 'ghost');
@@ -16,14 +19,14 @@ export function createPalette(container, board, editor) {
   flyout.className = 'palette-flyout';
   flyout.hidden = true;
   document.body.append(flyout);
-  let openCategory = null; // its button while a flyout is open
+  let openCategory: HTMLButtonElement | null = null; // its button while a flyout is open
 
-  const overBoard = (e) => {
+  const overBoard = (e: { clientX: number; clientY: number }) => {
     const r = svg.getBoundingClientRect();
     return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
   };
 
-  function partButton(type) {
+  function partButton(type: PartType) {
     const part = PARTS[type];
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -38,13 +41,13 @@ export function createPalette(container, board, editor) {
     return btn;
   }
 
-  function openFlyout(button, category) {
+  function openFlyout(button: HTMLButtonElement, category: { id: CategoryId }) {
     openCategory?.classList.remove('open');
     openCategory = button;
     button.classList.add('open');
     button.setAttribute('aria-expanded', 'true');
     flyout.replaceChildren(
-      ...Object.keys(PARTS)
+      ...(Object.keys(PARTS) as PartType[])
         .filter((type) => PARTS[type].category === category.id)
         .map(partButton),
     );
@@ -89,7 +92,8 @@ export function createPalette(container, board, editor) {
   window.addEventListener(
     'pointerdown',
     (e) => {
-      if (openCategory && !flyout.contains(e.target) && !container.contains(e.target)) closeFlyout();
+      const target = e.target as Node;
+      if (openCategory && !flyout.contains(target) && !container.contains(target)) closeFlyout();
     },
     true,
   );
@@ -98,12 +102,12 @@ export function createPalette(container, board, editor) {
   });
   window.addEventListener('resize', closeFlyout);
 
-  function startDrag(e, type, btn) {
+  function startDrag(e: PointerEvent, type: PartType, btn: HTMLButtonElement) {
     if (e.button !== 0) return;
     e.preventDefault();
     btn.setPointerCapture(e.pointerId);
     ghost.innerHTML = symbolMarkup(type, defaults(type));
-    const start = { x: e.clientX, y: e.clientY };
+    const start = { clientX: e.clientX, clientY: e.clientY };
     let last = start;
     let moved = false;
     let rotation = 0;
@@ -119,8 +123,8 @@ export function createPalette(container, board, editor) {
       if (!ghost.isConnected) world.append(ghost);
     };
 
-    const move = (ev) => {
-      if (!moved && Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < DRAG_THRESHOLD) return;
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.hypot(ev.clientX - start.clientX, ev.clientY - start.clientY) < DRAG_THRESHOLD) return;
       if (!moved) {
         document.body.classList.add('dragging');
         // Fade the flyout out of the way; it stays in the page so the pointer
@@ -144,7 +148,7 @@ export function createPalette(container, board, editor) {
       closeFlyout();
     };
 
-    const end = (ev) => {
+    const end = (ev: PointerEvent) => {
       stop();
       if (!moved) {
         const r = svg.getBoundingClientRect();
@@ -158,7 +162,7 @@ export function createPalette(container, board, editor) {
 
     // Captured ahead of the editor's shortcuts so they act on the part being placed:
     // R rotates it, Esc or Delete cancels the placement.
-    const key = (ev) => {
+    const key = (ev: KeyboardEvent) => {
       if (ev.metaKey || ev.ctrlKey) return;
       if (ev.key === 'r' || ev.key === 'R') {
         rotation = (rotation + 90) % 360;

@@ -1,18 +1,21 @@
-import { fromControl } from './keys.js';
+import { fromControl } from './keys.ts';
+import type { Point } from './types.ts';
 
 // Grid spacing in world units; must match the #grid-minor pattern in index.html.
 export const GRID = 20;
 
-export const snap = (v) => Math.round(v / GRID) * GRID;
+export const snap = (v: number): number => Math.round(v / GRID) * GRID;
 
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 4;
 
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-export function createBoard(svg) {
-  const grid = svg.querySelector('#grid');
-  const world = svg.querySelector('#world');
+export type Board = ReturnType<typeof createBoard>;
+
+export function createBoard(svg: SVGSVGElement) {
+  const grid = svg.querySelector<SVGRectElement>('#grid')!;
+  const world = svg.querySelector<SVGGElement>('#world')!;
 
   // x, y: world coordinates shown at the board's top-left corner.
   // scale: screen pixels per world unit.
@@ -22,14 +25,14 @@ export function createBoard(svg) {
     const w = svg.clientWidth / view.scale;
     const h = svg.clientHeight / view.scale;
     svg.setAttribute('viewBox', `${view.x} ${view.y} ${w} ${h}`);
-    grid.setAttribute('x', view.x);
-    grid.setAttribute('y', view.y);
-    grid.setAttribute('width', w);
-    grid.setAttribute('height', h);
-    svg.style.setProperty('--px', 1 / view.scale);
+    grid.setAttribute('x', String(view.x));
+    grid.setAttribute('y', String(view.y));
+    grid.setAttribute('width', String(w));
+    grid.setAttribute('height', String(h));
+    svg.style.setProperty('--px', String(1 / view.scale));
   }
 
-  function screenToWorld(clientX, clientY) {
+  function screenToWorld(clientX: number, clientY: number): Point {
     const r = svg.getBoundingClientRect();
     return {
       x: view.x + (clientX - r.left) / view.scale,
@@ -38,7 +41,7 @@ export function createBoard(svg) {
   }
 
   // Zoom keeping the world point under the cursor fixed.
-  function zoomAt(clientX, clientY, factor) {
+  function zoomAt(clientX: number, clientY: number, factor: number) {
     const anchor = screenToWorld(clientX, clientY);
     const r = svg.getBoundingClientRect();
     view.scale = clamp(view.scale * factor, MIN_SCALE, MAX_SCALE);
@@ -64,9 +67,9 @@ export function createBoard(svg) {
 
   // Hold space and drag, or middle-drag, to pan. Plain left-drag is left to the editor.
   let spaceHeld = false;
-  let drag = null;
+  let drag: { id: number; x: number; y: number } | null = null;
 
-  const setSpace = (held) => {
+  const setSpace = (held: boolean) => {
     spaceHeld = held;
     svg.classList.toggle('space-pan', held);
   };
@@ -102,7 +105,7 @@ export function createBoard(svg) {
     render();
   });
 
-  const endDrag = (e) => {
+  const endDrag = (e: PointerEvent) => {
     if (!drag || e.pointerId !== drag.id) return;
     drag = null;
     svg.classList.remove('panning');

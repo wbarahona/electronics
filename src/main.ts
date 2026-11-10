@@ -1,25 +1,33 @@
-import './material.js';
-import { createBoard } from './board.js';
-import { createControls } from './controls.js';
-import { createCircuit } from './model.js';
-import { createEditor } from './editor.js';
-import { createMenu } from './menu.js';
-import { createPalette } from './palette.js';
-import { createPanel } from './panel.js';
-import { createReadout } from './readout.js';
-import { createEngine } from './sim/engine.js';
-import { wireCurrents } from './sim/flow.js';
-import { MODELS } from './sim/models.js';
+import './material.ts';
+import { createBoard } from './board.ts';
+import { createControls } from './controls.ts';
+import { createCircuit } from './model.ts';
+import { createEditor, type Live } from './editor.ts';
+import { createMenu } from './menu.ts';
+import type { Nets } from './nets.ts';
+import { createPalette } from './palette.ts';
+import { createPanel } from './panel.ts';
+import { createReadout } from './readout.ts';
+import { createEngine } from './sim/engine.ts';
+import { wireCurrents } from './sim/flow.ts';
+import { MODELS } from './sim/models.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
 
-const board = createBoard(document.getElementById('board'));
+// An element index.html must have.
+function byId<T extends Element = HTMLElement>(id: string): T {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`index.html is missing #${id}`);
+  return el as unknown as T;
+}
+
+const board = createBoard(byId<SVGSVGElement>('board'));
 const circuit = createCircuit();
 const engine = createEngine(circuit);
-let nets = null;
-let currents = new Map(); // wire id -> amps
+let nets: Nets | null = null;
+let currents = new Map<string, number>(); // wire id -> amps
 const readout = createReadout(
-  document.getElementById('readout'),
+  byId('readout'),
   board.svg,
   circuit,
   engine,
@@ -32,7 +40,7 @@ const readout = createReadout(
 // new values (see editor.animate); when paused they jump straight there.
 function showResults() {
   const smooth = controls.running;
-  const live = new Map();
+  const live: Live = new Map();
   for (const c of circuit.components) {
     const { brightness, thermal } = MODELS[c.type];
     const r = engine.results.get(c.id);
@@ -65,10 +73,10 @@ const editor = createEditor(board, circuit, {
       { label: 'Delete', icon: 'delete', shortcut: 'Del', enabled: editor.hasSelection(), danger: true, action: editor.deleteSelected },
     ]),
 });
-const menu = createMenu(document.getElementById('menu'), document.getElementById('menu-anchor'));
-const panel = createPanel(document.getElementById('props'), circuit, editor);
-createPalette(document.getElementById('palette'), board, editor);
-const controls = createControls(document.getElementById('sim-controls'));
+const menu = createMenu(byId('menu'), byId('menu-anchor'));
+const panel = createPanel(byId('props'), circuit, editor);
+createPalette(byId('palette'), board, editor);
+const controls = createControls(byId('sim-controls'));
 
 // While running, simulated time advances at `speed` times real time. Edits are
 // solved immediately even when paused, so readouts stay right, but nothing
@@ -81,7 +89,7 @@ requestAnimationFrame(function frame(now) {
   if (controls.running) {
     const failed = engine.advance(dt * controls.speed);
     // Mark every casualty before redrawing, since redrawing re-solves.
-    for (const id of failed) circuit.get(id).broken = true;
+    for (const id of failed) circuit.part(id)!.broken = true;
     for (const id of failed) editor.burn(id);
     if (failed.length) panel.refresh();
     if (engine.dynamic || engine.heating || failed.length) showResults();

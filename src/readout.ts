@@ -1,27 +1,36 @@
-import { PARTS } from './components.js';
-import { MODELS } from './sim/models.js';
-import { formatSI } from './units.js';
+import { PARTS } from './components.ts';
+import type { Circuit } from './model.ts';
+import type { Engine } from './sim/engine.ts';
+import { MODELS, type Lines } from './sim/models.ts';
+import { isWire, type Part, type Wire } from './types.ts';
+import { formatSI } from './units.ts';
 
 // Tooltip with the live simulation values of the part or wire under the
 // pointer. `wireCurrent(id)` gives a wire's current in amps.
-export function createReadout(el, svg, circuit, engine, wireCurrent) {
-  let hover = null; // part or wire id
+export function createReadout(
+  el: HTMLElement,
+  svg: SVGSVGElement,
+  circuit: Circuit,
+  engine: Engine,
+  wireCurrent: (id: string) => number | undefined,
+) {
+  let hover: string | null = null; // part or wire id
   let pointer = { x: 0, y: 0 };
 
-  function partLines(c) {
+  function partLines(c: Part): Lines {
     const r = engine.results.get(c.id);
     const model = MODELS[c.type];
-    const lines = [[`-${c.ref}`, PARTS[c.type].name]];
-    lines.push(...(r ? model.readout(r, c.props) : [['', engine.error ?? 'No result']]));
+    const lines: Lines = [[`-${c.ref}`, PARTS[c.type].name]];
+    lines.push(...(r ? model.readout(r, c.props) : ([['', engine.error ?? 'No result']] as Lines)));
     // Load against the rating, unless brightness already says the same thing.
     if (r && model.thermal && !model.brightness && !c.broken) {
       lines.push(['Load', `${Math.round(r.load * 100)} %`]);
     }
-    if (c.broken) lines.push(['Status', model.failure.label]);
+    if (c.broken && model.failure) lines.push(['Status', model.failure.label]);
     return lines;
   }
 
-  function wireLines(w) {
+  function wireLines(w: Wire): Lines {
     const i = Math.abs(wireCurrent(w.id) ?? 0);
     return [['Wire', ''], ['Current', formatSI(i < 1e-9 ? 0 : i, 'A')]];
   }
@@ -32,7 +41,11 @@ export function createReadout(el, svg, circuit, engine, wireCurrent) {
       el.hidden = true;
       return;
     }
-    const lines = 'from' in item ? wireLines(item) : partLines(item);
+    if (!isWire(item) && !('type' in item)) {
+      el.hidden = true;
+      return;
+    }
+    const lines = isWire(item) ? wireLines(item) : partLines(item);
     el.replaceChildren(
       ...lines.map(([label, value]) => {
         const row = document.createElement('div');
@@ -50,7 +63,7 @@ export function createReadout(el, svg, circuit, engine, wireCurrent) {
   }
 
   svg.addEventListener('pointermove', (e) => {
-    hover = e.target.closest?.('.part, .wire')?.dataset.id ?? null;
+    hover = (e.target as Element).closest<SVGElement>('.part, .wire')?.dataset.id ?? null;
     pointer = { x: e.clientX, y: e.clientY };
     refresh();
   });

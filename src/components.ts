@@ -1,4 +1,5 @@
-import { formatSI } from './units.js';
+import type { Point, Props, PropsByType, PartType, PropValue } from './types.ts';
+import { formatSI } from './units.ts';
 
 // Schematic symbols follow DIN EN 60617 and are drawn in local coordinates around (0, 0), spanning x -40..40.
 // Pins sit on multiples of GRID so they land on grid points at any 90° rotation.
@@ -22,18 +23,75 @@ export const LIGHT_COLORS = {
   green: '#30d158',
   blue: '#0a84ff',
   white: '#e6f2ff',
-};
+} as const;
+
+export type LightColor = keyof typeof LIGHT_COLORS;
+
+export type CategoryId = 'sources' | 'passive' | 'lights' | 'switches';
 
 // Groups shown as the clickable entries of the parts bar, in order. `icon` is
 // a Material Symbols name (it must also be listed in index.html's icon_names).
-export const CATEGORIES = [
+export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
   { id: 'sources', label: 'Sources', icon: 'bolt' },
   { id: 'passive', label: 'Passive', icon: 'electrical_services' },
   { id: 'lights', label: 'Lights', icon: 'lightbulb' },
   { id: 'switches', label: 'Switches', icon: 'toggle_on' },
 ];
 
-export const PARTS = {
+// How the panel edits one value.
+interface FieldSpec {
+  label: string;
+  hidden?: boolean;
+}
+export interface NumberSpec extends FieldSpec {
+  value: number;
+  unit: string;
+  min?: number;
+  max?: number;
+}
+export interface ChoiceSpec<V extends string = string> extends FieldSpec {
+  value: V;
+  options: readonly V[];
+}
+export interface SwitchSpec extends FieldSpec {
+  value: boolean;
+}
+export type PropSpec = NumberSpec | ChoiceSpec | SwitchSpec;
+
+export const isSwitchSpec = (s: PropSpec): s is SwitchSpec => typeof s.value === 'boolean';
+export const isChoiceSpec = (s: PropSpec): s is ChoiceSpec => 'options' in s;
+
+// The field kind that matches a value's type ([V] stops unions distributing).
+type SpecFor<V> = [V] extends [boolean] ? SwitchSpec : [V] extends [number] ? NumberSpec : ChoiceSpec<V & string>;
+type BooleanKeys<P> = { [K in keyof P]: P[K] extends boolean ? K : never }[keyof P] & string;
+
+// One part type's definition, checked against its values P.
+interface PartDef<P> {
+  name: string;
+  letter: string;
+  category: CategoryId;
+  pins: Point[];
+  props: { [K in keyof P]: SpecFor<P[K]> };
+  tag?: (p: P) => string;
+  glow?: { color: (p: P) => LightColor; radius: number };
+  actuator?: { prop: BooleanKeys<P>; momentary: boolean };
+  draw: (p: P, broken: boolean) => string;
+}
+
+// The same, seen by code that handles any part type.
+export interface AnyPartDef {
+  name: string;
+  letter: string;
+  category: CategoryId;
+  pins: Point[];
+  props: Record<string, PropSpec>;
+  tag?: (p: Props) => string;
+  glow?: { color: (p: Props) => LightColor; radius: number };
+  actuator?: { prop: string; momentary: boolean };
+  draw: (p: Props, broken: boolean) => string;
+}
+
+const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
   battery: {
     name: 'Battery',
     letter: 'G',
@@ -153,12 +211,17 @@ export const PARTS = {
   },
 };
 
+// Every part type's definition. Each is checked against its own values above;
+// this map is the general view the rest of the app works with.
+export const PARTS = DEFINITIONS as unknown as Record<PartType, AnyPartDef>;
+
 // The values a new part of this type starts with.
-export function defaults(type) {
-  return Object.fromEntries(Object.entries(PARTS[type].props).map(([key, spec]) => [key, spec.value]));
+export function defaults<T extends PartType>(type: T): PropsByType[T] {
+  const entries = Object.entries(PARTS[type].props).map(([key, spec]): [string, PropValue] => [key, spec.value]);
+  return Object.fromEntries(entries) as PropsByType[T];
 }
 
-export function symbolMarkup(type, props, broken = false) {
+export function symbolMarkup(type: PartType, props: Props, broken = false): string {
   const part = PARTS[type];
   const pins = part.pins.map((p, i) => `<circle class="pin" data-pin="${i}" cx="${p.x}" cy="${p.y}" r="3" />`);
   return part.draw(props, broken) + pins.join('');
