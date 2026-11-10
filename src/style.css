@@ -1,0 +1,674 @@
+/* App tokens, mapped onto the Material Design 3 colour roles in theme.css.
+   The simulation colours (net, heat, burn, smoke, flow) are our own. */
+:root {
+  --md-ref-typeface-brand: 'Roboto', system-ui, sans-serif;
+  --md-ref-typeface-plain: 'Roboto', system-ui, sans-serif;
+  --bg: var(--md-sys-color-surface);
+  --text: var(--md-sys-color-on-surface);
+  --bar-bg: var(--md-sys-color-surface-container);
+  --bar-border: var(--md-sys-color-outline-variant);
+  --grid-minor: var(--md-sys-color-surface-container-high);
+  --grid-major: var(--md-sys-color-outline-variant);
+  --hover: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+  --ink: var(--md-sys-color-on-surface);
+  --accent: var(--md-sys-color-primary);
+  --muted: var(--md-sys-color-on-surface-variant);
+  --danger: var(--md-sys-color-error);
+  --net: #d97706;
+  --hot: #ff4d00;
+  --burnt: #6b4f3a;
+  --smoke: #8a8a8a;
+  --flow: #d4a20b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --net: #f0a030;
+    --hot: #ff6a2b;
+    --burnt: #8a6a52;
+    --smoke: #b0b0b0;
+    --flow: #f2cc60;
+  }
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 14px/1.43 var(--md-ref-typeface-plain);
+  letter-spacing: 0.0179em;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+/* M3 top app bar. */
+#toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 64px;
+  padding: 4px 8px 4px 16px;
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+}
+
+.title {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 400;
+}
+
+.palette {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+/* Category buttons in the bar (M3 filter-chip style); the open one is
+   tinted with the secondary container colour. */
+.palette-category {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.0071em;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  outline: none;
+  --md-focus-ring-shape: 8px;
+  --md-icon-size: 18px;
+}
+
+.palette-category md-icon {
+  color: var(--md-sys-color-primary);
+}
+
+.palette-category .arrow {
+  color: inherit;
+  transition: transform 0.15s;
+}
+
+.palette-category.open {
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+  border-color: transparent;
+}
+
+.palette-category.open .arrow {
+  transform: rotate(180deg);
+}
+
+/* The parts of the open category: an M3 menu-like surface under its button. */
+.palette-flyout {
+  position: fixed;
+  z-index: 15;
+  display: flex;
+  gap: 2px;
+  padding: 6px;
+  background: var(--md-sys-color-surface-container);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+  transition: opacity 0.12s;
+}
+
+.palette-flyout[hidden] {
+  display: none;
+}
+
+/* Fades away once a part is being dragged out of it. */
+.palette-flyout.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A part in the flyout: M3 shape, state layer from md-ripple, md-focus-ring. */
+.palette-item {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  padding: 6px 8px 4px;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.045em;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+  --md-focus-ring-shape: 8px;
+}
+
+.palette-item svg {
+  width: 40px;
+  height: 22px;
+}
+
+/* Icons only when the bar gets tight. */
+@media (max-width: 900px) {
+  .palette-category span {
+    display: none;
+  }
+
+  .palette-category {
+    padding-left: 8px;
+  }
+}
+
+.sim-controls {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clock {
+  min-width: 6.5em;
+  margin-right: 4px;
+  font-size: 12px;
+  text-align: right;
+  color: var(--md-sys-color-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.speed {
+  min-width: 4.5em;
+  margin-left: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+#run {
+  min-width: 112px;
+}
+
+@media (max-width: 600px) {
+  .clock {
+    display: none;
+  }
+}
+
+body.dragging,
+body.dragging * {
+  cursor: grabbing !important;
+}
+
+.part {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.part .thick {
+  stroke-width: 4;
+}
+
+/* Light from lamps and LEDs: --glow (0..1) is set from the simulation,
+   --glow-color from the part. LEDs keep a faint tint of their colour when off. */
+.part .glow {
+  stroke: none;
+  opacity: var(--glow, 0);
+  pointer-events: none;
+}
+
+.part .bulb {
+  fill: var(--glow-color, transparent);
+  fill-opacity: var(--glow, 0);
+}
+
+.part .bulb.tinted {
+  fill-opacity: calc(0.2 + 0.8 * var(--glow, 0));
+}
+
+.part .value {
+  fill: var(--ink);
+  stroke: none;
+  font: 11px system-ui, sans-serif;
+  pointer-events: none;
+}
+
+.part .value .ref {
+  font-weight: 600;
+}
+
+#board .part.selected .value {
+  fill: var(--accent);
+}
+
+/* Live values of the hovered part: an M3 rich tooltip. */
+.readout {
+  position: fixed;
+  z-index: 10;
+  min-width: 160px;
+  padding: 12px 16px;
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+  pointer-events: none;
+}
+
+.readout[hidden] {
+  display: none;
+}
+
+.readout div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.readout div:first-child {
+  margin-bottom: 4px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+}
+
+.readout b {
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Right-click menu (md-menu), opened at a fixed anchor moved to the pointer. */
+.menu-anchor {
+  position: fixed;
+  width: 0;
+  height: 0;
+}
+
+#menu {
+  --md-menu-container-color: var(--md-sys-color-surface-container);
+  min-width: 220px;
+}
+
+#menu md-menu-item.danger:not([disabled]) {
+  --md-menu-item-label-text-color: var(--md-sys-color-error);
+  --md-menu-item-leading-icon-color: var(--md-sys-color-error);
+}
+
+/* Properties panel: an M3 side sheet on the right, a bottom sheet on phones. */
+.props {
+  flex: none;
+  width: 280px;
+  padding: 16px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  background: var(--md-sys-color-surface-container-low);
+  border-left: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.props[hidden] {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .props {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 50%;
+    border-left: none;
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -2px 6px 2px rgb(0 0 0 / 0.15);
+  }
+}
+
+.props h2 {
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.props h2 .ref {
+  font-weight: 500;
+  color: var(--md-sys-color-primary);
+}
+
+.props md-outlined-text-field,
+.props md-outlined-select {
+  width: 100%;
+}
+
+.field.check {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Open pins are hollow; pins connected to anything are filled. */
+.part .pin {
+  fill: var(--bg);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.part .pin.linked {
+  fill: var(--ink);
+}
+
+.part .hit {
+  fill: transparent;
+  stroke: none;
+}
+
+#board .part {
+  cursor: move;
+  /* Overloaded parts turn red-hot as they approach failure (--heat 0..1). */
+  stroke: color-mix(in srgb, var(--hot) calc(var(--heat, 0) * 100%), var(--ink));
+}
+
+#board .part.broken {
+  stroke: var(--burnt);
+}
+
+.part.broken .bulb,
+.part.broken .bulb.tinted {
+  fill: var(--burnt);
+  fill-opacity: 0.6;
+}
+
+.part.broken .glow {
+  display: none;
+}
+
+.part.broken .value {
+  fill: var(--burnt);
+}
+
+/* Dashed link from a push button's actuator to its contact. */
+.part .link {
+  stroke-dasharray: 3 3;
+}
+
+/* On-board controls for switches and push buttons. */
+.actuator {
+  cursor: pointer;
+}
+
+.actuator .act-bg {
+  fill: var(--bg);
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+
+.actuator .act-knob {
+  fill: var(--muted);
+  stroke: none;
+}
+
+.actuator .act-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.actuator:hover .act-bg {
+  stroke: var(--accent);
+}
+
+.actuator.on .act-bg {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.actuator.on .act-knob {
+  fill: var(--bg);
+}
+
+.part .weld {
+  fill: var(--burnt);
+  stroke: none;
+}
+
+/* A puff of smoke when a part fails. */
+.smoke circle {
+  fill: var(--smoke);
+  stroke: none;
+  opacity: 0;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: smoke 1.4s ease-out forwards;
+}
+
+.smoke circle:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.smoke circle:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes smoke {
+  from {
+    opacity: 0.7;
+    transform: translate(0, 0) scale(0.5);
+  }
+  to {
+    opacity: 0;
+    transform: translate(0, -36px) scale(2.2);
+  }
+}
+
+/* M3 error-container card for a failed part. */
+.broken-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 12px 16px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-error-container);
+  background: var(--md-sys-color-error-container);
+  border-radius: 12px;
+}
+
+#board .part.selected {
+  stroke: var(--accent);
+}
+
+#board .part.selected .pin {
+  stroke: var(--accent);
+}
+
+#board .part.selected .pin.linked {
+  fill: var(--accent);
+}
+
+/* Everything on the hovered net. */
+#board .part .pin.net-hot {
+  fill: var(--net);
+  stroke: var(--net);
+}
+
+.wire.net-hot .wire-line {
+  stroke: var(--net);
+  stroke-width: 3;
+}
+
+.joint.net-hot .joint-dot {
+  display: inline;
+  fill: var(--net);
+}
+
+.part .pin-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+.part .pin-hit:hover {
+  fill: color-mix(in srgb, var(--accent) 25%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.wire-line,
+.wire-draft {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wire-hit {
+  stroke: transparent;
+  stroke-width: 10;
+}
+
+/* Horizontal segments drag up/down, vertical ones left/right. */
+.wire-hit.h {
+  cursor: ns-resize;
+}
+
+.wire-hit.v {
+  cursor: ew-resize;
+}
+
+.wire.selected .wire-line {
+  stroke: var(--accent);
+}
+
+/* Moving dots showing current along a wire; dot spacing matches DOT_SPACING
+   in editor.js. */
+.wire-flow {
+  display: none;
+  fill: none;
+  stroke: var(--flow);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 0 16;
+  pointer-events: none;
+}
+
+.wire.flowing .wire-flow {
+  display: inline;
+}
+
+/* The wire a dragged part will be dropped into. */
+.wire.embed-target .wire-line {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+
+/* A joint shows a dot only where three or more wires meet (or when selected). */
+.joint-dot {
+  display: none;
+  fill: var(--ink);
+}
+
+.joint.junction .joint-dot,
+.joint.selected .joint-dot {
+  display: inline;
+}
+
+.joint.selected .joint-dot {
+  fill: var(--accent);
+}
+
+.joint-hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.joint-hit:hover {
+  fill: color-mix(in srgb, var(--accent) 25%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.wire-draft {
+  stroke: var(--accent);
+  stroke-dasharray: 6 4;
+  pointer-events: none;
+}
+
+.part.ghost {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.workspace {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+
+#board {
+  flex: 1 1 0;
+  display: block;
+  min-width: 0;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+#board.space-pan,
+#board.space-pan .part {
+  cursor: grab;
+}
+
+#board.panning,
+#board.panning .part {
+  cursor: grabbing;
+}
+
+.marquee {
+  fill: color-mix(in srgb, var(--accent) 10%, transparent);
+  stroke: var(--accent);
+  stroke-width: var(--px);
+}
+
+/* --px is one screen pixel in world units, so grid lines stay 1px at any zoom */
+#grid-minor path {
+  fill: none;
+  stroke: var(--grid-minor);
+  stroke-width: var(--px);
+}
+
+#grid-major > path {
+  fill: none;
+  stroke: var(--grid-major);
+  stroke-width: var(--px);
+}

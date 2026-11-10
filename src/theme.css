@@ -1,0 +1,86 @@
+/* Material Design 3 colour roles, generated from seed #0969da (fidelity: keeps the seed vivid).
+   Regenerate with @material/material-color-utilities rather than editing by hand. */
+
+:root {
+  color-scheme: light;
+  --md-sys-color-primary: #0051ae;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #0969da;
+  --md-sys-color-on-primary-container: #ecefff;
+  --md-sys-color-secondary: #485e8a;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #b6ccfe;
+  --md-sys-color-on-secondary-container: #405681;
+  --md-sys-color-tertiary: #913900;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #b84b00;
+  --md-sys-color-on-tertiary-container: #ffece5;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #93000a;
+  --md-sys-color-background: #f9f9ff;
+  --md-sys-color-on-background: #191c22;
+  --md-sys-color-surface: #f9f9ff;
+  --md-sys-color-on-surface: #191c22;
+  --md-sys-color-surface-variant: #dee2f2;
+  --md-sys-color-on-surface-variant: #424753;
+  --md-sys-color-surface-dim: #d8d9e3;
+  --md-sys-color-surface-bright: #f9f9ff;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f2f3fd;
+  --md-sys-color-surface-container: #ecedf7;
+  --md-sys-color-surface-container-high: #e6e8f1;
+  --md-sys-color-surface-container-highest: #e1e2ec;
+  --md-sys-color-outline: #727785;
+  --md-sys-color-outline-variant: #c2c6d6;
+  --md-sys-color-inverse-surface: #2e3038;
+  --md-sys-color-inverse-on-surface: #eff0fa;
+  --md-sys-color-inverse-primary: #adc6ff;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-surface-tint: #005bc0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --md-sys-color-primary: #adc6ff;
+    --md-sys-color-on-primary: #002e68;
+    --md-sys-color-primary-container: #0969da;
+    --md-sys-color-on-primary-container: #ecefff;
+    --md-sys-color-secondary: #b0c6f8;
+    --md-sys-color-on-secondary: #183059;
+    --md-sys-color-secondary-container: #304671;
+    --md-sys-color-on-secondary-container: #9fb5e6;
+    --md-sys-color-tertiary: #ffb693;
+    --md-sys-color-on-tertiary: #561f00;
+    --md-sys-color-tertiary-container: #b84b00;
+    --md-sys-color-on-tertiary-container: #ffece5;
+    --md-sys-color-error: #ffb4ab;
+    --md-sys-color-on-error: #690005;
+    --md-sys-color-error-container: #93000a;
+    --md-sys-color-on-error-container: #ffdad6;
+    --md-sys-color-background: #10131a;
+    --md-sys-color-on-background: #e1e2ec;
+    --md-sys-color-surface: #10131a;
+    --md-sys-color-on-surface: #e1e2ec;
+    --md-sys-color-surface-variant: #424753;
+    --md-sys-color-on-surface-variant: #c2c6d6;
+    --md-sys-color-surface-dim: #10131a;
+    --md-sys-color-surface-bright: #363941;
+    --md-sys-color-surface-container-lowest: #0b0e15;
+    --md-sys-color-surface-container-low: #191c22;
+    --md-sys-color-surface-container: #1d2027;
+    --md-sys-color-surface-container-high: #272a31;
+    --md-sys-color-surface-container-highest: #32353c;
+    --md-sys-color-outline: #8c909f;
+    --md-sys-color-outline-variant: #424753;
+    --md-sys-color-inverse-surface: #e1e2ec;
+    --md-sys-color-inverse-on-surface: #2e3038;
+    --md-sys-color-inverse-primary: #005bc0;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-surface-tint: #adc6ff;
+  }
+}
