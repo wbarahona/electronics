@@ -1,5 +1,5 @@
 import { PARTS, isChoiceSpec, isSwitchSpec, type ChoiceSpec, type NumberSpec, type PropSpec, type SwitchSpec } from './components.ts';
-import type { Editor } from './editor.ts';
+import type { Editor, Live } from './editor.ts';
 import type { Circuit } from './model.ts';
 import { MODELS } from './sim/models.ts';
 import type { Part, PropValue } from './types.ts';
@@ -48,6 +48,35 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     return field;
   }
 
+  // An M3 slider for values with a natural range (positions, ambient light),
+  // applied live as it moves.
+  function sliderInput(c: Part, key: string, spec: NumberSpec) {
+    const row = document.createElement('div');
+    row.className = 'slider-field';
+    const head = document.createElement('div');
+    head.className = 'slider-head';
+    const name = document.createElement('span');
+    name.textContent = spec.label;
+    const shown = document.createElement('span');
+    shown.className = 'slider-value';
+    head.append(name, shown);
+    const slider = document.createElement('md-slider');
+    slider.min = spec.min ?? 0;
+    slider.max = spec.max ?? 100;
+    slider.labeled = true;
+    slider.value = value(c, key) as number;
+    const show = () => {
+      shown.textContent = `${Math.round(slider.value ?? 0)} ${spec.unit}`;
+    };
+    slider.addEventListener('input', () => {
+      show();
+      set(c, key, slider.value ?? 0);
+    });
+    show();
+    row.append(head, slider);
+    return row;
+  }
+
   function choiceInput(c: Part, key: string, spec: ChoiceSpec) {
     const select = document.createElement('md-outlined-select');
     select.label = spec.label;
@@ -80,7 +109,8 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
 
   function field(c: Part, key: string, spec: PropSpec) {
     if (isSwitchSpec(spec)) return switchInput(c, key, spec);
-    return isChoiceSpec(spec) ? choiceInput(c, key, spec) : numberInput(c, key, spec);
+    if (isChoiceSpec(spec)) return choiceInput(c, key, spec);
+    return spec.slider ? sliderInput(c, key, spec) : numberInput(c, key, spec);
   }
 
   function show(id: string | null) {
@@ -92,6 +122,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
       el.replaceChildren();
       return;
     }
+    level = null;
     const heading = document.createElement('h2');
     const ref = document.createElement('span');
     ref.className = 'ref';
@@ -100,11 +131,48 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     el.replaceChildren(
       heading,
       ...(c.broken ? [brokenNotice(c)] : []),
+      ...(PARTS[c.type].gauge ? [chargeRow(c)] : []),
       ...Object.entries(PARTS[c.type].props)
         .filter(([, spec]) => !spec.hidden)
         .map(([key, spec]) => field(c, key, spec)),
     );
     el.hidden = false;
+    showLive();
+  }
+
+  // How full an energy store is, kept live by showLive(); batteries also get a
+  // button to recharge them.
+  let level: { bar: HTMLElement & { value: number }; text: HTMLElement } | null = null;
+  let latest: Live = new Map(); // so a freshly opened panel shows values at once
+
+  function chargeRow(c: Part) {
+    const row = document.createElement('div');
+    row.className = 'charge';
+    const head = document.createElement('div');
+    head.className = 'charge-head';
+    const name = document.createElement('span');
+    name.textContent = 'Charge';
+    const text = document.createElement('span');
+    text.className = 'charge-value';
+    head.append(name, text);
+    const bar = document.createElement('md-linear-progress');
+    row.append(head, bar);
+    if ('charge' in c.props) {
+      const recharge = document.createElement('md-outlined-button');
+      recharge.innerHTML = '<md-icon slot="icon">battery_charging_full</md-icon>Recharge';
+      recharge.addEventListener('click', () => set(c, 'charge', 1));
+      row.append(recharge);
+    }
+    level = { bar, text };
+    return row;
+  }
+
+  function showLive(live: Live = latest) {
+    latest = live;
+    const l = current === null ? undefined : live.get(current)?.level;
+    if (!level || l === undefined) return;
+    level.bar.value = l;
+    level.text.textContent = `${Math.round(l * 100)} %`;
   }
 
   // What happened to a failed part, and a button to swap in a fresh one.
@@ -132,5 +200,5 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     show(id);
   }
 
-  return { show, refresh };
+  return { show, refresh, showLive };
 }

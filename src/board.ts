@@ -113,13 +113,32 @@ export function createBoard(svg: SVGSVGElement) {
   svg.addEventListener('pointerup', endDrag);
   svg.addEventListener('pointercancel', endDrag);
 
-  new ResizeObserver(render).observe(svg);
+  // When the board's top or left edge moves (the parts tray sliding open or
+  // shut above it), shift the view by the same amount so the circuit stays
+  // where it is on screen instead of jumping with the edge.
+  let edge = svg.getBoundingClientRect();
+  new ResizeObserver(() => {
+    const r = svg.getBoundingClientRect();
+    view.x += (r.left - edge.left) / view.scale;
+    view.y += (r.top - edge.top) / view.scale;
+    edge = r;
+    render();
+  }).observe(svg);
   render();
+
+  // Pan and zoom to a saved view.
+  function setView(v: { x: number; y: number; scale: number }) {
+    view.x = v.x;
+    view.y = v.y;
+    view.scale = clamp(v.scale, MIN_SCALE, MAX_SCALE);
+    render();
+  }
 
   return {
     svg,
     world,
     view,
+    setView,
     screenToWorld,
     get spaceHeld() {
       return spaceHeld;

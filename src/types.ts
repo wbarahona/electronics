@@ -11,13 +11,32 @@ export type LedColor = 'red' | 'yellow' | 'green' | 'blue' | 'white';
 // The values each kind of part carries: what the properties panel edits and
 // the simulator reads. Adding a part type starts here.
 export interface PropsByType {
-  battery: { voltage: number; internalResistance: number; maxCurrent: number };
+  // `charge` is the state of charge, 1 full .. 0 flat; it drains as the battery is used.
+  battery: { voltage: number; internalResistance: number; maxCurrent: number; capacity: number; charge: number };
   generator: { voltage: number; frequency: number; phase: number; internalResistance: number; maxCurrent: number };
   resistor: { resistance: number; powerRating: number };
+  capacitor: { capacitance: number; ratedVoltage: number };
+  electrolytic: { capacitance: number; ratedVoltage: number };
+  inductor: { inductance: number; resistance: number; maxCurrent: number };
+  fuse: { ratedCurrent: number };
+  // Positions and ambient light are percentages, 0..100.
+  potentiometer: { resistance: number; position: number; powerRating: number };
+  rheostat: { resistance: number; position: number; powerRating: number };
+  ldr: { darkResistance: number; lightResistance: number; ambient: number; powerRating: number };
+  ntc: { resistance: number; beta: number; ambient: number; powerRating: number }; // resistance at 25 °C, ambient in °C
   lamp: { ratedVoltage: number; ratedPower: number };
   led: { color: LedColor; forwardVoltage: number; maxCurrent: number };
   switch: { closed: boolean; maxCurrent: number };
   button: { closed: boolean; maxCurrent: number };
+  buttonNC: { pressed: boolean; maxCurrent: number }; // conducts until pressed
+  // Forward voltage is at 10 mA.
+  diode: { forwardVoltage: number; maxCurrent: number; reverseVoltage: number };
+  schottky: { forwardVoltage: number; maxCurrent: number; reverseVoltage: number };
+  zener: { forwardVoltage: number; zenerVoltage: number; powerRating: number };
+  npn: { gain: number; maxCurrent: number; powerRating: number };
+  pnp: { gain: number; maxCurrent: number; powerRating: number };
+  // On-resistance is at a gate–source voltage of 10 V.
+  nmos: { thresholdVoltage: number; onResistance: number; maxCurrent: number; powerRating: number };
 }
 
 export type PartType = keyof PropsByType;

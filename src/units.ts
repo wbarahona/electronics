@@ -26,7 +26,7 @@ export function parseSI(text: string): number {
     .trim()
     .replace(',', '.')
     .replace(/\s+/g, '')
-    .replace(/(ohms?|Ω|V|A|W|F|H|Hz|°)$/i, '');
+    .replace(/(ohms?|Ω|V|Ah|A|W|F|H|Hz|°)$/i, '');
   let m = s.match(/^([+-]?(?:\d+\.?\d*|\.\d+))([pnuµmkKMGR]?)$/);
   if (m) return Number(m[1]) * MULTIPLIERS[m[2]];
   m = s.match(/^(\d+)([pnuµmkKMGR])(\d+)$/); // RKM code: the prefix is the decimal point

@@ -3,6 +3,7 @@ import { createBoard } from './board.ts';
 import { createControls } from './controls.ts';
 import { createCircuit } from './model.ts';
 import { createEditor, type Live } from './editor.ts';
+import { createFileActions } from './files.ts';
 import { createMenu } from './menu.ts';
 import type { Nets } from './nets.ts';
 import { createPalette } from './palette.ts';
@@ -11,6 +12,7 @@ import { createReadout } from './readout.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
 import { MODELS } from './sim/models.ts';
+import type { SavedCircuit } from './persist.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
 
@@ -47,9 +49,11 @@ function showResults() {
     live.set(c.id, {
       glow: r && brightness ? brightness(r, c.props) : 0,
       heat: r && thermal && !c.broken ? Math.min(1, Math.max(0, (r.heat - 1) / (thermal.limit - 1))) : 0,
+      level: r?.level,
     });
   }
   editor.showLive(live, smooth);
+  panel.showLive(live);
   currents = nets ? wireCurrents(circuit, nets, engine.results) : new Map();
   editor.setFlow(currents, smooth);
   readout.refresh();
@@ -61,6 +65,7 @@ const editor = createEditor(board, circuit, {
     nets = next;
     engine.rebuild(nets);
     showResults();
+    files.changed();
   },
   onPropChange: () => panel.refresh(),
   onContextMenu: (x, y, at) =>
@@ -75,8 +80,40 @@ const editor = createEditor(board, circuit, {
 });
 const menu = createMenu(byId('menu'), byId('menu-anchor'));
 const panel = createPanel(byId('props'), circuit, editor);
-createPalette(byId('palette'), board, editor);
+createPalette(byId('palette'), byId('palette-tray'), board, editor);
 const controls = createControls(byId('sim-controls'));
+
+// A short message at the bottom of the screen (an M3 snackbar).
+const toast = byId('toast');
+let toastTimer = 0;
+function showToast(message: string) {
+  toast.textContent = message;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    toast.hidden = true;
+  }, 6000);
+}
+
+// Put a loaded (or empty) circuit on the board, with fresh simulation state.
+function loadCircuit(data: SavedCircuit) {
+  circuit.load(data.parts, data.joints, data.wires);
+  engine.reset();
+  if (data.view) board.setView(data.view);
+  editor.reload();
+  controls.showTime(engine.time);
+}
+
+const files = createFileActions(byId('file-actions'), {
+  circuit,
+  getView: () => ({ x: board.view.x, y: board.view.y, scale: board.view.scale }),
+  load: loadCircuit,
+  report: showToast,
+});
+
+// Pick up where the last session left off.
+const restored = files.restore();
+if (restored) loadCircuit(restored);
 
 // While running, simulated time advances at `speed` times real time. Edits are
 // solved immediately even when paused, so readouts stay right, but nothing
@@ -92,7 +129,7 @@ requestAnimationFrame(function frame(now) {
     for (const id of failed) circuit.part(id)!.broken = true;
     for (const id of failed) editor.burn(id);
     if (failed.length) panel.refresh();
-    if (engine.dynamic || engine.heating || failed.length) showResults();
+    if (engine.dynamic || engine.heating || engine.draining || failed.length) showResults();
     editor.animate(dt);
     controls.showTime(engine.time);
   }

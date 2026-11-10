@@ -33,14 +33,14 @@ export function wireCurrents(circuit: Circuit, nets: Nets, results: Map<string, 
   });
   for (const [a, b] of nets.links) edges.push({ a, b, g: LINK_CONDUCTANCE });
 
-  // Current a part's current i (pin 0 → pin 1 through it) feeds into each net.
+  // Current each part feeds into the net at each of its pins (what flows into
+  // the part at a pin leaves the net there).
   const inflow = new Map<string, number>();
   const add = (key: string, i: number) => inflow.set(key, (inflow.get(key) ?? 0) + i);
   for (const c of circuit.components) {
     const r = results.get(c.id);
     if (!r) continue;
-    add(pinKey(c.id, 0), -r.i);
-    add(pinKey(c.id, 1), r.i);
+    r.pins.forEach((i, k) => add(pinKey(c.id, k), -i));
   }
 
   const byNet = new Map<number, Edge[]>();

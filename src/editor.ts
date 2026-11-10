@@ -49,8 +49,11 @@ interface Box {
 }
 
 // Live simulation state per part id: `glow` is brightness (1 = at its rating),
-// `heat` is 0..1 from its rating up to the point where it fails.
-export type Live = Map<string, { glow: number; heat: number }>;
+// `heat` is 0..1 from its rating up to the point where it fails, `level` how
+// full an energy store is (for its gauge).
+export type Live = Map<string, { glow: number; heat: number; level?: number }>;
+
+const GAUGE_WIDTH = 15; // inner width of the gauge's fill bar
 
 // A self-contained copy of part of the circuit, for copy/paste and duplicate.
 // Wire ends point into its own parts and joints by index.
@@ -186,13 +189,34 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const vertical = rotation % 180 !== 0;
     const text = g.querySelector('.value');
     if (text) {
-      const other = !!PARTS[n.type].actuator;
-      const offset = vertical ? `${other ? -26 : 26} 4` : `0 ${other ? 32 : -26}`;
-      text.setAttribute('transform', `rotate(${-rotation}) translate(${offset})`);
-      text.setAttribute('text-anchor', vertical ? (other ? 'end' : 'start') : 'middle');
+      const other = !!PARTS[n.type].actuator || !!PARTS[n.type].labelBelow;
+      const [lx, ly, anchor] = PARTS[n.type].labelAt?.(vertical) ??
+        (vertical ? [other ? -26 : 26, 4, other ? 'end' : 'start'] : [0, other ? 32 : -26, 'middle']);
+      text.setAttribute('transform', `rotate(${-rotation}) translate(${lx} ${ly})`);
+      text.setAttribute('text-anchor', anchor);
     }
     g.querySelector('.actuator')
       ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '34 0' : '0 -34'})`);
+    // The charge gauge sits opposite the label: below, or left when vertical.
+    g.querySelector('.gauge')
+      ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '-34 0' : '0 30'})`);
+  }
+
+  // A small battery icon whose fill shows how full an energy store is.
+  const GAUGE = `
+    <g class="gauge">
+      <rect class="gauge-body" x="-10" y="-5" width="19" height="10" rx="2" />
+      <rect class="gauge-nub" x="9" y="-2.5" width="2" height="5" rx="0.5" />
+      <rect class="gauge-fill" x="-8.5" y="-3.5" width="0" height="7" rx="1" />
+    </g>`;
+
+  function paintGauge(g: SVGElement, level: number) {
+    const gauge = g.querySelector('.gauge');
+    if (!gauge) return;
+    const l = Math.min(1, Math.max(0, level));
+    gauge.querySelector('.gauge-fill')!.setAttribute('width', (l * GAUGE_WIDTH).toFixed(2));
+    gauge.classList.toggle('low', l < 0.2);
+    gauge.classList.toggle('mid', l >= 0.2 && l < 0.5);
   }
 
   // The small on-board control for a part you operate by hand: a toggle pill
@@ -228,7 +252,8 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       `<text class="value"><tspan class="ref">-${c.ref}</tspan>${tag ? ` ${tag}` : ''}</text>` +
       HIT +
       pinHits.join('') +
-      (part.actuator ? actuatorMarkup(c) : '');
+      (part.actuator ? actuatorMarkup(c) : '') +
+      (part.gauge ? GAUGE : '');
     place(c);
   }
 
@@ -261,9 +286,10 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   const glows = new Map<string, { target: number; shown: number }>(); // light levels 0..1
 
   function showLive(live: Live, smooth = false) {
-    for (const [id, { glow, heat }] of live) {
+    for (const [id, { glow, heat, level: charge }] of live) {
       const g = nodes.get(id);
       if (!g) continue;
+      if (charge !== undefined) paintGauge(g, charge);
       const level = Math.min(1, Math.max(0, glow));
       const s = glows.get(id) ?? { target: level, shown: level };
       s.target = level;
@@ -499,6 +525,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // stretch long enough for both pins, turned to lie along it, within a grid
   // step of `p`. Pins may not land on the wire's own ends.
   function findSpot(type: PartType, p: Point, rotation: number): Spot | null {
+    if (PARTS[type].pins.length !== 2) return null; // only two-pin parts sit in a wire
     const half = Math.abs(PARTS[type].pins[0].x);
     let best: Spot | null = null;
     let bestD = GRID;
@@ -1048,12 +1075,17 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   }
 
   // Add a copy to the circuit centred on world point `at`, and select it.
+  // Copies are fresh parts: settings come along, but state the part manages
+  // itself (a battery's charge, a pressed button) starts over.
   function placeCopy(copy: Copy, at: Point) {
     const dx = snap(at.x) - copy.center.x;
     const dy = snap(at.y) - copy.center.y;
     const parts = copy.parts.map((p) => {
       const c = circuit.add(p.type, p.x + dx, p.y + dy, p.rotation);
-      Object.assign(c.props, structuredClone(p.props));
+      const specs = PARTS[p.type].props;
+      for (const [key, value] of Object.entries(structuredClone(p.props))) {
+        if (!specs[key].hidden) (c.props as Record<string, PropValue>)[key] = value;
+      }
       mountPart(c);
       return c;
     });
@@ -1066,6 +1098,30 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const ids = new Set([...parts, ...joints].map((n) => n.id).filter((id) => circuit.get(id)));
     for (const w of circuit.wires) if (ids.has(endId(w.from)) && ids.has(endId(w.to))) ids.add(w.id);
     setSelected(ids);
+  }
+
+  // Redraw everything from the circuit data, e.g. after a file was loaded.
+  function reload() {
+    drag = null;
+    segDrag = null;
+    if (wiring) stopWire();
+    if (marquee) endMarquee();
+    lit = null;
+    setSelected([]);
+    for (const g of nodes.values()) g.remove();
+    nodes.clear();
+    glows.clear();
+    flows.clear();
+    for (const c of circuit.components) mountPart(c);
+    for (const j of circuit.joints) {
+      const g = svgEl('g', 'joint', jointsLayer);
+      g.dataset.id = j.id;
+      g.innerHTML = '<circle class="joint-dot" r="4" /><circle class="joint-hit" r="7" />';
+      nodes.set(j.id, g);
+      place(j);
+    }
+    for (const w of circuit.wires) addWire(w);
+    tidyJoints();
   }
 
   // Right-click: act on what's under the pointer (keeping the selection if it's
@@ -1096,5 +1152,6 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     canCopy: () => !!snapshot(),
     canPaste: () => !!clipboard,
     hasSelection: () => selected.size > 0,
+    reload,
   };
 }

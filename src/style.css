@@ -19,6 +19,8 @@
   --burnt: #6b4f3a;
   --smoke: #8a8a8a;
   --flow: #d4a20b;
+  --gauge-ok: #2e7d32;
+  --gauge-mid: #e09b00;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,6 +30,8 @@
     --burnt: #8a6a52;
     --smoke: #b0b0b0;
     --flow: #f2cc60;
+    --gauge-ok: #81c784;
+    --gauge-mid: #ffd54f;
   }
 }
 
@@ -68,6 +72,12 @@ button {
   font-size: 22px;
   line-height: 28px;
   font-weight: 400;
+}
+
+.file-actions {
+  flex: none;
+  display: flex;
+  margin-left: -8px;
 }
 
 .palette {
@@ -120,39 +130,60 @@ button {
   transform: rotate(180deg);
 }
 
-/* The parts of the open category: an M3 menu-like surface under its button. */
-.palette-flyout {
-  position: fixed;
-  z-index: 15;
+/* The parts tray: a full-width strip under the top bar that slides open with
+   the chosen category's parts (grid rows 0fr → 1fr animates its height). */
+.tray {
+  flex: none;
+  display: grid;
+  grid-template-rows: 0fr;
+  background: var(--md-sys-color-surface-container-low);
+  border-bottom: 0 solid var(--md-sys-color-outline-variant);
+  transition: grid-template-rows 0.22s cubic-bezier(0.2, 0, 0, 1), border-width 0.22s;
+}
+
+.tray.open {
+  grid-template-rows: 1fr;
+  border-bottom-width: 1px;
+}
+
+.tray-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tray-content {
   display: flex;
-  gap: 2px;
-  padding: 6px;
-  background: var(--md-sys-color-surface-container);
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
-  transition: opacity 0.12s;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
 }
 
-.palette-flyout[hidden] {
-  display: none;
+/* One row of parts that scrolls sideways; the close button sits outside it,
+   so it stays in view however far the row is scrolled. */
+.tray-parts {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
 }
 
-/* Fades away once a part is being dragged out of it. */
-.palette-flyout.leaving {
-  opacity: 0;
-  pointer-events: none;
+.tray-close {
+  flex: none;
 }
 
-/* A part in the flyout: M3 shape, state layer from md-ripple, md-focus-ring. */
+/* A part in the tray: M3 shape, state layer from md-ripple, md-focus-ring. */
 .palette-item {
   position: relative;
   flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  min-width: 64px;
-  padding: 6px 8px 4px;
+  gap: 4px;
+  min-width: 76px;
+  padding: 8px 8px 6px;
   border: none;
   border-radius: 8px;
   font-size: 11px;
@@ -166,12 +197,23 @@ button {
 }
 
 .palette-item svg {
-  width: 40px;
-  height: 22px;
+  width: 48px;
+  height: 26px;
 }
 
-/* Icons only when the bar gets tight. */
-@media (max-width: 900px) {
+.palette-item:hover {
+  background: var(--hover);
+}
+
+/* As the bar gets tight: first drop the app title, then show the categories
+   as icons only (their names stay as tooltips). */
+@media (max-width: 1360px) {
+  .title {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
   .palette-category span {
     display: none;
   }
@@ -230,6 +272,23 @@ body.dragging * {
 
 .part .thick {
   stroke-width: 4;
+}
+
+/* Arrowheads drawn as filled shapes (potentiometer wiper, light arrows). */
+.part .fill {
+  fill: var(--ink);
+  stroke: none;
+}
+
+#board .part.selected .fill {
+  fill: var(--accent);
+}
+
+/* Lettering that is part of a symbol, like the thermistor's −ϑ. */
+.part .sym-text {
+  fill: var(--ink);
+  stroke: none;
+  font: 9px system-ui, sans-serif;
 }
 
 /* Light from lamps and LEDs: --glow (0..1) is set from the simulation,
@@ -302,6 +361,26 @@ body.dragging * {
   font-variant-numeric: tabular-nums;
 }
 
+/* M3 snackbar for short messages, such as a file that couldn't be opened. */
+.toast {
+  position: fixed;
+  z-index: 30;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 14px 16px;
+  font-size: 14px;
+  color: var(--md-sys-color-inverse-on-surface);
+  background: var(--md-sys-color-inverse-surface);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px 2px rgb(0 0 0 / 0.15);
+}
+
+.toast[hidden] {
+  display: none;
+}
+
 /* Right-click menu (md-menu), opened at a fixed anchor moved to the pointer. */
 .menu-anchor {
   position: fixed;
@@ -365,6 +444,57 @@ body.dragging * {
   width: 100%;
 }
 
+.slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slider-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.slider-value {
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider-field md-slider {
+  width: calc(100% + 32px);
+  margin: 0 -16px;
+}
+
+.charge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.charge-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.charge-value {
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.charge md-linear-progress {
+  width: 100%;
+}
+
+.charge md-outlined-button {
+  align-self: flex-start;
+}
+
 .field.check {
   display: flex;
   align-items: center;
@@ -412,6 +542,40 @@ body.dragging * {
 
 .part.broken .value {
   fill: var(--burnt);
+}
+
+/* Charge gauge: a small battery icon, green when full, amber then red as it
+   empties. */
+.part .gauge {
+  pointer-events: none;
+}
+
+.part .gauge-body {
+  fill: none;
+  stroke: var(--md-sys-color-outline);
+  stroke-width: 1.2;
+}
+
+.part .gauge-nub {
+  fill: var(--md-sys-color-outline);
+  stroke: none;
+}
+
+.part .gauge-fill {
+  fill: var(--gauge-ok);
+  stroke: none;
+}
+
+.part .gauge.mid .gauge-fill {
+  fill: var(--gauge-mid);
+}
+
+.part .gauge.low .gauge-fill {
+  fill: var(--danger);
+}
+
+.part.broken .gauge {
+  opacity: 0.4;
 }
 
 /* Dashed link from a push button's actuator to its contact. */

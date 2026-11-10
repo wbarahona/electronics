@@ -83,6 +83,18 @@ export function createCircuit() {
       return joints.find((j) => j.id === id);
     },
 
+    // Replace everything with the given items (e.g. a loaded file). New ids
+    // carry on after the highest one loaded.
+    load(parts: Part[], newJoints: Joint[], newWires: Wire[]): void {
+      components.splice(0, components.length, ...parts);
+      joints.splice(0, joints.length, ...newJoints);
+      wires.splice(0, wires.length, ...newWires);
+      const next = (items: { id: string }[]) => Math.max(0, ...items.map((x) => Number(x.id.slice(1)) || 0)) + 1;
+      nextPart = next(components);
+      nextJoint = next(joints);
+      nextWire = next(wires);
+    },
+
     // Wires attached to a part or joint.
     wiresOf(id: string): Wire[] {
       return wires.filter((w) => endId(w.from) === id || endId(w.to) === id);

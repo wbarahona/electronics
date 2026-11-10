@@ -2,7 +2,7 @@ import { PARTS } from '../components.ts';
 import type { Circuit } from '../model.ts';
 import { pinKey, type Nets } from '../nets.ts';
 import { solve } from './linear.ts';
-import { MODELS, type Element, type PartState, type Result, type Stamper } from './models.ts';
+import { MODELS, type Element, type Env, type PartState, type Result, type Stamper } from './models.ts';
 
 // Modified Nodal Analysis, stepped through time.
 //
@@ -27,6 +27,18 @@ import { MODELS, type Element, type PartState, type Result, type Stamper } from 
 // For AC, every part also keeps running averages of v², i² and power over
 // AVERAGE_TAU of simulated time, giving RMS and average readings.
 //
+// Batteries drain as they deliver current; while any is draining, `draining`
+// is set so time keeps running, and in a DC circuit the solution is refreshed
+// as their voltage sags.
+//
+// Re-solving after an edit doesn't move time on: what capacitors and
+// inductors hold is only updated by real time steps, so dragging parts around
+// (even while paused) never charges anything.
+//
+// Some parts sense their surroundings (an LDR the light from nearby lamps and
+// LEDs). They respond after each solved step, so the coupling runs one step
+// behind, which at these step sizes is invisible.
+//
 // The time step is TIME_STEP normally, and grows when the simulation is run
 // fast so a frame needs about STEPS_PER_ADVANCE steps, but never beyond what
 // the parts can follow (a twentieth of an AC period). Each advance gets a
@@ -34,12 +46,18 @@ import { MODELS, type Element, type PartState, type Result, type Stamper } from 
 // and the simulation simply runs slower than asked.
 
 export const TIME_STEP = 1e-4; // s
+// Step used when re-solving without moving time on: so short that capacitors
+// and inductors simply hold what they have.
+const HOLD_STEP = 1e-9; // s
 const MAX_TIME_STEP = 0.01; // s
 const GMIN = 1e-12;
 const MAX_ITERATIONS = 100;
 const STEPS_PER_ADVANCE = 2000;
 const BUDGET_MS = 10;
 const AVERAGE_TAU = 0.1; // s
+// Light from a glowing part falls off with distance (world units, a grid
+// square is 20): at LIGHT_REACH it's half as strong as right next to it.
+const LIGHT_REACH = 60;
 
 const settled = (prev: Float64Array, next: Float64Array) =>
   next.every((v, i) => Math.abs(v - prev[i]) <= 1e-6 + 1e-6 * Math.abs(v));
@@ -61,9 +79,12 @@ export function createEngine(circuit: Circuit) {
     results: new Map<string, Result>(),
     error: null as string | null,
     dynamic: false,
+    ac: false, // driven by an alternating source: readouts show RMS
     heating: false,
+    draining: false,
     rebuild,
     advance,
+    reset,
     get time() {
       return t;
     },
@@ -103,7 +124,22 @@ export function createEngine(circuit: Circuit) {
       idle(k) {
         A![k][k] += 1;
       },
+      // The part draws Σ g·V(n) + i0 out of `node` (a linearised current that
+      // depends on several nodes: transistors).
+      draw(node, terms, i0) {
+        for (const [n, g] of terms) A![node][n] += g;
+        b![node] -= i0;
+      },
     };
+  }
+
+  // Forget all simulation state and start time over, e.g. when a different
+  // circuit is loaded (whose part ids may repeat the old ones).
+  function reset() {
+    state.clear();
+    engine.results.clear();
+    t = 0;
+    pending = 0;
   }
 
   // Re-read the circuit after any edit. `nets` comes from buildNets().
@@ -135,8 +171,39 @@ export function createEngine(circuit: Circuit) {
     refs = referenceNets();
     for (const id of state.keys()) if (!circuit.get(id)) state.delete(id);
     engine.dynamic = elements.some((el) => el.model.dynamic);
+    engine.ac = elements.some((el) => el.model.alternating && !el.open);
     x = new Float64Array(size);
-    step(TIME_STEP);
+    step(HOLD_STEP, false);
+    // Let sensing parts settle on what they now see, then solve with that.
+    if (elements.some((el) => el.model.respond)) {
+      respond(null);
+      step(HOLD_STEP, false);
+    }
+  }
+
+  // Light reaching a part from every glowing part, fading with distance.
+  const env: Env = {
+    light(el) {
+      const at = circuit.part(el.id);
+      if (!at) return 0;
+      let light = 0;
+      for (const other of elements) {
+        const r = engine.results.get(other.id);
+        const from = circuit.part(other.id);
+        if (other === el || !other.model.brightness || !r || !from) continue;
+        const d = Math.hypot(from.x - at.x, from.y - at.y);
+        light += other.model.brightness(r, other.props) / (1 + (d / LIGHT_REACH) ** 2);
+      }
+      return light;
+    },
+  };
+
+  // Let parts react to their surroundings: over dt seconds, or at once (null).
+  function respond(dt: number | null) {
+    for (const el of elements) {
+      const r = engine.results.get(el.id);
+      if (el.model.respond && !el.open && r) el.model.respond(el, env, r, dt);
+    }
   }
 
   // Group nets joined through parts into separate circuits and pick one net in
@@ -157,8 +224,9 @@ export function createEngine(circuit: Circuit) {
     return [...chosen.values()];
   }
 
-  // Solve the circuit at time t, the end of a step of length dt.
-  function step(dt: number): boolean {
+  // Solve the circuit at time t, the end of a step of length dt. With `commit`
+  // the step really happened, so energy stores take on their new values.
+  function step(dt: number, commit = true): boolean {
     const nonlinear = elements.some((el) => el.model.nonlinear);
     for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
       const A = Array.from({ length: size }, () => new Float64Array(size));
@@ -174,20 +242,29 @@ export function createEngine(circuit: Circuit) {
       if (!next) return fail('The circuit has no single solution (check for loops of ideal sources).');
       const done = !nonlinear || (iter > 0 && s.converged && settled(x, next));
       x = next;
-      if (done) return finish(dt);
+      if (done) return finish(dt, commit);
     }
     return fail('The simulation did not converge.');
   }
 
-  function finish(dt: number): boolean {
+  function finish(dt: number, commit: boolean): boolean {
     const s = stamper(null, null, x, dt);
     engine.results.clear();
     for (const el of elements) {
-      if (!el.open) el.model.accept?.(el, s);
       const v = s.v(el.nodes[0]) - s.v(el.nodes[1]);
+      // Current first: accept() moves an energy store on to this step's value.
       const i = el.open ? 0 : el.model.current(el, s);
-      const r: Result = { v, i, p: v * i, vrms: 0, irms: 0, pavg: 0, heat: el.state.heat ?? 0, load: 0, ac: engine.dynamic };
+      const pins = el.open ? el.nodes.map(() => 0) : (el.model.pinCurrents?.(el, s) ?? [i, -i]);
+      const pinV = el.nodes.map((n) => s.v(n));
+      // Power taken in: the sum over pins of voltage × current in.
+      const p = el.open ? 0 : (el.model.power?.(el, s) ?? pins.reduce((sum, ik, k) => sum + ik * pinV[k], 0));
+      if (commit && !el.open) el.model.accept?.(el, s);
+      const r: Result = {
+        v, i, p, vrms: 0, irms: 0, pavg: 0, heat: el.state.heat ?? 0, load: 0, ac: engine.ac,
+        pins, pinV, state: el.state,
+      };
       r.load = el.model.thermal && !el.broken ? el.model.thermal.load(r, el.props) : 0;
+      r.level = el.model.level?.(r, el.props);
       average(el, r, dt);
       engine.results.set(el.id, r);
     }
@@ -226,6 +303,19 @@ export function createEngine(circuit: Circuit) {
     return failed;
   }
 
+  // Let batteries drain for `dt` seconds at their present current.
+  function drain(dt: number) {
+    let draining = false;
+    for (const el of elements) {
+      const r = engine.results.get(el.id);
+      if (el.model.drain && !el.open && r && el.model.drain(el, r, dt)) {
+        draining = true;
+        r.level = el.model.level?.(r, el.props);
+      }
+    }
+    engine.draining = draining;
+  }
+
   function checkHeating() {
     engine.heating = elements.some((el) => {
       const r = engine.results.get(el.id);
@@ -247,7 +337,12 @@ export function createEngine(circuit: Circuit) {
   function advance(seconds: number): string[] {
     if (!engine.dynamic) {
       t += seconds;
-      return engine.error ? [] : heatUp(seconds);
+      if (engine.error) return [];
+      const failed = heatUp(seconds);
+      drain(seconds);
+      // A draining battery's voltage sags, so refresh the solution.
+      if (engine.draining) step(HOLD_STEP, false);
+      return failed;
     }
     pending += seconds;
     let limit = MAX_TIME_STEP;
@@ -263,7 +358,9 @@ export function createEngine(circuit: Circuit) {
       }
       t += dt;
       if (!step(dt)) return [];
+      respond(dt);
       const failed = heatUp(dt);
+      drain(dt);
       if (failed.length) return failed;
     }
     return [];

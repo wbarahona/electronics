@@ -10,7 +10,7 @@
     <!-- Only the icons we use; icon_names must stay in alphabetical order. -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_drop_down,autorenew,bolt,content_copy,content_cut,content_paste,delete,electrical_services,fast_forward,fast_rewind,library_add,lightbulb,pause,play_arrow,toggle_on&display=block"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_drop_down,autorenew,battery_charging_full,bolt,close,content_copy,content_cut,content_paste,delete,electrical_services,fast_forward,fast_rewind,folder_open,library_add,lightbulb,memory,note_add,pause,play_arrow,save,toggle_on&display=block"
     />
     <link rel="stylesheet" href="/reset.css" />
     <link rel="stylesheet" href="/src/theme.css" />
@@ -19,6 +19,17 @@
   <body>
     <header id="toolbar">
       <h1 class="title">Electronics</h1>
+      <div id="file-actions" class="file-actions">
+        <md-icon-button id="file-new" title="New circuit" aria-label="New circuit">
+          <md-icon>note_add</md-icon>
+        </md-icon-button>
+        <md-icon-button id="file-open" title="Open… (⌘O)" aria-label="Open">
+          <md-icon>folder_open</md-icon>
+        </md-icon-button>
+        <md-icon-button id="file-save" title="Save (⌘S)" aria-label="Save">
+          <md-icon>save</md-icon>
+        </md-icon-button>
+      </div>
       <div id="palette" class="palette"></div>
       <div id="sim-controls" class="sim-controls">
         <span id="clock" class="clock"></span>
@@ -35,6 +46,16 @@
         <span id="speed" class="speed" title="Simulation speed"></span>
       </div>
     </header>
+    <section id="palette-tray" class="tray" aria-label="Parts">
+      <div class="tray-inner">
+        <div class="tray-content">
+          <div class="tray-parts"></div>
+          <md-icon-button class="tray-close" title="Close" aria-label="Close parts">
+            <md-icon>close</md-icon>
+          </md-icon-button>
+        </div>
+      </div>
+    </section>
     <main class="workspace">
       <svg id="board" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -52,6 +73,7 @@
       <aside id="props" class="props" hidden></aside>
     </main>
     <div id="readout" class="readout" hidden></div>
+    <div id="toast" class="toast" role="status" hidden></div>
     <div id="menu-anchor" class="menu-anchor"></div>
     <md-menu id="menu" anchor="menu-anchor" positioning="fixed"></md-menu>
     <script type="module" src="/src/main.ts"></script>

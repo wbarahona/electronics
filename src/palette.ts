@@ -6,20 +6,45 @@ import type { PartType } from './types.ts';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DRAG_THRESHOLD = 4; // px before a press counts as a drag rather than a click
 
-// The parts bar: one button per category, each opening a small flyout of its
-// parts. Drag a part from the flyout onto the board, or click it to drop it in
-// the middle of the view. The flyout gets out of the way as soon as a drag
-// starts. While one flyout is open, hovering another category switches to it.
-export function createPalette(container: HTMLElement, board: Board, editor: Editor) {
+const ICON_HEIGHT = 26; // px, as .palette-item svg
+const ICON_MAX_WIDTH = 48; // px
+
+// The icon's view of a symbol: the usual 88×48 box around the pins, made
+// taller for a part with pins above or below, and its on-screen width to
+// match so the symbol keeps its proportions.
+function icon(type: PartType): { box: string; width: number } {
+  const ys = PARTS[type].pins.map((p) => p.y);
+  const top = Math.min(-24, Math.min(...ys) - 4);
+  const bottom = Math.max(24, Math.max(...ys) + 4);
+  const height = bottom - top;
+  return { box: `-44 ${top} 88 ${height}`, width: Math.min(ICON_MAX_WIDTH, (ICON_HEIGHT * 88) / height) };
+}
+
+// The parts bar: one button per category in the top bar. Choosing one slides
+// open the tray under the bar with that category's parts in a single row that
+// scrolls sideways when they don't fit (a mouse wheel scrolls it too); it
+// stays open while you work, until its close button (always in view at the
+// right) or the same category is clicked again.
+// Drag a part from the tray onto the board, or click it to drop it in the
+// middle of the view.
+export function createPalette(container: HTMLElement, tray: HTMLElement, board: Board, editor: Editor) {
   const { svg, world } = board;
   const ghost = document.createElementNS(SVG_NS, 'g');
   ghost.classList.add('part', 'ghost');
 
-  const flyout = document.createElement('div');
-  flyout.className = 'palette-flyout';
-  flyout.hidden = true;
-  document.body.append(flyout);
-  let openCategory: HTMLButtonElement | null = null; // its button while a flyout is open
+  const trayParts = tray.querySelector<HTMLElement>('.tray-parts')!;
+  tray.querySelector('.tray-close')!.addEventListener('click', () => closeTray());
+  // A plain mouse wheel scrolls the row sideways; trackpads already can.
+  trayParts.addEventListener(
+    'wheel',
+    (e) => {
+      if (e.deltaX !== 0 || trayParts.scrollWidth <= trayParts.clientWidth) return;
+      e.preventDefault();
+      trayParts.scrollLeft += e.deltaY;
+    },
+    { passive: false },
+  );
+  let openCategory: HTMLButtonElement | null = null; // its button while the tray is open
 
   const overBoard = (e: { clientX: number; clientY: number }) => {
     const r = svg.getBoundingClientRect();
@@ -35,42 +60,44 @@ export function createPalette(container: HTMLElement, board: Board, editor: Edit
     btn.innerHTML = `
       <md-focus-ring></md-focus-ring>
       <md-ripple></md-ripple>
-      <svg class="part" viewBox="-44 -24 88 48" aria-hidden="true">${symbolMarkup(type, defaults(type))}</svg>
+      <svg class="part" viewBox="${icon(type).box}" style="width: ${icon(type).width}px" aria-hidden="true">${symbolMarkup(type, defaults(type))}</svg>
       <span>${part.name}</span>`;
     btn.addEventListener('pointerdown', (e) => startDrag(e, type, btn));
     return btn;
   }
 
-  function openFlyout(button: HTMLButtonElement, category: { id: CategoryId }) {
+  function openTray(button: HTMLButtonElement, category: { id: CategoryId }) {
     openCategory?.classList.remove('open');
+    openCategory?.setAttribute('aria-expanded', 'false');
     openCategory = button;
     button.classList.add('open');
     button.setAttribute('aria-expanded', 'true');
-    flyout.replaceChildren(
+    trayParts.replaceChildren(
       ...(Object.keys(PARTS) as PartType[])
         .filter((type) => PARTS[type].category === category.id)
         .map(partButton),
     );
-    flyout.classList.remove('leaving');
-    flyout.hidden = false;
-    const r = button.getBoundingClientRect();
-    flyout.style.left = `${Math.max(8, Math.min(r.left, innerWidth - flyout.offsetWidth - 8))}px`;
-    flyout.style.top = `${r.bottom + 4}px`;
+    trayParts.scrollLeft = 0;
+    tray.classList.add('open');
+    tray.inert = false;
   }
 
-  function closeFlyout() {
+  // The parts stay in place while the tray slides shut.
+  function closeTray() {
     if (!openCategory) return;
     openCategory.classList.remove('open');
     openCategory.setAttribute('aria-expanded', 'false');
     openCategory = null;
-    flyout.hidden = true;
+    tray.classList.remove('open');
+    tray.inert = true;
   }
 
   for (const category of CATEGORIES) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'palette-category';
-    button.setAttribute('aria-haspopup', 'true');
+    button.title = category.label;
+    button.setAttribute('aria-controls', tray.id);
     button.setAttribute('aria-expanded', 'false');
     button.innerHTML = `
       <md-focus-ring></md-focus-ring>
@@ -79,28 +106,12 @@ export function createPalette(container: HTMLElement, board: Board, editor: Edit
       <span>${category.label}</span>
       <md-icon class="arrow">arrow_drop_down</md-icon>`;
     button.addEventListener('click', () => {
-      if (openCategory === button) closeFlyout();
-      else openFlyout(button, category);
-    });
-    button.addEventListener('pointerenter', () => {
-      if (openCategory && openCategory !== button) openFlyout(button, category);
+      if (openCategory === button) closeTray();
+      else openTray(button, category);
     });
     container.append(button);
   }
-
-  // Close on a press outside the bar and flyout, or Esc.
-  window.addEventListener(
-    'pointerdown',
-    (e) => {
-      const target = e.target as Node;
-      if (openCategory && !flyout.contains(target) && !container.contains(target)) closeFlyout();
-    },
-    true,
-  );
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeFlyout();
-  });
-  window.addEventListener('resize', closeFlyout);
+  tray.inert = true;
 
   function startDrag(e: PointerEvent, type: PartType, btn: HTMLButtonElement) {
     if (e.button !== 0) return;
@@ -125,12 +136,7 @@ export function createPalette(container: HTMLElement, board: Board, editor: Edit
 
     const move = (ev: PointerEvent) => {
       if (!moved && Math.hypot(ev.clientX - start.clientX, ev.clientY - start.clientY) < DRAG_THRESHOLD) return;
-      if (!moved) {
-        document.body.classList.add('dragging');
-        // Fade the flyout out of the way; it stays in the page so the pointer
-        // capture on this button keeps working, and closes when the drag ends.
-        flyout.classList.add('leaving');
-      }
+      if (!moved) document.body.classList.add('dragging');
       moved = true;
       last = ev;
       showGhost();
@@ -145,7 +151,6 @@ export function createPalette(container: HTMLElement, board: Board, editor: Edit
       document.body.classList.remove('dragging');
       ghost.remove();
       editor.clearPreview();
-      closeFlyout();
     };
 
     const end = (ev: PointerEvent) => {

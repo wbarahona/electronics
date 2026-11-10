@@ -1,0 +1,163 @@
+import { fromControl } from './keys.ts';
+import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
+import type { Circuit } from './model.ts';
+
+const AUTOSAVE_KEY = 'electronics:autosave';
+const AUTOSAVE_EVERY_MS = 5000;
+const FILE_TYPES = [{ description: 'Circuit', accept: { 'application/json': ['.json'] } }];
+
+// The File System Access API (Chrome, Edge) gives a real "Save as" dialog and
+// lets later saves go straight back to the same file. Elsewhere, saving
+// downloads a file and opening uses a plain file input.
+interface PickerWindow {
+  showSaveFilePicker?: (options: object) => Promise<FileSystemFileHandle>;
+  showOpenFilePicker?: (options: object) => Promise<FileSystemFileHandle[]>;
+}
+const picker = window as unknown as PickerWindow;
+const cancelled = (e: unknown) => e instanceof DOMException && e.name === 'AbortError';
+
+export interface FileActionsOptions {
+  circuit: Circuit;
+  getView: () => View;
+  // Replace the circuit on screen with a loaded one (or an empty one).
+  load: (data: SavedCircuit) => void;
+  // Tell the user something went wrong.
+  report: (message: string) => void;
+}
+
+// New / Open / Save (buttons in the top bar, ⌘O / ⌘S, dropping a .json file
+// on the window), plus autosave to this browser so a reload loses nothing.
+export function createFileActions(root: HTMLElement, { circuit, getView, load, report }: FileActionsOptions) {
+  let handle: FileSystemFileHandle | null = null; // file the last save or open used
+  let name = 'circuit.json';
+
+  const empty = () => !circuit.components.length && !circuit.wires.length && !circuit.joints.length;
+  const replaceOk = () => empty() || confirm('Replace the circuit on the board? Anything not saved to a file will be lost.');
+  const text = () => JSON.stringify(serialize(circuit, getView()), null, 2);
+
+  function newCircuit() {
+    if (!replaceOk()) return;
+    handle = null;
+    name = 'circuit.json';
+    load({ format: 'electronics-circuit', version: 1, parts: [], joints: [], wires: [] });
+  }
+
+  function open(text: string, fileName: string) {
+    let data: SavedCircuit;
+    try {
+      data = parse(text);
+    } catch (e) {
+      report(`Couldn’t open ${fileName}: ${(e as Error).message}`);
+      return false;
+    }
+    load(data);
+    name = fileName;
+    return true;
+  }
+
+  async function openFile() {
+    if (!replaceOk()) return;
+    if (picker.showOpenFilePicker) {
+      try {
+        const [h] = await picker.showOpenFilePicker({ types: FILE_TYPES });
+        const file = await h.getFile();
+        if (open(await file.text(), file.name)) handle = h;
+      } catch (e) {
+        if (!cancelled(e)) report(`Couldn’t open the file: ${(e as Error).message}`);
+      }
+      return;
+    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      if (file && open(await file.text(), file.name)) handle = null;
+    });
+    input.click();
+  }
+
+  async function save() {
+    if (picker.showSaveFilePicker) {
+      try {
+        handle ??= await picker.showSaveFilePicker({ suggestedName: name, types: FILE_TYPES });
+        const writable = await handle.createWritable();
+        await writable.write(text());
+        await writable.close();
+        name = handle.name;
+      } catch (e) {
+        if (!cancelled(e)) report(`Couldn’t save: ${(e as Error).message}`);
+      }
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text()], { type: 'application/json' }));
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  root.querySelector('#file-new')!.addEventListener('click', newCircuit);
+  root.querySelector('#file-open')!.addEventListener('click', openFile);
+  root.querySelector('#file-save')!.addEventListener('click', save);
+
+  window.addEventListener('keydown', (e) => {
+    if (!(e.metaKey || e.ctrlKey) || fromControl(e)) return;
+    const key = e.key.toLowerCase();
+    if (key === 's') {
+      e.preventDefault();
+      save();
+    } else if (key === 'o') {
+      e.preventDefault();
+      openFile();
+    }
+  });
+
+  // Drop a circuit file anywhere on the window to open it.
+  window.addEventListener('dragover', (e) => {
+    if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
+  });
+  window.addEventListener('drop', async (e) => {
+    const file = e.dataTransfer?.files[0];
+    if (!file) return;
+    e.preventDefault();
+    if (replaceOk() && open(await file.text(), file.name)) handle = null;
+  });
+
+  // --- Autosave ---------------------------------------------------------------
+  // Kept in this browser only (localStorage): a reload picks up where you
+  // left off. Storage can be unavailable (private windows), so failures are
+  // ignored rather than shown.
+
+  function autosave() {
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, text());
+    } catch {
+      // no storage here; nothing to do
+    }
+  }
+
+  let pending = 0;
+  // Call after edits; saves shortly after things settle.
+  function changed() {
+    clearTimeout(pending);
+    pending = window.setTimeout(autosave, 500);
+  }
+
+  // Values that change while the simulation runs (battery charge, damage)
+  // are picked up every few seconds, and when the page is left.
+  setInterval(autosave, AUTOSAVE_EVERY_MS);
+  window.addEventListener('pagehide', autosave);
+
+  // The autosaved circuit, if there is a usable one.
+  function restore(): SavedCircuit | null {
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      return saved ? parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return { changed, restore };
+}
