@@ -14,6 +14,7 @@ import * as lamp from './signals/lamp.ts';
 import * as led from './signals/led.ts';
 import * as stackLight from './signals/stack-light.ts';
 import * as rgbLed from './signals/rgb-led.ts';
+import * as dotMatrix from './signals/dot-matrix.ts';
 import * as barGraph from './signals/bar-graph.ts';
 import * as bicolorLed from './signals/bicolor-led.ts';
 import * as sevenSeg from './signals/seven-seg.ts';
@@ -66,6 +67,7 @@ export const DEFS: PartDefs<PartType> = {
   ...led.defs,
   ...stackLight.defs,
   ...rgbLed.defs,
+  ...dotMatrix.defs,
   ...barGraph.defs,
   ...bicolorLed.defs,
   ...sevenSeg.defs,
@@ -111,6 +113,7 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...led.models,
   ...stackLight.models,
   ...rgbLed.models,
+  ...dotMatrix.models,
   ...barGraph.models,
   ...bicolorLed.models,
   ...sevenSeg.models,

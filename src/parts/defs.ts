@@ -113,6 +113,7 @@ export interface PartDef<P> {
   selector?: ChoiceKeys<P>;
   noLabel?: boolean;
   hit?: HitBox | ((p: P) => HitBox);
+  presets?: Preset<P>[];
   labelBelow?: boolean;
   labelAt?: (vertical: boolean, p: P, rotation: number) => LabelSpot;
   draw: (p: P, broken: boolean) => string;
@@ -145,10 +146,29 @@ export interface AnyPartDef {
   selector?: string;
   noLabel?: boolean;
   hit?: HitBox | ((p: Props) => HitBox);
+  presets?: Preset<Props>[];
   labelBelow?: boolean;
   labelAt?: (vertical: boolean, p: Props, rotation: number) => LabelSpot;
   draw: (p: Props, broken: boolean) => string;
 }
 
 // Definitions for the part types K, each checked against its values.
+// A real part number (e.g. 1N4007): its datasheet values for the part's
+// settings, and a one-line note about it. A part with presets has a
+// `partNumber` setting (see partNumberSpec); GENERIC means none.
+export interface Preset<P> {
+  code: string;
+  note: string;
+  values: Partial<P>;
+}
+
+export const GENERIC = 'Generic';
+
+// The Part number setting for a list of presets, starting on `initial`.
+export const partNumberSpec = (presets: { code: string }[], initial: string): ChoiceSpec<string> => ({
+  label: 'Part number',
+  value: initial,
+  options: [GENERIC, ...presets.map((p) => p.code)],
+});
+
 export type PartDefs<K extends PartType> = { [T in K]: PartDef<PropsByType[T]> };

@@ -1,4 +1,4 @@
-import { PARTS, isChoiceSpec, isSwitchSpec, type ChoiceSpec, type NumberSpec, type PropSpec, type SwitchSpec } from './components.ts';
+import { PARTS, applyPreset, isChoiceSpec, isModified, isSwitchSpec, presetOf, type ChoiceSpec, type NumberSpec, type PropSpec, type SwitchSpec } from './components.ts';
 import type { Editor, Live } from './editor.ts';
 import type { Circuit } from './model.ts';
 import { MODELS } from './sim/models.ts';
@@ -23,6 +23,17 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
   function set(c: Part, key: string, v: PropValue) {
     (c.props as Record<string, PropValue>)[key] = v;
     editor.refreshPart(c.id);
+    if (partSelect) partSelect.supportingText = partNote(c);
+  }
+
+  // A part with part numbers: its Part number field, whose supporting text
+  // says what the part is, or that its values have been changed from it.
+  let partSelect: (HTMLElement & { supportingText: string }) | null = null;
+
+  function partNote(c: Part): string {
+    const preset = presetOf(c.type, c.props);
+    if (!preset) return 'No particular part: the values are your own';
+    return isModified(c.type, c.props) ? `Modified: differs from the ${preset.code} datasheet` : preset.note;
   }
 
   // Outlined text field with the unit as suffix. Commits on Enter or leaving
@@ -97,6 +108,17 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
       option.append(headline);
       select.append(option);
     }
+    if (key === 'partNumber') {
+      // Picking a part number brings in its values; show them.
+      partSelect = select;
+      select.supportingText = partNote(c);
+      select.addEventListener('change', () => {
+        applyPreset(c.type, c.props, select.value);
+        editor.refreshPart(c.id);
+        refresh();
+      });
+      return select;
+    }
     select.addEventListener('change', () => set(c, key, select.value));
     return select;
   }
@@ -130,6 +152,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
       return;
     }
     level = null;
+    partSelect = null;
     const heading = document.createElement('h2');
     const ref = document.createElement('span');
     ref.className = 'ref';

@@ -1,5 +1,5 @@
 import { DEFS } from './parts/index.ts';
-import type { AnyPartDef, HitBox } from './parts/defs.ts';
+import type { AnyPartDef, HitBox, Preset } from './parts/defs.ts';
 import type { Point, Props, PropsByType, PartType, PropValue } from './types.ts';
 
 // The parts as the rest of the app sees them: every part type's symbol and
@@ -12,6 +12,7 @@ export {
   isSwitchSpec,
   type AnyPartDef,
   type CategoryId,
+  GENERIC,
   type ChoiceSpec,
   type HitBox,
   type LabelSpot,
@@ -40,9 +41,43 @@ export const hitOf = (type: PartType, props: Props): HitBox | undefined => {
 };
 
 // The values a new part of this type starts with.
+// (A part with part numbers starts as its default one, with its values.)
 export function defaults<T extends PartType>(type: T): PropsByType[T] {
   const entries = Object.entries(PARTS[type].props).map(([key, spec]): [string, PropValue] => [key, spec.value]);
-  return Object.fromEntries(entries) as PropsByType[T];
+  const props = Object.fromEntries(entries) as PropsByType[T];
+  Object.assign(props, presetOf(type, props)?.values);
+  return props;
+}
+
+// --- Part numbers ----------------------------------------------------------------
+// Parts with presets carry a `partNumber`; picking one sets the part's values
+// to that device's. Values changed by hand afterwards mark it modified: it
+// keeps its part number, shown with a * on the board.
+
+const partNumberOf = (props: Props) => (props as { partNumber?: string }).partNumber;
+
+export function presetOf(type: PartType, props: Props): Preset<Props> | undefined {
+  const code = partNumberOf(props);
+  return PARTS[type].presets?.find((p) => p.code === code);
+}
+
+export function applyPreset(type: PartType, props: Props, code: string) {
+  (props as { partNumber?: string }).partNumber = code;
+  Object.assign(props, presetOf(type, props)?.values);
+}
+
+export function isModified(type: PartType, props: Props): boolean {
+  const preset = presetOf(type, props);
+  if (!preset) return false;
+  return Object.entries(preset.values).some(([key, v]) => (props as Record<string, unknown>)[key] !== v);
+}
+
+// What follows the reference on the board: the part number (with * when
+// modified), or the part's own tag (its value) when it has none.
+export function tagOf(type: PartType, props: Props): string | undefined {
+  const preset = presetOf(type, props);
+  if (preset) return `${preset.code}${isModified(type, props) ? '*' : ''}`;
+  return PARTS[type].tag?.(props);
 }
 
 // Glyphs marked `upright` (letters, the generator's sine) stay level when the

@@ -1,4 +1,4 @@
-import { PARTS, defaults, isChoiceSpec, isSwitchSpec, pinsOf } from './components.ts';
+import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, pinsOf } from './components.ts';
 import type { Circuit } from './model.ts';
 import type { End, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
@@ -97,6 +97,8 @@ function readPart(o: Record<string, unknown>): Part {
       props[key] = v as PropValue;
     }
   }
+  // Saved before it had part numbers: its values may be any part's.
+  if (PARTS[type as PartType].presets && saved.partNumber === undefined) props.partNumber = GENERIC;
   const rotation = num(o.rotation ?? 0, 'part rotation');
   if (rotation % 90 !== 0) throw new Error('A part is rotated by something other than a quarter turn.');
   return {

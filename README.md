@@ -23,7 +23,7 @@ EN 81346 reference designations (-R1, -S1, -P1…).
   and push buttons, relays and AC contactors, DC and AC (1~ and 3~) motors,
   heater, solenoid, fluorescent tube with ballast and starter, buzzer, piezo,
   bell and speaker (audible while running), pilot lamp, stack light,
-  bi-colour LED, LED bar graph, diodes, BJTs, MOSFET, logic gates,
+  bi-colour LED, LED bar graph, dot-matrix display (any size, mono or RGB), diodes, BJTs, MOSFET, logic gates,
   flip-flops, 555 timer, CD4511 decoder, CD4017 counter, LM358 op-amp,
   ULN2003 driver, voltage regulator, DC/AC voltmeter and ammeter, and an
   analog panel meter
@@ -79,7 +79,8 @@ src/
     shared/      model helpers by topic (junctions, sources, coils, logic, meters…)
 ```
 
-Planned parts and tools are listed in [INCOMING_PARTS.md](INCOMING_PARTS.md).
+Planned parts and tools are listed in [INCOMING_PARTS.md](INCOMING_PARTS.md),
+and planned features in [UPCOMING_FEATURES.md](UPCOMING_FEATURES.md).
 
 Built with TypeScript, Vite, SVG and [Material Web](https://github.com/material-components/material-web) (Material Design 3).
 

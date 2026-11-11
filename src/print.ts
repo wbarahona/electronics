@@ -1,5 +1,5 @@
 import type { MdDialog } from '@material/web/dialog/dialog.js';
-import { PARTS } from './components.ts';
+import { PARTS, tagOf } from './components.ts';
 import type { Circuit } from './model.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -103,7 +103,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     table.innerHTML = `
       <thead><tr><th>Ref.</th><th>Part</th><th>Value</th></tr></thead>
       <tbody>${parts
-        .map((c) => `<tr><td>-${c.ref}</td><td>${PARTS[c.type].name}</td><td>${PARTS[c.type].tag?.(c.props) ?? ''}</td></tr>`)
+        .map((c) => `<tr><td>-${c.ref}</td><td>${PARTS[c.type].name}</td><td>${tagOf(c.type, c.props) ?? ''}</td></tr>`)
         .join('')}</tbody>`;
     return table;
   }

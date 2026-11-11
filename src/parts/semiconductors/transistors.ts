@@ -1,16 +1,16 @@
 import { fmt } from '../../sim/shared/readout.ts';
 import { limitJunction, THERMAL_VOLTAGE } from '../../sim/shared/junctions.ts';
 import type { Element, ModelDef, ModelDefs, Stamper } from '../../sim/models.ts';
-import type { LabelSpot, PartDefs } from '../defs.ts';
+import { partNumberSpec, type Preset, type LabelSpot, type PartDefs } from '../defs.ts';
 import type { PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
-  npn: { gain: number; maxCurrent: number; powerRating: number };
-  pnp: { gain: number; maxCurrent: number; powerRating: number };
+  npn: { partNumber: string; gain: number; maxCurrent: number; powerRating: number };
+  pnp: { partNumber: string; gain: number; maxCurrent: number; powerRating: number };
   // On-resistance is at a gate–source voltage of 10 V.
-  nmos: { thresholdVoltage: number; onResistance: number; maxCurrent: number; powerRating: number };
+  nmos: { partNumber: string; thresholdVoltage: number; onResistance: number; maxCurrent: number; powerRating: number };
 }
 
 // Transistors: base/gate on the left, the other two leads leave up and down,
@@ -178,6 +178,35 @@ function mosfet(): ModelDef<PropsByType['nmos']> {
   };
 }
 
+// npn's part numbers (datasheet values; the default first in Europe).
+const NPN_PRESETS: Preset<PropsByType['npn']>[] = [
+  { code: 'BC547', note: '45 V, 100 mA general-purpose NPN (TO-92), B grade', values: { gain: 290, maxCurrent: 0.1, powerRating: 0.5 } },
+  { code: 'BC337', note: '45 V, 800 mA NPN (TO-92), -25 grade', values: { gain: 250, maxCurrent: 0.8, powerRating: 0.625 } },
+  { code: '2N2222A', note: '40 V, 600 mA switching NPN (TO-92)', values: { gain: 150, maxCurrent: 0.6, powerRating: 0.625 } },
+  { code: '2N3904', note: '40 V, 200 mA general-purpose NPN (TO-92)', values: { gain: 150, maxCurrent: 0.2, powerRating: 0.625 } },
+  { code: 'BD139', note: '80 V, 1.5 A medium-power NPN (TO-126), free air', values: { gain: 100, maxCurrent: 1.5, powerRating: 1.25 } },
+  { code: 'TIP120', note: '60 V, 5 A Darlington NPN (TO-220), free air', values: { gain: 1000, maxCurrent: 5, powerRating: 2 } },
+];
+
+// pnp's part numbers (datasheet values; the default first in Europe).
+const PNP_PRESETS: Preset<PropsByType['pnp']>[] = [
+  { code: 'BC557', note: '45 V, 100 mA general-purpose PNP (TO-92), B grade', values: { gain: 290, maxCurrent: 0.1, powerRating: 0.5 } },
+  { code: 'BC327', note: '45 V, 800 mA PNP (TO-92), -25 grade', values: { gain: 250, maxCurrent: 0.8, powerRating: 0.625 } },
+  { code: '2N2907A', note: '60 V, 600 mA switching PNP (TO-92)', values: { gain: 150, maxCurrent: 0.6, powerRating: 0.625 } },
+  { code: '2N3906', note: '40 V, 200 mA general-purpose PNP (TO-92)', values: { gain: 150, maxCurrent: 0.2, powerRating: 0.625 } },
+  { code: 'BD140', note: '80 V, 1.5 A medium-power PNP (TO-126), free air', values: { gain: 100, maxCurrent: 1.5, powerRating: 1.25 } },
+  { code: 'TIP125', note: '60 V, 5 A Darlington PNP (TO-220), free air', values: { gain: 1000, maxCurrent: 5, powerRating: 2 } },
+];
+
+// nmos's part numbers (datasheet values; the default first in Europe).
+const NMOS_PRESETS: Preset<PropsByType['nmos']>[] = [
+  { code: '2N7000', note: '60 V, 200 mA small-signal N-MOSFET (TO-92)', values: { thresholdVoltage: 2.1, onResistance: 1.2, maxCurrent: 0.2, powerRating: 0.4 } },
+  { code: 'BS170', note: '60 V, 500 mA small-signal N-MOSFET (TO-92)', values: { thresholdVoltage: 2.1, onResistance: 1.2, maxCurrent: 0.5, powerRating: 0.83 } },
+  { code: 'IRF520', note: '100 V, 9 A power N-MOSFET (TO-220), free air', values: { thresholdVoltage: 3, onResistance: 0.27, maxCurrent: 9.2, powerRating: 2 } },
+  { code: 'IRF540N', note: '100 V, 33 A power N-MOSFET (TO-220), free air', values: { thresholdVoltage: 3, onResistance: 0.044, maxCurrent: 33, powerRating: 2 } },
+  { code: 'IRLZ44N', note: '55 V, 47 A logic-level N-MOSFET (TO-220), free air', values: { thresholdVoltage: 1.5, onResistance: 0.022, maxCurrent: 47, powerRating: 2 } },
+];
+
 export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
   // Pins: base, collector, emitter. The emitter arrow points out of an NPN.
   npn: {
@@ -187,10 +216,12 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
     group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: -40 }, { x: 20, y: 40 }],
     props: {
+      partNumber: partNumberSpec(NPN_PRESETS, 'BC547'),
       gain: { label: 'Current gain (hFE)', unit: '', value: 100, min: 1 },
       maxCurrent: { label: 'Max collector current', unit: 'A', value: 0.5, min: 0.001 },
       powerRating: { label: 'Power rating', unit: 'W', value: 0.5, min: 0.001 },
     },
+    presets: NPN_PRESETS,
     labelAt: transistorLabel,
     draw: () => `
       <circle r="24" cx="4" />
@@ -206,10 +237,12 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
     group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: 40 }, { x: 20, y: -40 }],
     props: {
+      partNumber: partNumberSpec(PNP_PRESETS, 'BC557'),
       gain: { label: 'Current gain (hFE)', unit: '', value: 100, min: 1 },
       maxCurrent: { label: 'Max collector current', unit: 'A', value: 0.5, min: 0.001 },
       powerRating: { label: 'Power rating', unit: 'W', value: 0.5, min: 0.001 },
     },
+    presets: PNP_PRESETS,
     labelAt: transistorLabel,
     draw: () => `
       <circle r="24" cx="4" />
@@ -225,11 +258,13 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
     group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: -40 }, { x: 20, y: 40 }],
     props: {
+      partNumber: partNumberSpec(NMOS_PRESETS, '2N7000'),
       thresholdVoltage: { label: 'Threshold voltage', unit: 'V', value: 2, min: 0.1 },
       onResistance: { label: 'On-resistance (Vgs 10 V)', unit: 'Ω', value: 2, min: 0.001 },
       maxCurrent: { label: 'Max drain current', unit: 'A', value: 0.5, min: 0.001 },
       powerRating: { label: 'Power rating', unit: 'W', value: 0.4, min: 0.001 },
     },
+    presets: NMOS_PRESETS,
     labelAt: transistorLabel,
     draw: () => `
       <circle r="24" cx="4" />

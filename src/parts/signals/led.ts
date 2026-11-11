@@ -1,14 +1,26 @@
 import { basicReadout } from '../../sim/shared/readout.ts';
 import { diode, limitJunction } from '../../sim/shared/junctions.ts';
 import type { ModelDefs } from '../../sim/models.ts';
-import type { PartDefs } from '../defs.ts';
-import type { LedColor } from '../../types.ts';
+import { partNumberSpec, type Preset, type PartDefs } from '../defs.ts';
+import type { LedColor, PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
-  led: { color: LedColor; forwardVoltage: number; maxCurrent: number };
+  led: { partNumber: string; color: LedColor; forwardVoltage: number; maxCurrent: number };
 }
+
+// led's part numbers (datasheet values; the default first in Europe).
+const LED_PRESETS: Preset<PropsByType['led']>[] = [
+  { code: '5 mm red', note: 'Standard 5 mm red LED, 20 mA', values: { color: 'red', forwardVoltage: 2, maxCurrent: 0.02 } },
+  { code: '5 mm yellow', note: 'Standard 5 mm yellow LED, 20 mA', values: { color: 'yellow', forwardVoltage: 2.1, maxCurrent: 0.02 } },
+  { code: '5 mm green', note: 'Standard 5 mm green LED, 20 mA', values: { color: 'green', forwardVoltage: 2.2, maxCurrent: 0.02 } },
+  { code: '5 mm blue', note: 'Standard 5 mm blue LED, 20 mA', values: { color: 'blue', forwardVoltage: 3.2, maxCurrent: 0.02 } },
+  { code: '5 mm white', note: 'Standard 5 mm white LED, 20 mA', values: { color: 'white', forwardVoltage: 3.2, maxCurrent: 0.02 } },
+  { code: '3 mm red', note: 'Standard 3 mm red LED, 20 mA', values: { color: 'red', forwardVoltage: 2, maxCurrent: 0.02 } },
+  { code: '3 mm green', note: 'Standard 3 mm green LED, 20 mA', values: { color: 'green', forwardVoltage: 2.2, maxCurrent: 0.02 } },
+  { code: '1 W white', note: 'High-power 1 W white LED, 350 mA (on a heatsink)', values: { color: 'white', forwardVoltage: 3.3, maxCurrent: 0.35 } },
+];
 
 export const defs: PartDefs<'led'> = {
   led: {
@@ -18,10 +30,12 @@ export const defs: PartDefs<'led'> = {
     group: 'Lights',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }], // anode, cathode
     props: {
+      partNumber: partNumberSpec(LED_PRESETS, '5 mm red'),
       color: { label: 'Colour', value: 'red', options: ['red', 'yellow', 'green', 'blue', 'white'] },
       forwardVoltage: { label: 'Forward voltage', unit: 'V', value: 2, min: 0.1 },
       maxCurrent: { label: 'Max current', unit: 'A', value: 0.02, min: 0.0001 },
     },
+    presets: LED_PRESETS,
     glow: { color: (p) => p.color, radius: 30 },
     draw: () => `
       <path class="bulb tinted" d="M -10 -10 V 10 L 10 0 Z" />

@@ -1,5 +1,5 @@
 import { GRID, snap, type Board } from './board.ts';
-import { LIGHT_COLORS, PARTS, defaults, hitOf, keepUpright, pinNamesOf, pinsOf, symbolMarkup, type ChoiceSpec } from './components.ts';
+import { LIGHT_COLORS, PARTS, defaults, hitOf, keepUpright, pinNamesOf, pinsOf, symbolMarkup, tagOf, type ChoiceSpec } from './components.ts';
 import { fromControl } from './keys.ts';
 import type { Circuit } from './model.ts';
 import { buildNets, keyOf, pinKey, type Nets } from './nets.ts';
@@ -292,7 +292,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // (Re)draw a part's symbol, value text and hit areas from its current props.
   function renderPart(c: Part) {
     const part = PARTS[c.type];
-    const tag = part.tag?.(c.props);
+    const tag = tagOf(c.type, c.props);
     drawnPins.set(c.id, pinNamesOf(c.type, c.props));
     const pinHits = pinsOf(c.type, c.props).map(
       (p, i) => `<circle class="pin-hit" data-pin="${i}" cx="${p.x}" cy="${p.y}" r="7" />`,

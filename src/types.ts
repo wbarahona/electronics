@@ -14,6 +14,7 @@ import type { PartProps as LampProps } from './parts/signals/lamp.ts';
 import type { PartProps as LedProps } from './parts/signals/led.ts';
 import type { PartProps as StackLightProps } from './parts/signals/stack-light.ts';
 import type { PartProps as RgbLedProps } from './parts/signals/rgb-led.ts';
+import type { PartProps as DotMatrixProps } from './parts/signals/dot-matrix.ts';
 import type { PartProps as BarGraphProps } from './parts/signals/bar-graph.ts';
 import type { PartProps as BicolorLedProps } from './parts/signals/bicolor-led.ts';
 import type { PartProps as SevenSegProps } from './parts/signals/seven-seg.ts';
@@ -76,6 +77,7 @@ export interface PropsByType
     LedProps,
     StackLightProps,
     RgbLedProps,
+    DotMatrixProps,
     BarGraphProps,
     BicolorLedProps,
     SevenSegProps,

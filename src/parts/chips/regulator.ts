@@ -2,13 +2,13 @@ import { chip } from '../symbols.ts';
 import { fmt } from '../../sim/shared/readout.ts';
 import { formatNumber } from '../../units.ts';
 import type { Element, ModelDef, ModelDefs } from '../../sim/models.ts';
-import type { PartDefs } from '../defs.ts';
+import { partNumberSpec, type Preset, type PartDefs } from '../defs.ts';
 import type { PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
-  regulator: { outputVoltage: number; dropout: number; maxCurrent: number; powerRating: number };
+  regulator: { partNumber: string; outputVoltage: number; dropout: number; maxCurrent: number; powerRating: number };
 }
 
 // 78xx linear regulator. Pins: IN, GND, OUT. OUT is held at the set voltage
@@ -64,6 +64,17 @@ function regulator(): ModelDef<PropsByType['regulator']> {
   };
 }
 
+// regulator's part numbers (datasheet values; the default first in Europe).
+const REGULATOR_PRESETS: Preset<PropsByType['regulator']>[] = [
+  { code: '7805', note: '5 V, 1.5 A linear regulator (TO-220), free air', values: { outputVoltage: 5, dropout: 2, maxCurrent: 1.5, powerRating: 2 } },
+  { code: '7809', note: '9 V, 1.5 A linear regulator (TO-220), free air', values: { outputVoltage: 9, dropout: 2, maxCurrent: 1.5, powerRating: 2 } },
+  { code: '7812', note: '12 V, 1.5 A linear regulator (TO-220), free air', values: { outputVoltage: 12, dropout: 2, maxCurrent: 1.5, powerRating: 2 } },
+  { code: '7815', note: '15 V, 1.5 A linear regulator (TO-220), free air', values: { outputVoltage: 15, dropout: 2, maxCurrent: 1.5, powerRating: 2 } },
+  { code: '78L05', note: '5 V, 100 mA linear regulator (TO-92)', values: { outputVoltage: 5, dropout: 1.7, maxCurrent: 0.1, powerRating: 0.6 } },
+  { code: 'LM2940-5', note: '5 V, 1 A low-dropout regulator (TO-220), free air', values: { outputVoltage: 5, dropout: 0.5, maxCurrent: 1, powerRating: 2 } },
+  { code: 'LM1117-3.3', note: '3.3 V, 800 mA low-dropout regulator (SOT-223)', values: { outputVoltage: 3.3, dropout: 1.2, maxCurrent: 0.8, powerRating: 1.5 } },
+];
+
 export const defs: PartDefs<'regulator'> = {
   // Fixed linear voltage regulator, 78xx family (7805 by default).
   regulator: {
@@ -73,11 +84,13 @@ export const defs: PartDefs<'regulator'> = {
     group: 'Regulators',
     pins: [{ x: -40, y: 0 }, { x: 0, y: 40 }, { x: 40, y: 0 }], // 1 IN, 2 GND, 3 OUT
     props: {
+      partNumber: partNumberSpec(REGULATOR_PRESETS, '7805'),
       outputVoltage: { label: 'Output voltage', unit: 'V', value: 5, min: 1.25, max: 24 },
       dropout: { label: 'Dropout voltage', unit: 'V', value: 2, min: 0.1 },
       maxCurrent: { label: 'Max output current', unit: 'A', value: 1.5, min: 0.001 },
       powerRating: { label: 'Power rating', unit: 'W', value: 2, min: 0.01 },
     },
+    presets: REGULATOR_PRESETS,
     tag: (p) => `78${String(Math.round(p.outputVoltage)).padStart(2, '0')}`,
     draw: (p) =>
       chip({ w: 32, h: 18 }, `${formatNumber(p.outputVoltage)} V`, [['IN', 1, -40, 0], ['GND', 2, 0, 40], ['OUT', 3, 40, 0]]),

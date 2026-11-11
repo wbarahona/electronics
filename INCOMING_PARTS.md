@@ -1,7 +1,8 @@
 # Incoming parts
 
 Parts and tools we've discussed for Ampage but not built yet, roughly in the
-order they'd be most useful. Move an entry out when it's done.
+order they'd be most useful. Move an entry out when it's done. App features
+(sharing, editing, analysis…) are in [UPCOMING_FEATURES.md](UPCOMING_FEATURES.md).
 
 ## Signals
 

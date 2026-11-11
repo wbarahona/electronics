@@ -1,0 +1,99 @@
+# Upcoming features
+
+Features we've discussed for Ampage but not built yet, grouped by what they
+add. Parts and instruments still to come are in
+[INCOMING_PARTS.md](INCOMING_PARTS.md). Move an entry out when it's done.
+
+## Top picks
+
+The most value for the effort, roughly in order:
+
+1. **Example circuits gallery**: biggest win for newcomers; circuits are
+   already plain JSON files.
+2. **Net labels**: make larger schematics manageable; every real CAD tool has
+   them.
+3. **Share by link**: instant sharing without a server.
+4. **Fault injection**: turns the meters and oscilloscope into real
+   troubleshooting practice.
+5. **Export as PNG / SVG**: small effort, used constantly (builds on the
+   print pipeline).
+
+## Learning and sharing
+
+- **Example circuits gallery**: ready-made circuits (stairway light, motor
+  starter with seal-in, 555 blinker, bridge rectifier, logic counter,
+  doorbell) that open with one click.
+- **Share by link**: the whole circuit packed into the URL; opening the link
+  opens the circuit.
+- **Export as image**: PNG or SVG of the schematic, for documents, slides and
+  chat.
+- **Text notes on the board**: labels and comments placed among the parts, to
+  explain a circuit or mark its sections.
+- **Challenges and lessons**: tasks such as "make the lamp light only when both
+  switches are on", checked by the simulator.
+
+## Schematic editing
+
+- **Net labels**: name a wire (e.g. "+12V", "CLK"); every wire with the same
+  name is connected, without drawing it across the sheet.
+- **Subcircuits / blocks**: turn a selection into one reusable block and drop
+  copies of it.
+- **Title block and sheet frame**: a proper DIN / ISO drawing frame for
+  printing.
+- **Align and distribute**: tidy a selection, with its wires following.
+
+## Simulation depth
+
+- **Fault injection**: make any part fail on purpose (open, short, drifted) to
+  practise fault finding.
+- **Component tolerances**: ±5 % resistors and the like, so "identical"
+  circuits differ slightly, as in real life.
+- **Frequency response (Bode plot)**: sweep a frequency through a filter or
+  amplifier and plot gain and phase.
+- **DC sweep / I–V curve tracer**: plot a diode's, LED's or transistor's
+  characteristic curve.
+- **Ambient temperature**: affects the NTC, LDR and when parts overheat.
+- **More part numbers**: the first batch is built (diodes, Schottkys,
+  zeners, NPN/PNP/MOSFET transistors, LEDs, regulators, with European
+  defaults and a modified mark). Still to do: relays and contactors by coil
+  voltage and contact rating, more transistor and LED codes, the LM317, and
+  specs not modelled yet where they matter (a diode's surge current, a
+  transistor's maximum collector voltage). Typing a code in the parts search
+  could also drop the part preset to it.
+- **Standard values (E12 / E24)**: for resistors and capacitors, which have
+  values rather than part numbers: a dropdown or snap-to-standard option.
+- **Navigation rail**: an M3 navigation rail down the left edge for the
+  app's main destinations and options, e.g. Parts, Tools (oscilloscope,
+  thermal view), Examples, Files and Settings, with the FAB at its top. It
+  would free the top bar, which now holds files, history, search, run
+  controls and the category row. On narrow screens it becomes an M3
+  navigation bar at the bottom.
+- **Properties as an M3 side sheet**: rebuild the part properties panel to
+  the M3 side sheet guidelines: a standard (docked) side sheet on wide
+  screens and a modal one with a scrim on narrow screens, with a headline
+  and close button in its header, M3 container colour, shape and elevation,
+  and the enter/exit motion. It should also slide in and out rather than
+  appearing at once, and the bottom-sheet fallback on phones should follow
+  the M3 bottom sheet guidelines (drag handle, scrim).
+- **M3 sliders for draggable values**: every setting with a natural range
+  gets an M3 slider in the properties panel, not just the few that have one
+  today (potentiometer and variable resistor position, LDR/NTC ambient). For
+  example: the piezo's tone, a phase's angle, a clock's duty cycle, rail and
+  generator voltages within a sensible range. Use discrete sliders with tick
+  marks for whole-number settings (relay contacts, contactor poles), show the
+  value indicator while dragging, and keep a text field beside the slider for
+  typing an exact value.
+- **Command palette (⌘⇧P)**: run any action by typing ("rotate", "fit",
+  "export PNG", "add resistor").
+- **Installable app (PWA)**: works offline and opens like a desktop app.
+- **Touch and tablet support**: pinch zoom, long-press for the context menu,
+  larger targets.
+- **Languages**: English, Spanish and German.
+- **Norms and standards: EU or US**: a menu option for the drawing standard.
+  EU (today): IEC / DIN EN 60617 symbols and EN 81346 references (-R1).
+  US: ANSI / IEEE 315 symbols (zigzag resistors and so on), US reference
+  designators (R1, Q1, CR1 for diodes), and US default part numbers (2N3904,
+  2N3906, 1N4733A instead of BC547, BC557, BZX55C5V1).
+- **Light / dark toggle**: today the theme follows the system only.
+- **Fit to circuit on open**: optionally fit the view when a file is opened,
+  instead of restoring the view saved with it.
