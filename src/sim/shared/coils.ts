@@ -5,14 +5,10 @@ import { basicReadout, fmt } from './readout.ts';
 // Coils: inductance with resistance, and the levels a relay-like coil pulls
 // in and drops out at.
 
-// --- Relays and contactors ---------------------------------------------------
-// The coil is a resistance between pins 0 and 1. It pulls in at PULL_IN of
-// its rated voltage and, once in, holds until it falls below DROP_OUT, so a
-// relay doesn't chatter at the threshold. `contacts` lists [a, b, closed when
-// energized] for each pair of pins the contacts join. An AC coil judges its
-// RMS voltage (`ac`), a DC one the voltage at that instant.
+// A relay-like coil pulls in at PULL_IN of its rated voltage (or current)
+// and, once in, holds until it falls below DROP_OUT, so it doesn't chatter
+// at the threshold.
 export const PULL_IN = 0.75;
-
 export const DROP_OUT = 0.4;
 
 // --- Inductive coils ---------------------------------------------------------

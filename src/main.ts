@@ -170,8 +170,9 @@ let waveSpeed = 0;
 let last = performance.now();
 requestAnimationFrame(function frame(now) {
   scope.draw(engine.time, controls.speed);
-  // Sounders are heard only while the simulation runs.
-  audio.play(controls.running ? sounds : new Map());
+  // Sounders are heard only while the simulation runs (pausing silences them
+  // without a door chime's closing dong).
+  audio.play(controls.running ? sounds : new Map(), !controls.running);
   logo.classList.toggle('running', controls.running);
   const burnt = circuit.components.some((c) => c.broken);
   logo.classList.toggle('burnt', burnt);

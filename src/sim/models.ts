@@ -96,9 +96,17 @@ export interface Stamper {
 export type Lines = [string, string][];
 
 // A tone for the speakers.
+// A sound for the speakers. `voice` says how it's made: a steady `tone`; a
+// `buzz` (the tone chopped `rate` times a second, an armature hitting its
+// pole piece); a `bell` (a hammer striking a gong `rate` times a second, each
+// strike a decaying metallic ring); a `chime` (one tone bar struck when it
+// starts, ding, the `second` when it stops, dong). `level` is 0..1.
 export interface Sound {
+  voice?: 'tone' | 'buzz' | 'bell' | 'chime';
   frequency: number;
   wave: OscillatorType;
+  rate?: number;
+  second?: number;
   level: number;
 }
 
