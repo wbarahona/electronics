@@ -6,6 +6,7 @@ import { createControls } from './controls.ts';
 import { createCircuit } from './model.ts';
 import { createEditor, type Live } from './editor.ts';
 import { createFileActions } from './files.ts';
+import { createHistory } from './history.ts';
 import { createMenu } from './menu.ts';
 import type { Nets } from './nets.ts';
 import { createPalette } from './palette.ts';
@@ -14,10 +15,11 @@ import { createReadout } from './readout.ts';
 import { createPrint } from './print.ts';
 import { createScope } from './scope.ts';
 import { createSearch } from './search.ts';
+import { createZoom } from './zoom.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
 import { MODELS, type Sound } from './sim/models.ts';
-import type { SavedCircuit } from './persist.ts';
+import { parse, serialize, type SavedCircuit } from './persist.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
 
@@ -87,6 +89,17 @@ function showResults() {
   readout.refresh();
 }
 
+// Undo / redo: the circuit captured whole after each edit, restored in place
+// (the simulation carries on; only a new or opened circuit resets it).
+const history = createHistory(byId('history-actions'), {
+  capture: () => JSON.stringify(serialize(circuit)),
+  restore(snapshot) {
+    const data = parse(snapshot);
+    circuit.load(data.parts, data.joints, data.wires);
+    editor.reload();
+  },
+});
+
 const editor = createEditor(board, circuit, {
   onSelect: (ids) => panel.show(ids.length === 1 ? ids[0] : null),
   onChange: (next) => {
@@ -95,6 +108,7 @@ const editor = createEditor(board, circuit, {
     engine.rebuild(nets);
     showResults();
     files.changed();
+    history.changed();
   },
   onPropChange: () => panel.refresh(),
   onContextMenu: (x, y, at) =>
@@ -134,6 +148,7 @@ function loadCircuit(data: SavedCircuit) {
   if (data.view) board.setView(data.view);
   editor.reload();
   controls.showTime(engine.time);
+  history.reset();
 }
 
 const files = createFileActions(byId('file-actions'), {
@@ -146,6 +161,7 @@ const files = createFileActions(byId('file-actions'), {
 // Pick up where the last session left off.
 const restored = files.restore();
 if (restored) loadCircuit(restored);
+else history.reset();
 
 // While running, simulated time advances at `speed` times real time. Edits are
 // solved immediately even when paused, so readouts stay right, but nothing
@@ -266,3 +282,6 @@ const printer = createPrint(byId('print-dialog'), {
   thermalShowing: () => !thermalLegend.hidden,
 });
 byId('file-print').addEventListener('click', () => printer.open());
+
+// Zoom buttons and shortcuts at the board's bottom-left corner.
+createZoom(byId('zoom'), board);

@@ -14,7 +14,7 @@
     <!-- Only the icons we use; icon_names must stay in alphabetical order. -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_drop_down,autorenew,avg_pace,battery_charging_full,bolt,build,check,close,content_copy,content_cut,content_paste,delete,developer_board,electrical_services,fast_forward,fast_rewind,folder_open,library_add,lightbulb,memory,mode_fan,monitoring,more_horiz,note_add,pause,play_arrow,print,save,schedule,search,speed,thermostat,toggle_on&display=block"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_drop_down,autorenew,avg_pace,battery_charging_full,bolt,build,check,close,content_copy,content_cut,content_paste,delete,developer_board,electrical_services,fast_forward,fast_rewind,fit_screen,folder_open,library_add,lightbulb,memory,mode_fan,monitoring,more_horiz,note_add,pause,play_arrow,print,redo,save,schedule,search,speed,thermostat,toggle_on,undo,zoom_in,zoom_out&display=block"
     />
     <link rel="stylesheet" href="/reset.css" />
     <link rel="stylesheet" href="/src/theme.css" />
@@ -53,6 +53,14 @@
             aria-label="Print"
           >
             <md-icon>print</md-icon>
+          </md-icon-button>
+        </div>
+        <div id="history-actions" class="history-actions">
+          <md-icon-button id="undo" title="Undo (⌘Z)" aria-label="Undo" disabled>
+            <md-icon>undo</md-icon>
+          </md-icon-button>
+          <md-icon-button id="redo" title="Redo (⇧⌘Z)" aria-label="Redo" disabled>
+            <md-icon>redo</md-icon>
           </md-icon-button>
         </div>
         <div id="search" class="search" role="search">
@@ -162,6 +170,23 @@
         <div class="thermal-legend-labels">
           <span>Cool</span><span>Rated</span><span>Failing</span>
         </div>
+      </div>
+      <div id="zoom" class="zoom-controls" role="group" aria-label="Zoom">
+        <md-icon-button id="zoom-in" title="Zoom in (⌘=)" aria-label="Zoom in">
+          <md-icon>zoom_in</md-icon>
+        </md-icon-button>
+        <button id="zoom-level" class="zoom-level" type="button" title="Zoom to 100 % (⌘0)" aria-label="Zoom level; click for 100 %">
+          <md-focus-ring></md-focus-ring>
+          <md-ripple></md-ripple>
+          100 %
+        </button>
+        <md-icon-button id="zoom-out" title="Zoom out (⌘−)" aria-label="Zoom out">
+          <md-icon>zoom_out</md-icon>
+        </md-icon-button>
+        <md-divider></md-divider>
+        <md-icon-button id="zoom-fit" title="Fit circuit (⇧1)" aria-label="Fit circuit in view">
+          <md-icon>fit_screen</md-icon>
+        </md-icon-button>
       </div>
       <div id="tools" class="fab-menu">
         <div

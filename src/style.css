@@ -172,6 +172,18 @@ button {
   margin-left: -8px;
 }
 
+/* Undo / redo: their own group, set off from the file actions by an M3
+   vertical divider. */
+.history-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  margin-left: -8px;
+  padding-left: 8px;
+  border-left: 1px solid var(--md-sys-color-outline-variant);
+  height: 32px;
+}
+
 .palette {
   flex: 1;
   min-width: 0;
@@ -1364,6 +1376,48 @@ body.dragging * {
   min-height: 0;
   display: flex;
   position: relative;
+}
+
+/* Zoom controls: an M3 surface (container high, medium corners, elevation
+   2) at the board's bottom-left corner holding standard icon buttons, with
+   the zoom level between in and out. */
+.zoom-controls {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.3),
+    0 2px 6px 2px rgb(0 0 0 / 0.15);
+}
+
+.zoom-controls md-divider {
+  width: 32px;
+  margin: 2px 0;
+}
+
+/* The level: M3 label-medium, a quiet button that resets to 100 %. */
+.zoom-level {
+  position: relative;
+  min-width: 48px;
+  height: 28px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 12px/16px var(--md-ref-typeface-plain);
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  outline: none;
+  --md-focus-ring-shape: 8px;
 }
 
 /* Tools: an M3 FAB menu. The tertiary FAB (the brand accent) sits 16px in

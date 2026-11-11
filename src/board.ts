@@ -8,6 +8,10 @@ export const snap = (v: number): number => Math.round(v / GRID) * GRID;
 
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 4;
+// The zoom buttons step through these (fractions of 100 %).
+const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 4];
+const FIT_MARGIN = 40; // world units around a fitted circuit
+const FIT_MAX = 2; // fitting never zooms in past 200 %
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -20,6 +24,7 @@ export function createBoard(svg: SVGSVGElement) {
   // x, y: world coordinates shown at the board's top-left corner.
   // scale: screen pixels per world unit.
   const view = { x: 0, y: 0, scale: 1 };
+  const viewListeners: (() => void)[] = [];
 
   function render() {
     const w = svg.clientWidth / view.scale;
@@ -30,6 +35,7 @@ export function createBoard(svg: SVGSVGElement) {
     grid.setAttribute('width', String(w));
     grid.setAttribute('height', String(h));
     svg.style.setProperty('--px', String(1 / view.scale));
+    for (const listener of viewListeners) listener();
   }
 
   function screenToWorld(clientX: number, clientY: number): Point {
@@ -134,6 +140,35 @@ export function createBoard(svg: SVGSVGElement) {
   }).observe(svg);
   render();
 
+  // Zoom about the middle of the board to `scale`.
+  function zoomTo(scale: number) {
+    const r = svg.getBoundingClientRect();
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, scale / view.scale);
+  }
+
+  // One zoom step in (+1) or out (−1) from the current scale.
+  function zoomStep(dir: 1 | -1) {
+    const next = dir > 0
+      ? ZOOM_STEPS.find((s) => s > view.scale * 1.001) ?? MAX_SCALE
+      : [...ZOOM_STEPS].reverse().find((s) => s < view.scale / 1.001) ?? MIN_SCALE;
+    zoomTo(next);
+  }
+
+  // Show `box` (world units) whole and centred, zooming no closer than FIT_MAX.
+  function fit(box: { x: number; y: number; width: number; height: number }) {
+    const w = svg.clientWidth;
+    const h = svg.clientHeight;
+    if (!w || !h) return;
+    view.scale = clamp(
+      Math.min(w / (box.width + 2 * FIT_MARGIN), h / (box.height + 2 * FIT_MARGIN)),
+      MIN_SCALE,
+      FIT_MAX,
+    );
+    view.x = box.x + box.width / 2 - w / view.scale / 2;
+    view.y = box.y + box.height / 2 - h / view.scale / 2;
+    render();
+  }
+
   // Pan and zoom to a saved view.
   function setView(v: { x: number; y: number; scale: number }) {
     view.x = v.x;
@@ -148,6 +183,13 @@ export function createBoard(svg: SVGSVGElement) {
     view,
     setView,
     screenToWorld,
+    zoomTo,
+    zoomStep,
+    fit,
+    // Called after every pan or zoom.
+    onView(listener: () => void) {
+      viewListeners.push(listener);
+    },
     get spaceHeld() {
       return spaceHeld;
     },
