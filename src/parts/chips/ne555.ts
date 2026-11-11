@@ -1,14 +1,16 @@
 import { chip } from '../symbols.ts';
 import { fmt } from '../../sim/shared/readout.ts';
 import type { Element, Lines, ModelDef, ModelDefs } from '../../sim/models.ts';
-import type { PartDefs } from '../defs.ts';
+import { GENERIC, type PartDefs, partNumberSpec, type Preset } from '../defs.ts';
 import type { PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
   // Chips, wired with their own supply pins like the real parts.
-  ne555: { maxCurrent: number; maxSupply: number };
+  // highDrop: how far below VCC its output gets when high; supplyCurrent:
+  // what the chip itself draws, at 9 V.
+  ne555: { partNumber: string; maxCurrent: number; maxSupply: number; highDrop: number; supplyCurrent: number };
 }
 
 // --- Chips -------------------------------------------------------------------
@@ -25,13 +27,15 @@ const T555_ROUT = 10; // Ω
 
 const T555_RDIS = 10; // Ω, discharge transistor on
 
-const T555_HIGH_DROP = 1.7; // V below VCC
 
 const T555_LOW = 0.1; // V above GND
 
-const T555_IQ_R = 3000; // Ω; ~3 mA quiescent at 9 V
 
 const T555_LEAK = 1e-9; // S on the high-impedance inputs
+
+// The chip's own supply current, as a conductance from VCC to GND that draws
+// `supplyCurrent` at 9 V.
+const iq = (el: Element<PropsByType['ne555']>) => el.props.supplyCurrent / 9;
 
 function timer555(): ModelDef<PropsByType['ne555']> {
   const [GND, TRIG, OUT, RESET, CTRL, THR, DIS, VCC] = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -45,10 +49,10 @@ function timer555(): ModelDef<PropsByType['ne555']> {
     };
     flow(VCC, CTRL, (v(VCC) - v(CTRL)) / 5000);
     flow(CTRL, GND, (v(CTRL) - v(GND)) / 10000);
-    flow(VCC, GND, (v(VCC) - v(GND)) / T555_IQ_R);
+    flow(VCC, GND, (v(VCC) - v(GND)) * iq(el));
     for (const k of [TRIG, THR, RESET]) flow(k, GND, T555_LEAK * (v(k) - v(GND)));
     flow(DIS, GND, (el.state.out ? T555_LEAK : 1 / T555_RDIS) * (v(DIS) - v(GND)));
-    if (el.state.out) flow(VCC, OUT, g * (v(VCC) - T555_HIGH_DROP - v(OUT)));
+    if (el.state.out) flow(VCC, OUT, g * (v(VCC) - el.props.highDrop - v(OUT)));
     else flow(OUT, GND, g * (v(OUT) - v(GND) - T555_LOW));
     return i;
   }
@@ -58,13 +62,13 @@ function timer555(): ModelDef<PropsByType['ne555']> {
       const n = el.nodes;
       s.conductance(n[VCC], n[CTRL], 1 / 5000);
       s.conductance(n[CTRL], n[GND], 1 / 10000);
-      s.conductance(n[VCC], n[GND], 1 / T555_IQ_R);
+      s.conductance(n[VCC], n[GND], iq(el));
       for (const k of [TRIG, THR, RESET]) s.conductance(n[k], n[GND], T555_LEAK);
       s.conductance(n[DIS], n[GND], el.state.out ? T555_LEAK : 1 / T555_RDIS);
       if (el.state.out) {
         // OUT pulled toward VCC − drop, fed from VCC.
-        s.draw(n[OUT], [[n[OUT], g], [n[VCC], -g]], g * T555_HIGH_DROP);
-        s.draw(n[VCC], [[n[OUT], -g], [n[VCC], g]], -g * T555_HIGH_DROP);
+        s.draw(n[OUT], [[n[OUT], g], [n[VCC], -g]], g * el.props.highDrop);
+        s.draw(n[VCC], [[n[OUT], -g], [n[VCC], g]], -g * el.props.highDrop);
       } else {
         // OUT pulled toward GND + a little, sinking into GND.
         s.draw(n[OUT], [[n[OUT], g], [n[GND], -g]], -g * T555_LOW);
@@ -109,6 +113,13 @@ function timer555(): ModelDef<PropsByType['ne555']> {
   };
 }
 
+// ne555's part numbers (datasheet values; the default first in Europe).
+const NE_555_PRESETS: Preset<PropsByType['ne555']>[] = [
+  { code: 'NE555', note: 'Bipolar 555: 4.5–16 V, 200 mA output, ~3 mA supply current', values: { maxCurrent: 0.2, maxSupply: 16, highDrop: 1.7, supplyCurrent: 0.003 } },
+  { code: 'TLC555', note: 'CMOS 555: 2–15 V, output close to the rail, ~170 µA supply current', values: { maxCurrent: 0.1, maxSupply: 15, highDrop: 0.2, supplyCurrent: 0.00017 } },
+  { code: 'ICM7555', note: 'CMOS 555: 2–18 V, output close to the rail, ~60 µA supply current', values: { maxCurrent: 0.05, maxSupply: 18, highDrop: 0.2, supplyCurrent: 0.00006 } },
+];
+
 export const defs: PartDefs<'ne555'> = {
   // NE555 timer, pins in datasheet order 1–8.
   ne555: {
@@ -127,14 +138,17 @@ export const defs: PartDefs<'ne555'> = {
       { x: 20, y: -60 }, // 8 VCC
     ],
     props: {
+      partNumber: partNumberSpec(NE_555_PRESETS, 'NE555'),
       maxCurrent: { label: 'Max output current', unit: 'A', value: 0.2, min: 0.001 },
       maxSupply: { label: 'Max supply voltage', unit: 'V', value: 16, min: 1 },
+      highDrop: { label: 'Output high drop', unit: 'V', value: 1.7, min: 0 },
+      supplyCurrent: { label: 'Supply current (9 V)', unit: 'A', value: 0.003, min: 1e-6 },
     },
-    tag: () => 'NE555',
+    presets: NE_555_PRESETS,
     hit: { w: 80, h: 80 },
     labelAt: () => [44, -48, 'start'],
-    draw: () =>
-      chip({ w: 40, h: 40 }, '555', [
+    draw: (p) =>
+      chip({ w: 40, h: 40 }, p.partNumber === GENERIC ? '555' : p.partNumber, [
         ['GND', 1, -20, 60], ['TR', 2, -60, 20], ['Q', 3, 60, 0], ['R', 4, -20, -60],
         ['CV', 5, 20, 60], ['THR', 6, -60, 0], ['DIS', 7, -60, -20], ['VCC', 8, 20, -60],
       ]),

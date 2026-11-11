@@ -1,19 +1,21 @@
 import { chip } from '../symbols.ts';
 import { fmt } from '../../sim/shared/readout.ts';
 import type { Element, ModelDef, ModelDefs } from '../../sim/models.ts';
-import type { PartDefs } from '../defs.ts';
+import { GENERIC, type PartDefs, partNumberSpec, type Preset } from '../defs.ts';
 import type { PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
-  lm358: { maxCurrent: number }; // dual op-amp
+  // Dual op-amp; its output reaches within highHeadroom of VCC and
+  // lowHeadroom of GND.
+  lm358: { partNumber: string; maxCurrent: number; highHeadroom: number; lowHeadroom: number };
 }
 
 // --- LM358 op-amp ---------------------------------------------------------------
 
 // Each amplifier drives its output toward A·(V+ − V−), smoothly limited
-// (tanh) between GND and VCC − LM358_HEADROOM, through LM358_ROUT; the
+// (tanh) between GND + lowHeadroom and VCC − highHeadroom, through LM358_ROUT; the
 // current comes from VCC when it sources and goes to GND when it sinks.
 // Which of the two is settled between solves (el.state.outs: sourcing), from
 // the current last solved, so it can't flip back and forth within one. Its
@@ -27,7 +29,6 @@ const LM358_GAIN = 1e5;
 
 const LM358_ROUT = 50;
 
-const LM358_HEADROOM = 1.5;
 
 const LM358_G_IN = 1e-7; // S: input leakage (10 MΩ), also keeps unused inputs defined
 
@@ -50,7 +51,7 @@ const lm358Model: ModelDef<PropsByType['lm358']> = (() => {
     const i = el.nodes.map(() => 0);
     LM358_AMPS.forEach(([p, n, out], a) => {
       const lin = el.state.segV;
-      const target = lin ? lin[3 * a] + lin[3 * a + 1] * (v(p) - v(n) - lin[3 * a + 2]) : opampTarget(v(p), v(n), v(GND), v(VCC) - LM358_HEADROOM).v;
+      const target = lin ? lin[3 * a] + lin[3 * a + 1] * (v(p) - v(n) - lin[3 * a + 2]) : opampTarget(v(p), v(n), v(GND) + el.props.lowHeadroom, v(VCC) - el.props.highHeadroom).v;
       const amps = g * (target - v(out)); // into the output's net
       i[out] -= amps;
       i[(el.state.outs?.[a] ?? true) ? VCC : GND] += amps;
@@ -69,7 +70,7 @@ const lm358Model: ModelDef<PropsByType['lm358']> = (() => {
       LM358_AMPS.forEach(([p, m, out], a) => {
         s.conductance(n[p], n[GND], LM358_G_IN);
         s.conductance(n[m], n[GND], LM358_G_IN);
-        const { v: target, slope } = opampTarget(v(p), v(m), v(GND), v(VCC) - LM358_HEADROOM);
+        const { v: target, slope } = opampTarget(v(p), v(m), v(GND) + el.props.lowHeadroom, v(VCC) - el.props.highHeadroom);
         const lin = (el.state.segV ??= Array(6).fill(0));
         [lin[3 * a], lin[3 * a + 1], lin[3 * a + 2]] = [target, slope, v(p) - v(m)];
         // Linearised: amps into the output = g·(target + slope·(ΔV+ − ΔV−) − Vout).
@@ -97,11 +98,20 @@ const lm358Model: ModelDef<PropsByType['lm358']> = (() => {
   };
 })();
 
+// lm358's part numbers (datasheet values; the default first in Europe).
+const LM_358_PRESETS: Preset<PropsByType['lm358']>[] = [
+  { code: 'LM358', note: 'Single-supply dual op-amp: output reaches GND, ~1.5 V short of VCC', values: { maxCurrent: 0.04, highHeadroom: 1.5, lowHeadroom: 0 } },
+  { code: 'LM2904', note: 'LM358 for a wider temperature range: same behaviour', values: { maxCurrent: 0.04, highHeadroom: 1.5, lowHeadroom: 0 } },
+  { code: 'TL072', note: 'Low-noise JFET dual op-amp: output ~1.5 V short of both rails', values: { maxCurrent: 0.04, highHeadroom: 1.5, lowHeadroom: 1.5 } },
+  { code: 'NE5532', note: 'Low-noise audio dual op-amp: output ~1.5 V short of both rails', values: { maxCurrent: 0.04, highHeadroom: 1.5, lowHeadroom: 1.5 } },
+  { code: 'MCP6002', note: 'Rail-to-rail CMOS dual op-amp for 1.8–6 V supplies', values: { maxCurrent: 0.02, highHeadroom: 0.02, lowHeadroom: 0.02 } },
+];
+
 export const defs: PartDefs<'lm358'> = {
   // LM358: two op-amps on one supply (GND to VCC); outputs swing from GND up
   // to about VCC − 1.5 V.
   lm358: {
-    name: 'LM358 op-amp',
+    name: 'Dual op-amp',
     letter: 'K',
     category: 'chips',
     group: 'Op-amps',
@@ -109,12 +119,17 @@ export const defs: PartDefs<'lm358'> = {
       { x: 60, y: -20 }, { x: -60, y: -20 }, { x: -60, y: -40 }, { x: 0, y: 60 },
       { x: -60, y: 20 }, { x: -60, y: 40 }, { x: 60, y: 20 }, { x: 0, y: -60 },
     ],
-    props: { maxCurrent: { label: 'Max output current', unit: 'A', value: 0.04, min: 0.001 } },
-    tag: () => 'LM358',
+    props: {
+      partNumber: partNumberSpec(LM_358_PRESETS, 'LM358'),
+      maxCurrent: { label: 'Max output current', unit: 'A', value: 0.04, min: 0.001 },
+      highHeadroom: { label: 'Output headroom to VCC', unit: 'V', value: 1.5, min: 0 },
+      lowHeadroom: { label: 'Output headroom to GND', unit: 'V', value: 0, min: 0 },
+    },
+    presets: LM_358_PRESETS,
     hit: { w: 120, h: 120 },
     labelAt: () => [44, -64, 'start'],
-    draw: () =>
-      chip({ w: 40, h: 50 }, '358', [
+    draw: (p) =>
+      chip({ w: 40, h: 50 }, p.partNumber === GENERIC ? 'op-amp' : p.partNumber, [
         ['1OUT', 1, 60, -20], ['1IN−', 2, -60, -20], ['1IN+', 3, -60, -40], ['GND', 4, 0, 60],
         ['2IN+', 5, -60, 20], ['2IN−', 6, -60, 40], ['2OUT', 7, 60, 20], ['VCC', 8, 0, -60],
       ]),

@@ -13,9 +13,9 @@ function highlight(text: string, query: string): string {
 }
 
 // "Search parts" in the top bar (an M3 docked search view): as you type, a
-// list under the field shows every part whose name or subcategory contains
-// the text ("gate" finds the gates), by category, with its symbol and the
-// matching piece highlighted.
+// list under the field shows every part whose name, subcategory or a part
+// number contains the text ("gate" finds the gates, "1N4148" the diode), by
+// category, with its symbol and the matching piece highlighted.
 // Click a result to drop the part in the middle of the view, or drag it onto
 // the board, as in the tray. From the keyboard: ⌘K focuses the field, ↑/↓
 // choose, Enter places, Esc closes the list (or clears the field when the
@@ -54,9 +54,11 @@ export function createSearch(root: HTMLElement, palette: Palette) {
     options = [];
     active = -1;
     const groups = CATEGORIES.flatMap((category) => {
+      // A part's part numbers that match, e.g. "1N4148" for the diode.
+      const codes = (type: PartType) => (PARTS[type].presets ?? []).map((p) => p.code).filter((c) => c.toLowerCase().includes(query));
       const matches = (Object.keys(PARTS) as PartType[]).filter((type) => {
         const { category: id, name, group = '' } = PARTS[type];
-        return id === category.id && (name.toLowerCase().includes(query) || group.toLowerCase().includes(query));
+        return id === category.id && (name.toLowerCase().includes(query) || group.toLowerCase().includes(query) || codes(type).length > 0);
       });
       if (!matches.length) return [];
       const group = document.createElement('div');
@@ -76,7 +78,7 @@ export function createSearch(root: HTMLElement, palette: Palette) {
           <span class="search-option-icon"><svg class="part" viewBox="${box}" style="width: ${width}px; height: ${height}px" aria-hidden="true">${symbolMarkup(type, defaults(type))}</svg></span>
           <span class="search-option-text">
             <span class="search-option-name">${highlight(part.name, query)}</span>
-            ${part.group ? `<span class="search-option-group">${highlight(part.group, query)}</span>` : ''}
+            ${part.group || codes(type).length ? `<span class="search-option-group">${[part.group ? highlight(part.group, query) : '', ...codes(type).slice(0, 3).map((c) => highlight(c, query))].filter(Boolean).join(' · ')}</span>` : ''}
           </span>`;
         el.addEventListener('pointerdown', (e) => palette.startDrag(e, type, el));
         // After a click or a drop: done here, back to the board.

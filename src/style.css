@@ -923,6 +923,31 @@ body.dragging * {
   width: 100%;
 }
 
+/* A setting changed from its part number's datasheet value: an M3 small
+   badge (6px dot) on the field's top-right corner, in the accent colour. The
+   Part number field's note turns the accent colour too. */
+.prop-field {
+  position: relative;
+}
+
+.prop-field.modified::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--md-sys-color-tertiary);
+  pointer-events: none;
+}
+
+.props md-outlined-select.modified {
+  --md-outlined-select-text-field-supporting-text-color: var(--md-sys-color-tertiary);
+  --md-outlined-select-text-field-hover-supporting-text-color: var(--md-sys-color-tertiary);
+  --md-outlined-select-text-field-focus-supporting-text-color: var(--md-sys-color-tertiary);
+}
+
 .slider-field {
   display: flex;
   flex-direction: column;

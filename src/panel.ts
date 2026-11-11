@@ -24,6 +24,20 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     (c.props as Record<string, PropValue>)[key] = v;
     editor.refreshPart(c.id);
     if (partSelect) partSelect.supportingText = partNote(c);
+    markModified(c);
+  }
+
+  // A part with a part number: badge each setting that differs from the
+  // datasheet (an M3 small badge in the accent colour), and colour the Part
+  // number note to match while anything does.
+  function markModified(c: Part) {
+    const preset = presetOf(c.type, c.props);
+    for (const wrap of el.querySelectorAll<HTMLElement>('.prop-field')) {
+      const key = wrap.dataset.key!;
+      const datasheet = preset?.values[key as keyof typeof preset.values];
+      wrap.classList.toggle('modified', datasheet !== undefined && value(c, key) !== datasheet);
+    }
+    partSelect?.classList.toggle('modified', isModified(c.type, c.props));
   }
 
   // A part with part numbers: its Part number field, whose supporting text
@@ -172,8 +186,16 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
       ...(PARTS[c.type].gauge ? [chargeRow(c)] : []),
       ...Object.entries(PARTS[c.type].props)
         .filter(([, spec]) => !spec.hidden)
-        .map(([key, spec]) => field(c, key, spec)),
+        .map(([key, spec]) => {
+          // Each setting in a wrapper that can carry a badge (see markModified).
+          const wrap = document.createElement('div');
+          wrap.className = 'prop-field';
+          wrap.dataset.key = key;
+          wrap.append(field(c, key, spec));
+          return wrap;
+        }),
     );
+    markModified(c);
     el.hidden = false;
     showLive();
   }

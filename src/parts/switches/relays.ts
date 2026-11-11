@@ -3,7 +3,7 @@ import { R_SWITCH_ON } from '../../sim/shared/resistance.ts';
 import { fmt } from '../../sim/shared/readout.ts';
 import { pinText } from '../symbols.ts';
 import type { Element, ModelDef, ModelDefs, Result } from '../../sim/models.ts';
-import type { LabelSpot, PartDefs } from '../defs.ts';
+import { type LabelSpot, type PartDefs, partNumberSpec, type Preset } from '../defs.ts';
 import type { Point, PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
@@ -16,9 +16,9 @@ export interface PartProps {
   // (SPDT) or make only (SPST). maxCurrent is per contact. A contactor's coil
   // is AC, its `poles` main contacts (3 for a motor) make when energized.
   // `coil`: a DC coil, or an AC one (marked ~, judged by RMS voltage).
-  relay: { coil: CoilType; coilVoltage: number; coilResistance: number; contacts: number; contactType: 'SPDT' | 'SPST'; maxCurrent: number };
+  relay: { partNumber: string; coil: CoilType; coilVoltage: number; coilResistance: number; contacts: number; contactType: 'SPDT' | 'SPST'; maxCurrent: number };
   // `aux`: the auxiliary contacts it carries (EN 50012).
-  contactor: { coil: CoilType; coilVoltage: number; coilResistance: number; poles: number; aux: AuxSet; maxCurrent: number };
+  contactor: { partNumber: string; coil: CoilType; coilVoltage: number; coilResistance: number; poles: number; aux: AuxSet; maxCurrent: number };
 }
 
 // Relays and contactors (DIN EN 60617-7): the coil is a rectangle between A1
@@ -246,6 +246,26 @@ const contactor = relayModel<PropsByType['contactor']>(contactorPairs, (p) => [
   ...contactorPairs(p).map(([a, b]) => [a, b]),
 ]);
 
+// relay's part numbers (datasheet values; the default first in Europe).
+const RELAY_PRESETS: Preset<PropsByType['relay']>[] = [
+  { code: 'Finder 40.52 (12 V DC)', note: '2 changeover contacts, 8 A; 12 V DC coil', values: { coil: 'DC', coilVoltage: 12, coilResistance: 220, contacts: 2, contactType: 'SPDT', maxCurrent: 8 } },
+  { code: 'Finder 40.52 (24 V AC)', note: '2 changeover contacts, 8 A; 24 V AC coil', values: { coil: 'AC', coilVoltage: 24, coilResistance: 480, contacts: 2, contactType: 'SPDT', maxCurrent: 8 } },
+  { code: 'Finder 40.61 (230 V AC)', note: '1 changeover contact, 16 A; 230 V AC coil', values: { coil: 'AC', coilVoltage: 230, coilResistance: 44000, contacts: 1, contactType: 'SPDT', maxCurrent: 16 } },
+  { code: 'SRD-05VDC-SL-C', note: 'Songle hobby relay: 1 changeover, 10 A; 5 V DC coil', values: { coil: 'DC', coilVoltage: 5, coilResistance: 70, contacts: 1, contactType: 'SPDT', maxCurrent: 10 } },
+  { code: 'SRD-12VDC-SL-C', note: 'Songle hobby relay: 1 changeover, 10 A; 12 V DC coil', values: { coil: 'DC', coilVoltage: 12, coilResistance: 400, contacts: 1, contactType: 'SPDT', maxCurrent: 10 } },
+];
+
+// contactor's part numbers (datasheet values; the default first in Europe).
+const CONTACTOR_PRESETS: Preset<PropsByType['contactor']>[] = [
+  { code: 'LC1D09F7 (110 V~)', note: 'Schneider TeSys D: 3 poles 9 A (AC-3), 1 NO + 1 NC aux; 110 V AC coil', values: { coil: 'AC', coilVoltage: 110, coilResistance: 1700, poles: 3, aux: '1 NO + 1 NC', maxCurrent: 9 } },
+  { code: 'LC1D09P7 (230 V~)', note: 'Schneider TeSys D: 3 poles 9 A (AC-3), 1 NO + 1 NC aux; 230 V AC coil', values: { coil: 'AC', coilVoltage: 230, coilResistance: 7500, poles: 3, aux: '1 NO + 1 NC', maxCurrent: 9 } },
+  { code: 'LC1D09B7 (24 V~)', note: 'Schneider TeSys D: 3 poles 9 A (AC-3), 1 NO + 1 NC aux; 24 V AC coil', values: { coil: 'AC', coilVoltage: 24, coilResistance: 82, poles: 3, aux: '1 NO + 1 NC', maxCurrent: 9 } },
+  { code: 'LC1D09BD (24 V DC)', note: 'Schneider TeSys D: 3 poles 9 A (AC-3), 1 NO + 1 NC aux; 24 V DC coil', values: { coil: 'DC', coilVoltage: 24, coilResistance: 190, poles: 3, aux: '1 NO + 1 NC', maxCurrent: 9 } },
+  { code: 'LC1D18P7 (230 V~)', note: 'Schneider TeSys D: 3 poles 18 A (AC-3), 1 NO + 1 NC aux; 230 V AC coil', values: { coil: 'AC', coilVoltage: 230, coilResistance: 7500, poles: 3, aux: '1 NO + 1 NC', maxCurrent: 18 } },
+  { code: '3RT2015-1AP01 (230 V~)', note: 'Siemens SIRIUS S00: 3 poles 7 A (AC-3), 1 NO aux; 230 V AC coil', values: { coil: 'AC', coilVoltage: 230, coilResistance: 7500, poles: 3, aux: '1 NO', maxCurrent: 7 } },
+  { code: '3RT2015-1BB41 (24 V DC)', note: 'Siemens SIRIUS S00: 3 poles 7 A (AC-3), 1 NO aux; 24 V DC coil', values: { coil: 'DC', coilVoltage: 24, coilResistance: 144, poles: 3, aux: '1 NO', maxCurrent: 7 } },
+];
+
 export const defs: PartDefs<'relay' | 'contactor'> = {
   // Pins: see relayPins.
   relay: {
@@ -256,6 +276,7 @@ export const defs: PartDefs<'relay' | 'contactor'> = {
     pins: (p) => relayPins(p).map(({ x, y }) => ({ x, y })),
     pinNames: (p) => relayPins(p).map(({ name }) => name),
     props: {
+      partNumber: partNumberSpec(RELAY_PRESETS, 'Finder 40.52 (12 V DC)'),
       coil: COIL('DC'),
       coilVoltage: { label: 'Coil voltage (rms if AC)', unit: 'V', value: 12, min: 0.1 },
       coilResistance: { label: 'Coil resistance', unit: 'Ω', value: 400, min: 0.1 },
@@ -263,6 +284,7 @@ export const defs: PartDefs<'relay' | 'contactor'> = {
       contactType: { label: 'Contact type', value: 'SPDT', options: ['SPDT', 'SPST'] },
       maxCurrent: { label: 'Contact rating', unit: 'A', value: 10, min: 0.001 },
     },
+    presets: RELAY_PRESETS,
     hit: (p) => {
       const { coil, contacts } = relayLayout(p);
       const [left, right] = [coil - 16, contacts[contacts.length - 1] + 26];
@@ -287,6 +309,7 @@ export const defs: PartDefs<'relay' | 'contactor'> = {
     pins: (p) => contactorPins(p).map(({ x, y }) => ({ x, y })),
     pinNames: (p) => contactorPins(p).map(({ name }) => name),
     props: {
+      partNumber: partNumberSpec(CONTACTOR_PRESETS, 'LC1D09F7 (110 V~)'),
       coil: COIL('AC'),
       coilVoltage: { label: 'Coil voltage (rms if AC)', unit: 'V', value: 120, min: 0.1 },
       coilResistance: { label: 'Coil impedance', unit: 'Ω', value: 2400, min: 0.1 },
@@ -294,6 +317,7 @@ export const defs: PartDefs<'relay' | 'contactor'> = {
       aux: { label: 'Auxiliary contacts', value: 'none', options: ['none', '1 NO', '1 NC', '1 NO + 1 NC', '2 NO + 2 NC'] },
       maxCurrent: { label: 'Contact rating', unit: 'A', value: 16, min: 0.001 },
     },
+    presets: CONTACTOR_PRESETS,
     hit: (p) => {
       const pins = contactorPins(p);
       const right = pins[pins.length - 1].x + 16;
