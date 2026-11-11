@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1080 1080">
+  <defs>
+    <style>
+      .cls-1{display:none}
+      .cls-2{font-family:&apos;Source Sans 3&apos;, sans-serif;font-size:1296px;fill:#000000}
+      .cls-3{fill:none;stroke:#66cc33;stroke-width:90;stroke-miterlimit:10}
+      .cls-4{fill:none;stroke:#66cc33;stroke-width:45;stroke-miterlimit:10}
+    </style>
+  </defs>
+  <title>ampage</title>
+  <g id="Layer_2" data-name="Layer 2" class="cls-1">
+    <text transform="matrix(1 0 0 1 222.437 976.752)" x="0" y="0" xml:space="preserve" class="cls-2"><tspan x="0" y="0">A</tspan></text>
+  </g>
+  <g id="Layer_1" data-name="Layer 1">
+    <path d="M560 81.623 L926.966 293.491 C939.342 300.636 946.966 313.841 946.966 328.132 L946.966 751.868 C946.966 766.159 939.342 779.364 926.966 786.509 L560 998.377 C547.624 1005.522 532.376 1005.522 520 998.377 L153.034 786.509 C140.658 779.364 133.034 766.159 133.034 751.868 L133.034 328.132 C133.034 313.841 140.658 300.636 153.034 293.491 L520 81.623 C532.376 74.478 547.624 74.478 560 81.623 Z" class="cls-3"/>
+    <circle cx="302.103" cy="677.178" r="73.488" class="cls-4"/>
+    <circle cx="540" cy="254.454" r="73.488" class="cls-4"/>
+    <circle cx="781.527" cy="677.178" r="73.488" class="cls-4"/>
+    <line x1="329.973" y1="609.159" x2="495.869" y2="313.222" class="cls-4"/>
+    <line x1="584.8" y1="312.713" x2="742.312" y2="615.016" class="cls-4"/>
+  </g>
+</svg>

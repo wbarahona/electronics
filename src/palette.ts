@@ -18,7 +18,7 @@ const ICON_MAX_WIDTH = 48; // px
 // so the symbol keeps its proportions.
 const iconCache = new Map<PartType, { box: string; width: number; height: number }>();
 
-function icon(type: PartType): { box: string; width: number; height: number } {
+export function icon(type: PartType): { box: string; width: number; height: number } {
   const cached = iconCache.get(type);
   if (cached) return cached;
   const probe = document.createElementNS(SVG_NS, 'svg');
@@ -60,7 +60,9 @@ function groupsOf(category: CategoryId): [string, PartType[]][] {
 // stays open while you work, until its close button (always in view at the
 // right) or the same category is clicked again.
 // Drag a part from the tray onto the board, or click it to drop it in the
-// middle of the view.
+// middle of the view. Returns both, for other part lists (search results).
+export type Palette = ReturnType<typeof createPalette>;
+
 export function createPalette(container: HTMLElement, tray: HTMLElement, board: Board, editor: Editor) {
   const { svg, world } = board;
   const ghost = document.createElementNS(SVG_NS, 'g');
@@ -226,7 +228,13 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
   }
   new ResizeObserver(layout).observe(container);
 
-  function startDrag(e: PointerEvent, type: PartType, btn: HTMLButtonElement) {
+  function addToView(type: PartType, rotation = 0) {
+    const r = svg.getBoundingClientRect();
+    const p = board.screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+    editor.add(type, p.x, p.y, rotation);
+  }
+
+  function startDrag(e: PointerEvent, type: PartType, btn: HTMLElement) {
     if (e.button !== 0) return;
     e.preventDefault();
     btn.setPointerCapture(e.pointerId);
@@ -270,9 +278,7 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     const end = (ev: PointerEvent) => {
       stop();
       if (!moved) {
-        const r = svg.getBoundingClientRect();
-        const p = board.screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
-        editor.add(type, p.x, p.y, rotation);
+        addToView(type, rotation);
       } else if (overBoard(ev)) {
         const p = board.screenToWorld(ev.clientX, ev.clientY);
         editor.add(type, p.x, p.y, rotation);
@@ -300,4 +306,6 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     btn.addEventListener('pointercancel', stop);
     window.addEventListener('keydown', key, true);
   }
+
+  return { addToView, startDrag };
 }

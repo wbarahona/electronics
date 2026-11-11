@@ -11,7 +11,7 @@
   --grid-major: var(--md-sys-color-outline-variant);
   --hover: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
   --ink: var(--md-sys-color-on-surface);
-  --accent: var(--md-sys-color-primary);
+  --accent: var(--md-sys-color-tertiary); /* brand green: selection and highlights */
   --muted: var(--md-sys-color-on-surface-variant);
   --danger: var(--md-sys-color-error);
   --net: #d97706;
@@ -80,9 +80,18 @@ button {
 }
 
 .title {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 22px;
   line-height: 28px;
   font-weight: 400;
+}
+
+.title .logo {
+  width: 32px;
+  height: 32px;
 }
 
 .file-actions {
@@ -127,7 +136,7 @@ button {
 }
 
 .palette-category md-icon {
-  color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-tertiary);
 }
 
 /* Drawn category icons (like the diode for Semiconductors) take the icon's
@@ -214,7 +223,7 @@ md-icon svg {
 .tray-group-label {
   padding-left: 8px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0.045em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -250,6 +259,10 @@ md-icon svg {
   --md-focus-ring-shape: 8px;
 }
 
+.palette-item span {
+  color: var(--md-sys-color-tertiary);
+}
+
 .palette-item svg {
   width: 48px;
   height: 26px;
@@ -260,11 +273,11 @@ md-icon svg {
   background: var(--hover);
 }
 
-/* On narrow screens: drop the app title, and show the categories as icons
-   only (their names stay as tooltips); whatever still doesn't fit goes under
-   "More". */
+/* On narrow screens: keep only the logo of the app title, and show the
+   categories as icons only (their names stay as tooltips); whatever still
+   doesn't fit goes under "More". */
 @media (max-width: 600px) {
-  .title {
+  .title span {
     display: none;
   }
 }
@@ -276,6 +289,181 @@ md-icon svg {
 
   .palette-category {
     padding-left: 8px;
+  }
+}
+
+/* M3 search bar: a full-pill field on surface-container-high, leading
+   search icon, body-large text. 48px tall (spec: 56) to sit in the 56px bar.
+   While results show it becomes a docked search view: the bar and the list
+   below it form one container. */
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 24px;
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  cursor: text;
+  --md-icon-size: 24px;
+}
+
+.search-bar:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high));
+}
+
+.search-bar md-icon {
+  flex: none;
+}
+
+.search-bar input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.5px;
+  caret-color: var(--md-sys-color-tertiary);
+}
+
+.search-bar input::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* The native clear button doesn't match; Esc clears the field. */
+.search-bar input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.search.open .search-bar {
+  border-radius: 24px 24px 0 0;
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.search-results {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: min(480px, 70vh);
+  overflow-y: auto;
+  padding-bottom: 8px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 0 0 24px 24px;
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  /* M3 elevation level 3 */
+  box-shadow:
+    0 4px 8px 3px rgb(0 0 0 / 0.15),
+    0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+.search-results[hidden] {
+  display: none;
+}
+
+/* Out of the way while a result is dragged onto the board. */
+body.dragging .search-results {
+  opacity: 0;
+}
+
+.search-category-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--md-sys-color-on-surface-variant);
+  --md-icon-size: 18px;
+}
+
+.search-category-label md-icon {
+  color: var(--md-sys-color-tertiary);
+}
+
+.search-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 4px 16px;
+  cursor: grab;
+}
+
+.search-option:hover {
+  background: var(--hover);
+}
+
+.search-option.active {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+}
+
+.search-option-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+}
+
+.search-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.search-option-name {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.5px;
+}
+
+.search-option mark {
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--md-sys-color-tertiary) 22%, transparent);
+  color: inherit;
+  font-weight: 700;
+}
+
+.search-option-group {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.search-empty {
+  padding: 16px 16px 8px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Too narrow to share the row: the search bar gets its own line below
+   (on phones the run controls wrap onto one of their own too). */
+@media (max-width: 600px) {
+  .toolbar-row {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .search {
+    order: 1;
+    flex-basis: 100%;
+    margin-bottom: 8px;
   }
 }
 
@@ -303,8 +491,11 @@ md-icon svg {
   font-variant-numeric: tabular-nums;
 }
 
+/* In the brand green (the tertiary accent). */
 #run {
   min-width: 112px;
+  --md-sys-color-primary: var(--md-sys-color-tertiary);
+  --md-sys-color-on-primary: var(--md-sys-color-on-tertiary);
 }
 
 @media (max-width: 600px) {
@@ -558,7 +749,7 @@ body.dragging * {
 
 .props h2 .ref {
   font-weight: 500;
-  color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-tertiary);
 }
 
 .props md-outlined-text-field,

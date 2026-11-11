@@ -9,6 +9,7 @@ import type { Nets } from './nets.ts';
 import { createPalette } from './palette.ts';
 import { createPanel } from './panel.ts';
 import { createReadout } from './readout.ts';
+import { createSearch } from './search.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
 import { MODELS } from './sim/models.ts';
@@ -81,7 +82,8 @@ const editor = createEditor(board, circuit, {
 });
 const menu = createMenu(byId('menu'), byId('menu-anchor'));
 const panel = createPanel(byId('props'), circuit, editor);
-createPalette(byId('palette'), byId('palette-tray'), board, editor);
+const palette = createPalette(byId('palette'), byId('palette-tray'), board, editor);
+createSearch(byId('search'), palette);
 const controls = createControls(byId('sim-controls'));
 
 // A short message at the bottom of the screen (an M3 snackbar).
