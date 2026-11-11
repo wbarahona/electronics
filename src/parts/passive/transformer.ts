@@ -106,7 +106,7 @@ export const defs: PartDefs<'transformer'> = {
     props: {
       ratio: { label: 'Turns ratio (primary : secondary)', unit: ': 1', value: 2, min: 0.01, max: 100 },
       inductance: { label: 'Primary inductance', unit: 'H', value: 1, min: 1e-6 },
-      coupling: { label: 'Coupling', unit: '', value: 0.99, min: 0.1, max: 0.999 },
+      coupling: { label: 'Coupling', unit: '', value: 0.99, min: 0.1, max: 0.999, slider: { min: 0.9, max: 0.999, step: 0.001 } },
       resistance: { label: 'Primary winding resistance', unit: 'Ω', value: 1, min: 0.001 },
       maxCurrent: { label: 'Max secondary current', unit: 'A', value: 1, min: 0.001 },
     },

@@ -52,7 +52,7 @@ export const defs: PartDefs<'rail' | 'phase'> = {
     group: 'Rails',
     pins: [{ x: 0, y: 20 }],
     props: {
-      voltage: { label: 'Voltage', unit: 'V', value: 5 },
+      voltage: { label: 'Voltage', unit: 'V', value: 5, slider: { min: -30, max: 30, step: 0.1 } },
       maxCurrent: { label: 'Max current', unit: 'A', value: 3, min: 0.001 },
     },
     noLabel: true,
@@ -66,9 +66,9 @@ export const defs: PartDefs<'rail' | 'phase'> = {
     group: 'Rails',
     pins: [{ x: 0, y: 20 }],
     props: {
-      voltage: { label: 'Voltage (rms)', unit: 'V', value: 120, min: 0 },
+      voltage: { label: 'Voltage (rms)', unit: 'V', value: 120, min: 0, slider: { min: 0, max: 400 } },
       frequency: { label: 'Frequency', unit: 'Hz', value: 50, min: 0.01, max: 1000 },
-      phase: { label: 'Phase', unit: '°', value: 0 },
+      phase: { label: 'Phase', unit: '°', value: 0, slider: { min: -180, max: 180 } },
       maxCurrent: { label: 'Breaker rating', unit: 'A', value: 16, min: 0.001 },
     },
     noLabel: true,

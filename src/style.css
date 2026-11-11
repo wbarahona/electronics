@@ -1104,13 +1104,14 @@ body.dragging * {
 .slider-field {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .slider-head {
   display: flex;
   justify-content: space-between;
   font-size: 14px;
+  line-height: 20px;
   color: var(--md-sys-color-on-surface-variant);
 }
 
@@ -1118,11 +1119,6 @@ body.dragging * {
   font-weight: 500;
   color: var(--md-sys-color-on-surface);
   font-variant-numeric: tabular-nums;
-}
-
-.slider-field md-slider {
-  width: calc(100% + 32px);
-  margin: 0 -16px;
 }
 
 .charge {

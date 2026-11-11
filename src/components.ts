@@ -19,6 +19,7 @@ export {
   type LightColor,
   type NumberSpec,
   type PropSpec,
+  type SliderRange,
   type SwitchSpec,
 } from './parts/defs.ts';
 

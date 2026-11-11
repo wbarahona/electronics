@@ -36,7 +36,7 @@ export const defs: PartDefs<'battery'> = {
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }], // +, −
     props: {
       partNumber: partNumberSpec(BATTERY_PRESETS, '9 V alkaline (6LR61)'),
-      voltage: { label: 'Voltage', unit: 'V', value: 9, min: 0 },
+      voltage: { label: 'Voltage', unit: 'V', value: 9, min: 0, slider: { min: 0, max: 24, step: 0.1 } },
       internalResistance: { label: 'Internal resistance', unit: 'Ω', value: 0.5, min: 0 },
       maxCurrent: { label: 'Max current', unit: 'A', value: 1, min: 0.001 },
       capacity: { label: 'Capacity', unit: 'Ah', value: 0.5, min: 0.0001 },

@@ -85,8 +85,8 @@ export const defs: PartDefs<'dotMatrix'> = {
     pins: (p) => matrixPins(p).map(({ x, y }) => ({ x, y })),
     pinNames: (p) => matrixPins(p).map(({ name }) => name),
     props: {
-      columns: { label: 'Columns', unit: '', value: 8, min: 1, max: MAX_SIZE },
-      rows: { label: 'Rows', unit: '', value: 8, min: 1, max: MAX_SIZE },
+      columns: { label: 'Columns', unit: '', value: 8, min: 1, max: MAX_SIZE, slider: true },
+      rows: { label: 'Rows', unit: '', value: 8, min: 1, max: MAX_SIZE, slider: true },
       color: { label: 'Colour', value: 'red', options: ['red', 'yellow', 'green', 'blue', 'white', 'RGB'] },
       rowsAre: { label: 'Rows are', value: 'anodes', options: ['anodes', 'cathodes'] },
       forwardVoltage: { label: 'Forward voltage (single colour)', unit: 'V', value: 2, min: 0.1 },

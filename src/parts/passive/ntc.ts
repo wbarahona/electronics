@@ -37,7 +37,7 @@ export const defs: PartDefs<'ntc'> = {
     props: {
       resistance: { label: 'Resistance at 25 °C', unit: 'Ω', value: 10e3, min: 1 },
       beta: { label: 'B constant', unit: 'K', value: 3950, min: 100 },
-      ambient: { label: 'Ambient temperature', unit: '°C', value: 25, min: -40, max: 150 },
+      ambient: { label: 'Ambient temperature', unit: '°C', value: 25, min: -40, max: 150, slider: true },
       powerRating: { label: 'Power rating', unit: 'W', value: 0.5, min: 0.001 },
     },
     tag: (p) => formatSI(p.resistance, 'Ω'),

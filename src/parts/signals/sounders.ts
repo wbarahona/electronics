@@ -81,7 +81,7 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
     props: {
       ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 5, min: 0.1 },
       ratedCurrent: { label: 'Rated current', unit: 'A', value: 0.01, min: 0.0001 },
-      frequency: { label: 'Tone', unit: 'Hz', value: 2700, min: 100, max: 8000 },
+      frequency: { label: 'Tone', unit: 'Hz', value: 2700, min: 100, max: 8000, slider: { min: 100, max: 8000, step: 10 } },
     },
     draw: () => `
       <path d="M -40 0 H -8 M 8 0 H 40 M -8 -12 V 12 M 8 -12 V 12" />

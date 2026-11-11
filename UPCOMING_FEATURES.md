@@ -62,14 +62,9 @@ The most value for the effort, roughly in order:
   could also drop the part preset to it.
 - **Standard values (E12 / E24)**: for resistors and capacitors, which have
   values rather than part numbers: a dropdown or snap-to-standard option.
-- **M3 sliders for draggable values**: every setting with a natural range
-  gets an M3 slider in the properties panel, not just the few that have one
-  today (potentiometer and variable resistor position, LDR/NTC ambient). For
-  example: the piezo's tone, a phase's angle, a clock's duty cycle, rail and
-  generator voltages within a sensible range. Use discrete sliders with tick
-  marks for whole-number settings (relay contacts, contactor poles), show the
-  value indicator while dragging, and keep a text field beside the slider for
-  typing an exact value.
+- **Logarithmic sliders**: settings that span decades (frequencies, a
+  transformer's turns ratio, resistances) still take typed values only; a
+  log-scale slider would cover them. Discrete and linear sliders are built.
 - **Command palette (⌘⇧P)**: run any action by typing ("rotate", "fit",
   "export PNG", "add resistor").
 - **Installable app (PWA)**: works offline and opens like a desktop app.

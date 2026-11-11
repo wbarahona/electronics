@@ -19,9 +19,9 @@ export const defs: PartDefs<'generator'> = {
     category: 'sources',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
-      voltage: { label: 'Voltage (rms)', unit: 'V', value: 12, min: 0 },
+      voltage: { label: 'Voltage (rms)', unit: 'V', value: 12, min: 0, slider: { min: 0, max: 240, step: 0.1 } },
       frequency: { label: 'Frequency', unit: 'Hz', value: 50, min: 0.01, max: 1000 },
-      phase: { label: 'Phase', unit: '°', value: 0 },
+      phase: { label: 'Phase', unit: '°', value: 0, slider: { min: -180, max: 180 } },
       internalResistance: { label: 'Internal resistance', unit: 'Ω', value: 0.5, min: 0 },
       maxCurrent: { label: 'Max current', unit: 'A', value: 1, min: 0.001 },
     },

@@ -1,8 +1,9 @@
-import { PARTS, applyPreset, canReset, isChoiceSpec, isModified, resetValues, isSwitchSpec, presetOf, type ChoiceSpec, type NumberSpec, type PropSpec, type SwitchSpec } from './components.ts';
+import { PARTS, applyPreset, canReset, isChoiceSpec, isModified, resetValues, isSwitchSpec, presetOf, type ChoiceSpec, type NumberSpec, type PropSpec, type SliderRange, type SwitchSpec } from './components.ts';
 import type { Editor, Live } from './editor.ts';
 import type { Circuit } from './model.ts';
 import { MODELS } from './sim/models.ts';
 import type { Part, PropValue } from './types.ts';
+import './slider.ts';
 import { formatNumber, parseSI } from './units.ts';
 
 // Side sheet for editing the selected part's values, built from M3 fields.
@@ -140,9 +141,10 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     return field;
   }
 
-  // An M3 slider for values with a natural range (positions, ambient light),
-  // applied live as it moves.
-  function sliderInput(c: Part, key: string, spec: NumberSpec) {
+  // A setting with a natural range: an M3 Expressive slider, applied live as
+  // it moves (its value indicator shows while it's held), with the value
+  // beside the label. Few steps get a dot each.
+  function sliderInput(c: Part, key: string, spec: NumberSpec, range: SliderRange) {
     const row = document.createElement('div');
     row.className = 'slider-field';
     const head = document.createElement('div');
@@ -152,19 +154,24 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const shown = document.createElement('span');
     shown.className = 'slider-value';
     head.append(name, shown);
-    const slider = document.createElement('md-slider');
-    slider.min = spec.min ?? 0;
-    slider.max = spec.max ?? 100;
-    slider.labeled = true;
-    slider.value = value(c, key) as number;
-    const show = () => {
-      shown.textContent = `${Math.round(slider.value ?? 0)} ${spec.unit}`;
+    const slider = document.createElement('ampage-slider');
+    const step = range.step ?? 1;
+    slider.min = range.min;
+    slider.max = range.max;
+    slider.step = step;
+    slider.ticks = (range.max - range.min) / step <= 20;
+    slider.label = spec.label;
+    const show = (v: number) => {
+      slider.valueLabel = formatNumber(v);
+      shown.textContent = `${formatNumber(v)} ${spec.unit}`.trim();
     };
     slider.addEventListener('input', () => {
-      show();
-      set(c, key, slider.value ?? 0);
+      const v = slider.value;
+      show(v);
+      set(c, key, v);
     });
-    show();
+    slider.value = value(c, key) as number;
+    show(value(c, key) as number); // the real value, even if past the slider's ends
     row.append(head, slider);
     return row;
   }
@@ -210,10 +217,17 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     return label;
   }
 
+  // The slider's range, if the setting has one.
+  function sliderRange(spec: NumberSpec): SliderRange | null {
+    if (!spec.slider) return null;
+    return spec.slider === true ? { min: spec.min ?? 0, max: spec.max ?? 100 } : spec.slider;
+  }
+
   function field(c: Part, key: string, spec: PropSpec) {
     if (isSwitchSpec(spec)) return switchInput(c, key, spec);
     if (isChoiceSpec(spec)) return choiceInput(c, key, spec);
-    return spec.slider ? sliderInput(c, key, spec) : numberInput(c, key, spec);
+    const range = sliderRange(spec);
+    return range ? sliderInput(c, key, spec, range) : numberInput(c, key, spec);
   }
 
   function show(id: string | null) {

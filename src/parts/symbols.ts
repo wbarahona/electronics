@@ -5,7 +5,7 @@ import type { MeterMode } from '../types.ts';
 // qualifier (&, ≥1, =1, 1) and a circle on the output for inversion. Inputs
 // enter on the left, the output leaves on the right.
 export const gateProps = {
-  supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15 },
+  supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15, slider: { min: 1, max: 15, step: 0.5 } },
   maxCurrent: { label: 'Max output current', unit: 'A', value: 0.025, min: 0.001 },
 };
 

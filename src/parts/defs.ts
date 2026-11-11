@@ -71,7 +71,16 @@ export interface NumberSpec extends FieldSpec {
   unit: string;
   min?: number;
   max?: number;
-  slider?: boolean; // edit with a slider from min to max (both required)
+  // Also edit with an M3 slider (beside a text field for exact values): true
+  // for min to max in steps of 1, or a range of its own (where min or max are
+  // open-ended, or a finer step). Up to 20 steps get tick marks.
+  slider?: boolean | SliderRange;
+}
+
+export interface SliderRange {
+  min: number;
+  max: number;
+  step?: number; // default 1
 }
 
 export interface ChoiceSpec<V extends string = string> extends FieldSpec {

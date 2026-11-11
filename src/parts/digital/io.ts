@@ -44,7 +44,7 @@ export const defs: PartDefs<'logicSwitch' | 'clock' | 'probe'> = {
     pins: [{ x: 40, y: 0 }],
     props: {
       high: { label: 'Output high', value: false },
-      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15 },
+      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15, slider: { min: 1, max: 15, step: 0.5 } },
     },
     actuator: { prop: 'high', momentary: false },
     draw: ({ high }) => `
@@ -62,7 +62,7 @@ export const defs: PartDefs<'logicSwitch' | 'clock' | 'probe'> = {
     props: {
       frequency: { label: 'Frequency', unit: 'Hz', value: 1, min: 0.01, max: 1000 },
       duty: { label: 'Duty cycle', unit: '%', value: 50, min: 1, max: 99, slider: true },
-      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15 },
+      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15, slider: { min: 1, max: 15, step: 0.5 } },
     },
     tag: (p) => formatSI(p.frequency, 'Hz'),
     draw: () => `
@@ -78,7 +78,7 @@ export const defs: PartDefs<'logicSwitch' | 'clock' | 'probe'> = {
     group: 'Input/Output',
     pins: [{ x: -40, y: 0 }],
     props: {
-      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15 },
+      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15, slider: { min: 1, max: 15, step: 0.5 } },
     },
     glow: { color: () => 'red', radius: 24 },
     display: true,
