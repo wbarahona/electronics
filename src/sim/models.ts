@@ -35,6 +35,7 @@
 //   active(r)       whether the part is switched on by itself (an energized
 //                   relay), which its symbol shows
 //   segments(r, props)  light output of each segment of a display, 0..1
+//   needle(r, props) where a panel meter's needle points, 0..1 of full scale
 //   sound(r, props) the tone a sounder makes now: { frequency, wave, level }
 //                   with level 0..1, or null when silent
 //   extras(r)       further values to keep RMS averages of (r.extraRms)
@@ -89,7 +90,10 @@ export interface PartState {
   i?: number; // inductor current at the end of the last step
   light?: number; // light an LDR is getting, 0..1
   rise?: number; // a thermistor's temperature above ambient, K
-  ins?: boolean[]; // a logic part's input levels and output
+  ins?: boolean[]; // a logic part's input levels and output(s)
+  outs?: boolean[];
+  count?: number; // a counter's count; a decoder's latched value
+  needle?: number; // a panel meter's needle, 0..1 of full scale
   out?: boolean;
   edges?: number; // rising clock edges a flip-flop has seen
   edgeAt?: number; // a 555's last rising edge (s) and the period it measured
@@ -186,6 +190,7 @@ interface ModelDef<P> {
   active?(r: Result): boolean;
   segments?(r: Result, p: P): number[];
   sound?(r: Result, p: P): Sound | null;
+  needle?(r: Result, p: P): number;
   extras?(r: Result): number[];
   reading?(r: Result, p: P): string;
   power?(el: Element<P>, s: Stamper): number;
@@ -275,16 +280,17 @@ const powerThermal = <P extends { powerRating: number }>(tau: number, limit: num
 // under 0.5 % of the signal's RMS.
 const METER_RESOLUTION = 0.005;
 
-const meterReading = (r: Result, p: { mode: MeterMode }, unit: 'V' | 'A') => {
+const meterValue = (r: Result, p: { mode: MeterMode }, unit: 'V' | 'A') => {
   const [avg, rms] = unit === 'V' ? [r.vavg, r.vrms] : [r.iavg, r.irms];
   const floor = METER_RESOLUTION * rms;
-  if (p.mode === 'DC') return fmt(Math.abs(avg) < floor ? 0 : avg, unit);
+  if (p.mode === 'DC') return Math.abs(avg) < floor ? 0 : avg;
   const ac = Math.sqrt(Math.max(0, rms * rms - avg * avg));
-  return fmt(ac < floor ? 0 : ac, unit);
+  return ac < floor ? 0 : ac;
 };
+const meterReading = (r: Result, p: { mode: MeterMode }, unit: 'V' | 'A') => fmt(meterValue(r, p, unit), unit);
 
 // A filament is too slow to follow AC, so it shines by average power.
-const lampLight = (r: Result, p: PropsByType['lamp']) => Math.abs(r.ac ? r.pavg : r.p) / p.ratedPower;
+const lampLight = (r: Result, p: { ratedPower: number }) => Math.abs(r.ac ? r.pavg : r.p) / p.ratedPower;
 
 // Shockley diode, I = Is·(e^(V/nVt) − 1), fitted so it passes exactly
 // `maxCurrent` at `forwardVoltage`.
@@ -1011,15 +1017,8 @@ function ledGroup<P extends LedGroupProps>(names: string[], fv: (p: P, k: number
     stamp(el, s) {
       const segV = (el.state.segV ??= Array(n).fill(0));
       for (let k = 0; k < n; k++) {
-        const d = junction(el.props, k);
         const [a, c] = ends(el, k);
-        const v = s.v(a) - s.v(c);
-        const vd = limitJunction(v, segV[k], d.nVt, d.vcrit);
-        if (Math.abs(vd - v) > 1e-6) s.converged = false;
-        segV[k] = vd;
-        const gd = (d.is * Math.exp(Math.min(vd / d.nVt, 80))) / d.nVt;
-        s.conductance(a, c, gd);
-        s.current(a, c, d.current(vd) - gd * vd);
+        stampJunction(s, segV, k, a, c, junction(el.props, k));
       }
     },
     current: (el, s) => forward(el, s).reduce((sum, i) => sum + i, 0),
@@ -1041,6 +1040,356 @@ function ledGroup<P extends LedGroupProps>(names: string[], fv: (p: P, k: number
     failure: { label: 'burnt out', open: true },
   };
 }
+
+// --- Linearised junctions ----------------------------------------------------
+
+// Stamp a junction (diode(): an LED-style fit) from node a to c, keeping its
+// operating point in `vs[k]` between iterations.
+function stampJunction(s: Stamper, vs: number[], k: number, a: number, c: number, d: ReturnType<typeof diode>) {
+  const v = s.v(a) - s.v(c);
+  const vd = limitJunction(v, vs[k] ?? 0, d.nVt, d.vcrit);
+  if (Math.abs(vd - v) > 1e-6) s.converged = false;
+  vs[k] = vd;
+  const gd = (d.is * Math.exp(Math.min(vd / d.nVt, 80))) / d.nVt;
+  s.conductance(a, c, gd);
+  s.current(a, c, d.current(vd) - gd * vd);
+}
+
+// --- Bi-colour LED ------------------------------------------------------------
+
+// Red from pin 0 to 1, green from 1 to 0.
+const bicolorModel: ModelDef<PropsByType['bicolorLed']> = (() => {
+  const red = (p: PropsByType['bicolorLed']) => diode({ forwardVoltage: p.redVoltage, maxCurrent: p.maxCurrent });
+  const green = (p: PropsByType['bicolorLed']) => diode({ forwardVoltage: p.greenVoltage, maxCurrent: p.maxCurrent });
+  const both = (el: Element<PropsByType['bicolorLed']>, s: Stamper) => {
+    const v = s.v(el.nodes[0]) - s.v(el.nodes[1]);
+    return [red(el.props).current(v), green(el.props).current(-v)];
+  };
+  const segments = (r: Result, p: PropsByType['bicolorLed']) => [Math.max(0, r.i), Math.max(0, -r.i)].map((i) => i / p.maxCurrent);
+  return {
+    nonlinear: true,
+    stamp(el, s) {
+      const vs = (el.state.segV ??= [0, 0]);
+      stampJunction(s, vs, 0, el.nodes[0], el.nodes[1], red(el.props));
+      stampJunction(s, vs, 1, el.nodes[1], el.nodes[0], green(el.props));
+    },
+    current(el, s) {
+      const [r, g] = both(el, s);
+      return r - g;
+    },
+    segments,
+    brightness: (r, p) => Math.max(...segments(r, p)),
+    readout: (r) => [
+      ...basicReadout(r),
+      ['Lit', r.i > 1e-4 ? 'red' : r.i < -1e-4 ? 'green' : r.ac && r.irms > 1e-4 ? 'red and green (alternating)' : 'none'],
+    ],
+    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.05, limit: 1.5 },
+    failure: { label: 'burnt out', open: true },
+  };
+})();
+
+// --- Lamps on a common pin: stack light ---------------------------------------
+
+// Lamps (V²/P at their rating) from pins 0 .. n−1 to the common pin n, each
+// shining by its own average power.
+function lampGroup<P extends { ratedVoltage: number; ratedPower: number }>(names: string[]): ModelDef<P> {
+  const n = names.length;
+  const r = (p: P) => p.ratedVoltage ** 2 / p.ratedPower;
+  const currents = (el: Element<P>, s: Stamper) => names.map((_, k) => (s.v(el.nodes[k]) - s.v(el.nodes[n])) / r(el.props));
+  // Each lamp's power as a fraction of its rating (RMS current on AC).
+  const levels = (res: Result, p: P) =>
+    names.map((_, k) => ((res.ac ? res.extraRms[k] ?? 0 : Math.abs(res.pins[k])) ** 2 * r(p)) / p.ratedPower);
+  return {
+    stamp(el, s) {
+      for (let k = 0; k < n; k++) s.conductance(el.nodes[k], el.nodes[n], 1 / r(el.props));
+    },
+    current: (el, s) => currents(el, s).reduce((sum, i) => sum + i, 0),
+    pinCurrents(el, s) {
+      const i = currents(el, s);
+      return [...i, -i.reduce((sum, x) => sum + x, 0)];
+    },
+    extras: (res) => res.pins.slice(0, n),
+    segments: levels,
+    brightness: (res, p) => Math.max(...levels(res, p)),
+    readout: (res, p) => [['Lit', levels(res, p).flatMap((l, k) => (l > 0.05 ? [names[k]] : [])).join(', ') || 'none']],
+    thermal: { load: (res, p) => Math.max(...levels(res, p)), tau: 0.3, limit: 1.5 },
+    failure: { label: 'filament blown', open: true },
+  };
+}
+
+// --- Panel meter --------------------------------------------------------------
+
+// The needle follows the DC (average) or AC (RMS) voltage across it as a
+// fraction of full scale, with the damping of a real movement, and pegs a
+// little past either end.
+const NEEDLE_TAU = 0.25; // s
+
+const panelMeterModel: ModelDef<PropsByType['panelMeter']> = {
+  ...ohmic((p) => p.resistance, (r, p) => [['Reading', `${meterReading(r, p, 'V')} ${p.mode}`], ['Full scale', fmt(p.fullScale, 'V')]]),
+  respond(el, _env, r, dt) {
+    const target = Math.min(1.05, Math.max(-0.05, meterValue(r, el.props, 'V') / el.props.fullScale));
+    const now = el.state.needle ?? 0;
+    el.state.needle = dt === null ? target : now + (target - now) * (1 - Math.exp(-dt / NEEDLE_TAU));
+    return false;
+  },
+  needle: (r) => r.state.needle ?? 0,
+  // A movement survives some overload, not a sustained several times full scale.
+  thermal: { load: (r, p) => Math.abs(r.v) / (2 * p.fullScale), tau: 0.5, limit: 1.5 },
+  failure: { label: 'movement burnt out', open: true },
+};
+
+// --- CMOS logic chips -----------------------------------------------------------
+
+// CD4000-series logic with its own supply pins: inputs read high above 55 %
+// of the supply and low below 45 % (holding their last level in between),
+// barely loading; each output is a switch to VDD or VSS through `rOut`, so
+// what it sources or sinks really comes from the supply. `logic` turns the
+// input levels (and the part's state) into the output levels. The first
+// response after a rebuild only records the inputs, so a clock edge isn't
+// seen at power-up.
+function cmos<P extends { maxCurrent: number }>(pins: {
+  vdd: number;
+  vss: number;
+  inputs: number[];
+  outputs: number[];
+  rOut: number;
+  logic: (state: PartState, ins: boolean[], was: boolean[] | undefined) => boolean[];
+  readout: (state: PartState) => Lines;
+}): ModelDef<P> {
+  const { vdd, vss, inputs, outputs, rOut } = pins;
+  const g = 1 / rOut;
+  function currents(el: Element<P>, v: (pin: number) => number): number[] {
+    const i = el.nodes.map(() => 0);
+    const flow = (a: number, b: number, amps: number) => {
+      i[a] += amps;
+      i[b] -= amps;
+    };
+    for (const k of inputs) flow(k, vss, G_LOGIC_IN * (v(k) - v(vss)));
+    outputs.forEach((k, o) => {
+      const to = el.state.outs?.[o] ? vdd : vss;
+      flow(k, to, g * (v(k) - v(to)));
+    });
+    return i;
+  }
+  return {
+    dynamic: true,
+    stamp(el, s) {
+      for (const k of inputs) s.conductance(el.nodes[k], el.nodes[vss], G_LOGIC_IN);
+      outputs.forEach((k, o) => s.conductance(el.nodes[k], el.nodes[el.state.outs?.[o] ? vdd : vss], g));
+    },
+    current: (el, s) => currents(el, (k) => s.v(el.nodes[k]))[vdd],
+    pinCurrents: (el, s) => currents(el, (k) => s.v(el.nodes[k])),
+    respond(el, _env, r) {
+      const supply = r.pinV[vdd] - r.pinV[vss];
+      const was = el.state.ins;
+      const ins = inputs.map((k, n) => {
+        const v = r.pinV[k] - r.pinV[vss];
+        return v > supply * HIGH_LEVEL ? true : v < supply * LOW_LEVEL ? false : (was?.[n] ?? false);
+      });
+      el.state.ins = ins;
+      const outs = supply > 1 ? pins.logic(el.state, ins, was) : outputs.map(() => false);
+      const changed = outs.some((o, k) => o !== (el.state.outs?.[k] ?? false));
+      el.state.outs = outs;
+      return changed;
+    },
+    readout: (r) => [...pins.readout(r.state), ['Supply', fmt(r.pinV[vdd] - r.pinV[vss], 'V')]],
+    thermal: {
+      load: (r, p) => Math.max(...outputs.map((k) => Math.abs(r.pins[k]))) / p.maxCurrent,
+      tau: 0.2,
+      limit: 1.5,
+    },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
+// CD4511 segments a–g for 0–9 (6 and 9 without tails); anything above 9 blanks.
+const BCD_SEGMENTS = ['1111110', '0110000', '1101101', '1111001', '0110011', '1011011', '0011111', '1110000', '1111111', '1110011'];
+
+// Pins (index = pin − 1): inputs A, B, C, D, L̄T̄, B̄L̄, LE; outputs a–g.
+const cd4511Model = cmos<PropsByType['cd4511']>({
+  vdd: 15,
+  vss: 7,
+  inputs: [6, 0, 1, 5, 2, 3, 4],
+  outputs: [12, 11, 10, 9, 8, 14, 13],
+  rOut: 100,
+  logic(state, [a, b, c, d, lt, bl, le]) {
+    if (!le || state.count === undefined) state.count = +a + 2 * +b + 4 * +c + 8 * +d;
+    if (!lt) return Array(7).fill(true);
+    if (!bl || state.count > 9) return Array(7).fill(false);
+    return [...BCD_SEGMENTS[state.count]].map((x) => x === '1');
+  },
+  readout: (state) => [
+    ['Value', state.count === undefined ? '–' : state.count > 9 ? `${state.count} (blank)` : String(state.count)],
+    ['Segments', 'abcdefg'.split('').filter((_, k) => state.outs?.[k]).join(' ') || 'none'],
+  ],
+});
+
+// Pins (index = pin − 1): inputs CLK, INH, RST; outputs Q0–Q9 and CO.
+const cd4017Model = cmos<PropsByType['cd4017']>({
+  vdd: 15,
+  vss: 7,
+  inputs: [13, 12, 14],
+  outputs: [2, 1, 3, 6, 9, 0, 4, 5, 8, 10, 11],
+  rOut: 1000,
+  logic(state, [clk, inh, rst], was) {
+    let count = state.count ?? 0;
+    if (rst) count = 0;
+    else if (was && clk && !was[0] && !inh) count = (count + 1) % 10;
+    state.count = count;
+    return [...Array.from({ length: 10 }, (_, k) => k === count), count < 5];
+  },
+  readout: (state) => [['Count', `Q${state.count ?? 0}`], ['Carry out', (state.count ?? 0) < 5 ? 'high' : 'low']],
+});
+
+// --- LM358 op-amp ---------------------------------------------------------------
+
+// Each amplifier drives its output toward A·(V+ − V−), smoothly limited
+// (tanh) between GND and VCC − LM358_HEADROOM, through LM358_ROUT; the
+// current comes from VCC when it sources and goes to GND when it sinks.
+// Which of the two is settled between solves (el.state.outs: sourcing), from
+// the current last solved, so it can't flip back and forth within one. Its
+// currents are worked out from the same linearised output the solver used
+// (el.state.segV: target, slope and input difference per amplifier): with
+// so much gain, recomputing the tanh would magnify the solver's tolerance
+// into visible errors.
+// Inputs barely load. Pins (index = pin − 1): 1OUT 0, 1IN− 1, 1IN+ 2, GND 3,
+// 2IN+ 4, 2IN− 5, 2OUT 6, VCC 7.
+const LM358_GAIN = 1e5;
+const LM358_ROUT = 50;
+const LM358_HEADROOM = 1.5;
+const LM358_G_IN = 1e-7; // S: input leakage (10 MΩ), also keeps unused inputs defined
+const LM358_AMPS: [number, number, number][] = [
+  [2, 1, 0],
+  [4, 5, 6],
+]; // [in+, in−, out]
+
+function opampTarget(vp: number, vn: number, lo: number, hi: number) {
+  const mid = (lo + hi) / 2;
+  const half = Math.max(1e-3, (hi - lo) / 2);
+  const t = Math.tanh((LM358_GAIN * (vp - vn)) / half);
+  return { v: mid + half * t, slope: LM358_GAIN * (1 - t * t) };
+}
+
+const lm358Model: ModelDef<PropsByType['lm358']> = (() => {
+  const [GND, VCC] = [3, 7];
+  const g = 1 / LM358_ROUT;
+  function currents(el: Element<PropsByType['lm358']>, v: (pin: number) => number): number[] {
+    const i = el.nodes.map(() => 0);
+    LM358_AMPS.forEach(([p, n, out], a) => {
+      const lin = el.state.segV;
+      const target = lin ? lin[3 * a] + lin[3 * a + 1] * (v(p) - v(n) - lin[3 * a + 2]) : opampTarget(v(p), v(n), v(GND), v(VCC) - LM358_HEADROOM).v;
+      const amps = g * (target - v(out)); // into the output's net
+      i[out] -= amps;
+      i[(el.state.outs?.[a] ?? true) ? VCC : GND] += amps;
+      for (const k of [p, n]) {
+        i[k] += LM358_G_IN * (v(k) - v(GND));
+        i[GND] -= LM358_G_IN * (v(k) - v(GND));
+      }
+    });
+    return i;
+  }
+  return {
+    nonlinear: true,
+    stamp(el, s) {
+      const n = el.nodes;
+      const v = (k: number) => s.v(n[k]);
+      LM358_AMPS.forEach(([p, m, out], a) => {
+        s.conductance(n[p], n[GND], LM358_G_IN);
+        s.conductance(n[m], n[GND], LM358_G_IN);
+        const { v: target, slope } = opampTarget(v(p), v(m), v(GND), v(VCC) - LM358_HEADROOM);
+        const lin = (el.state.segV ??= Array(6).fill(0));
+        [lin[3 * a], lin[3 * a + 1], lin[3 * a + 2]] = [target, slope, v(p) - v(m)];
+        // Linearised: amps into the output = g·(target + slope·(ΔV+ − ΔV−) − Vout).
+        const i0 = g * (target - slope * (v(p) - v(m)));
+        const supply = (el.state.outs?.[a] ?? true) ? n[VCC] : n[GND];
+        s.draw(n[out], [[n[out], g], [n[p], -g * slope], [n[m], g * slope]], -i0);
+        s.draw(supply, [[n[out], -g], [n[p], g * slope], [n[m], -g * slope]], i0);
+      });
+    },
+    respond(el, _env, r) {
+      const sourcing = LM358_AMPS.map(([, , out]) => r.pins[out] <= 0); // current leaving at the output
+      const changed = sourcing.some((x, a) => x !== (el.state.outs?.[a] ?? true));
+      el.state.outs = sourcing;
+      return changed;
+    },
+    current: (el, s) => currents(el, (k) => s.v(el.nodes[k]))[VCC],
+    pinCurrents: (el, s) => currents(el, (k) => s.v(el.nodes[k])),
+    readout: (r) => [
+      ['Output 1', fmt(r.pinV[0] - r.pinV[GND], 'V')],
+      ['Output 2', fmt(r.pinV[6] - r.pinV[GND], 'V')],
+      ['Supply', fmt(r.pinV[VCC] - r.pinV[GND], 'V')],
+    ],
+    thermal: { load: (r, p) => Math.max(Math.abs(r.pins[0]), Math.abs(r.pins[6])) / p.maxCurrent, tau: 0.2, limit: 1.5 },
+    failure: { label: 'burnt out', open: true },
+  };
+})();
+
+// --- ULN2003 Darlington array -----------------------------------------------------
+
+// Pins (index = pin − 1): IN1–IN7 0–6, GND 7, COM 8, OUT7–OUT1 9–15. An input
+// is a resistance to GND; above ULN_ON (to GND) its channel turns on, below
+// ULN_OFF off. A channel that is on sinks its output to GND like a junction
+// dropping about 1 V at its rating (the Darlington's saturation); every
+// output has a flyback diode up to COM.
+const ULN_R_IN = 10.5e3;
+const ULN_ON = 1.6;
+const ULN_OFF = 1.2;
+const ulnOut = (ch: number) => 15 - ch; // OUT1 is pin 16
+
+const uln2003Model: ModelDef<PropsByType['uln2003']> = (() => {
+  const [GND, COM] = [7, 8];
+  const sink = (p: PropsByType['uln2003']) => diode({ forwardVoltage: 1, maxCurrent: p.maxCurrent });
+  const flyback = diode({ forwardVoltage: 0.8, maxCurrent: 0.5 });
+  function currents(el: Element<PropsByType['uln2003']>, v: (pin: number) => number): number[] {
+    const i = el.nodes.map(() => 0);
+    const flow = (a: number, b: number, amps: number) => {
+      i[a] += amps;
+      i[b] -= amps;
+    };
+    for (let ch = 0; ch < 7; ch++) {
+      const out = ulnOut(ch);
+      flow(ch, GND, (v(ch) - v(GND)) / ULN_R_IN);
+      if (el.state.outs?.[ch]) flow(out, GND, sink(el.props).current(v(out) - v(GND)));
+      flow(out, COM, flyback.current(v(out) - v(COM)));
+    }
+    return i;
+  }
+  return {
+    nonlinear: true,
+    dynamic: true,
+    stamp(el, s) {
+      const n = el.nodes;
+      const vs = (el.state.segV ??= Array(14).fill(0));
+      for (let ch = 0; ch < 7; ch++) {
+        const out = ulnOut(ch);
+        s.conductance(n[ch], n[GND], 1 / ULN_R_IN);
+        if (el.state.outs?.[ch]) stampJunction(s, vs, ch, n[out], n[GND], sink(el.props));
+        stampJunction(s, vs, 7 + ch, n[out], n[COM], flyback);
+      }
+    },
+    current: (el, s) => currents(el, (k) => s.v(el.nodes[k]))[GND],
+    pinCurrents: (el, s) => currents(el, (k) => s.v(el.nodes[k])),
+    respond(el, _env, r) {
+      const outs = Array.from({ length: 7 }, (_, ch) => {
+        const v = r.pinV[ch] - r.pinV[GND];
+        return v > ULN_ON ? true : v < ULN_OFF ? false : (el.state.outs?.[ch] ?? false);
+      });
+      const changed = outs.some((o, k) => o !== (el.state.outs?.[k] ?? false));
+      el.state.outs = outs;
+      return changed;
+    },
+    readout: (r) => [
+      ['On', (r.state.outs ?? []).flatMap((o, ch) => (o ? [`${ch + 1}`] : [])).join(', ') || 'none'],
+      ['Sinking', fmt(Math.abs(r.pins[GND]), 'A')],
+    ],
+    thermal: {
+      load: (r, p) => Math.max(...Array.from({ length: 7 }, (_, ch) => Math.abs(r.pins[ulnOut(ch)]))) / p.maxCurrent,
+      tau: 0.2,
+      limit: 1.5,
+    },
+    failure: { label: 'burnt out', open: true },
+  };
+})();
 
 // --- Relays and contactors ---------------------------------------------------
 
@@ -1530,6 +1879,17 @@ function sounder<P extends { ratedVoltage: number; ratedCurrent: number }>(
   };
 }
 
+// A filament lamp: its hot resistance, V²/P at its rating.
+const lampModel: ModelDef<PropsByType['lamp']> = {
+  ...ohmic(
+    (p) => p.ratedVoltage ** 2 / p.ratedPower,
+    (r, p) => [...basicReadout(r), ['Brightness', `${Math.round(lampLight(r, p) * 100)} %`]],
+  ),
+  brightness: (r, p) => lampLight(r, p),
+  thermal: { load: (r, p) => Math.abs(r.p) / p.ratedPower, tau: 0.3, limit: 1.5 },
+  failure: { label: 'filament blown', open: true },
+};
+
 // Overloaded contacts weld shut: a failed switch conducts whatever its setting.
 const switchModel: ModelDef<PropsByType['switch']> = {
   ...ohmic((p, el) => (p.closed || el.broken ? R_SWITCH_ON : Infinity)),
@@ -1805,15 +2165,10 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
   },
 
   // Filament treated as its hot resistance, V²/P at the rated values.
-  lamp: {
-    ...ohmic(
-      (p) => p.ratedVoltage ** 2 / p.ratedPower,
-      (r, p) => [...basicReadout(r), ['Brightness', `${Math.round(lampLight(r, p) * 100)} %`]],
-    ),
-    brightness: (r, p) => lampLight(r, p),
-    thermal: { load: (r, p) => Math.abs(r.p) / p.ratedPower, tau: 0.3, limit: 1.5 },
-    failure: { label: 'filament blown', open: true },
-  },
+  lamp: lampModel,
+  pilot: lampModel,
+  stackLight: lampGroup<PropsByType['stackLight']>(['red', 'amber', 'green']),
+
 
   switch: switchModel,
   changeover: changeoverModel,
@@ -1900,6 +2255,13 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
     failure: { label: 'burnt out', open: true },
   },
 
+  barGraph: ledGroup<PropsByType['barGraph']>(Array.from({ length: 10 }, (_, k) => String(k + 1)), (p) => p.forwardVoltage),
+  bicolorLed: bicolorModel,
+  panelMeter: panelMeterModel,
+  cd4511: cd4511Model,
+  cd4017: cd4017Model,
+  lm358: lm358Model,
+  uln2003: uln2003Model,
   sevenSeg: ledGroup<PropsByType['sevenSeg']>(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'], (p) => p.forwardVoltage),
   // Typical forward voltages: red 2 V, green and blue 3 V.
   rgbLed: ledGroup<PropsByType['rgbLed']>(['red', 'green', 'blue'], (p, k) => [p.redVoltage, p.greenVoltage, p.blueVoltage][k]),

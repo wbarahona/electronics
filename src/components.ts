@@ -176,6 +176,9 @@ function gate(name: string, qualifier: string, inverted: boolean, inputs: 1 | 2)
 // the box edge (`box` is the half-width/height).
 type ChipPin = [string, number | null, number, number];
 
+// A pin name with a bar over it (active low).
+const OVER = (name: string) => `<tspan text-decoration="overline">${name}</tspan>`;
+
 function chip(box: { w: number; h: number }, title: string, pins: ChipPin[]): string {
   const lead = ([, , x, y]: ChipPin) => {
     const ex = x < -box.w ? -box.w : x > box.w ? box.w : x;
@@ -652,6 +655,50 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
       <path d="M -40 0 H 40 M 10 -10 V 10" />
       <path d="M -2 -14 L 6 -22 M 1 -22 H 6 V -17 M 6 -12 L 14 -20 M 9 -20 H 14 V -15" />`,
   },
+  // A panel indicator: the lamp behind a lens (the outer ring).
+  pilot: {
+    name: 'Pilot lamp',
+    letter: 'P',
+    category: 'signals',
+    group: 'Indicators',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      color: { label: 'Lens colour', value: 'green', options: ['warm', 'red', 'yellow', 'green', 'blue', 'white'] },
+      ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 120, min: 0.001 },
+      ratedPower: { label: 'Rated power', unit: 'W', value: 1, min: 0.001 },
+    },
+    tag: (p) => formatSI(p.ratedVoltage, 'V'),
+    glow: { color: (p) => p.color, radius: 34 },
+    draw: () => `
+      <circle class="bulb tinted" r="14" />
+      <circle r="18" />
+      <path d="M -40 0 H -18 M 18 0 H 40 M -10 -10 L 10 10 M 10 -10 L -10 10" />`,
+  },
+  // Red, amber and green lamps stacked, each from its pin to a common bus.
+  stackLight: {
+    name: 'Stack light',
+    letter: 'P',
+    category: 'signals',
+    group: 'Indicators',
+    pins: [{ x: -40, y: -40 }, { x: -40, y: 0 }, { x: -40, y: 40 }, { x: 40, y: 60 }],
+    props: {
+      ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 24, min: 0.001 },
+      ratedPower: { label: 'Rated power (each)', unit: 'W', value: 2, min: 0.001 },
+    },
+    hit: { w: 80, h: 140 },
+    labelAt: () => [28, -52, 'start'],
+    draw: () => `
+      <path d="M -40 -40 H -14 M -40 0 H -14 M -40 40 H -14 M 14 -40 H 24 M 14 0 H 24 M 14 40 H 24 M 24 -40 V 60 H 40" />
+      ${(['red', 'yellow', 'green'] as const)
+        .map((c, k) => {
+          const y = -40 + 40 * k;
+          return `<rect class="rgb-off" x="-14" y="${y - 14}" width="28" height="28" rx="5" style="fill: ${LIGHT_COLORS[c]}" />
+            <rect class="seg-lit rgb-lit" data-seg="${k}" x="-14" y="${y - 14}" width="28" height="28" rx="5" style="opacity: 0; fill: ${LIGHT_COLORS[c]}" />
+            <rect x="-14" y="${y - 14}" width="28" height="28" rx="5" />`;
+        })
+        .join('')}
+      ${pinText('R', -37, -44)}${pinText('A', -37, -4)}${pinText('G', -37, 36)}`,
+  },
   // Pins R, G, B, then the common one. Inside, a spot of each colour lights
   // with its LED; where spots overlap their light adds up (red + green =
   // yellow, all three = white).
@@ -682,6 +729,55 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
       </g>
       <path d="M 8 -18 L 15 -25 M 10 -25 H 15 V -20 M 15 -13 L 22 -20 M 17 -20 H 22 V -15" />
       ${pinText('R', -37, -24)}${pinText('G', -37, -4)}${pinText('B', -37, 16)}${pinText(p.common === 'cathode' ? 'K' : 'A', 30, -4)}`,
+  },
+  // Ten segments (pins 1–10 down the left), then the common pin.
+  barGraph: {
+    name: 'LED bar graph',
+    letter: 'P',
+    category: 'signals',
+    group: 'Displays',
+    pins: [...Array.from({ length: 10 }, (_, k) => ({ x: -40, y: -100 + 20 * k })), { x: 40, y: 80 }],
+    props: {
+      color: { label: 'Colour', value: 'green', options: ['red', 'yellow', 'green', 'blue', 'white'] },
+      common: { label: 'Common', value: 'cathode', options: ['cathode', 'anode'] },
+      forwardVoltage: { label: 'Forward voltage', unit: 'V', value: 2, min: 0.1 },
+      maxCurrent: { label: 'Max current (segment)', unit: 'A', value: 0.02, min: 0.0001 },
+    },
+    glow: { color: (p) => p.color, radius: 0 },
+    hit: { w: 80, h: 220 },
+    labelAt: () => [24, -114, 'start'],
+    draw: (p) => `
+      <rect x="-20" y="-110" width="40" height="200" rx="3" />
+      <path d="${Array.from({ length: 10 }, (_, k) => `M -40 ${-100 + 20 * k} H -20`).join(' ')} M 20 80 H 40" />
+      ${Array.from({ length: 10 }, (_, k) => {
+        const y = -104 + 20 * k;
+        return `<rect class="bar-off" x="-10" y="${y}" width="20" height="8" rx="1" />
+          <rect class="bar-lit" data-seg="${k}" x="-10" y="${y}" width="20" height="8" rx="1" style="opacity: 0" />`;
+      }).join('')}
+      ${pinText(p.common === 'cathode' ? 'K' : 'A', 23, 76)}`,
+  },
+  // Two LED symbols back to back: red (top) conducts from pin 0, green
+  // (bottom) from pin 1.
+  bicolorLed: {
+    name: 'Bi-colour LED',
+    letter: 'P',
+    category: 'signals',
+    group: 'Lights',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      redVoltage: { label: 'Red forward voltage', unit: 'V', value: 2, min: 0.1 },
+      greenVoltage: { label: 'Green forward voltage', unit: 'V', value: 2.2, min: 0.1 },
+      maxCurrent: { label: 'Max current', unit: 'A', value: 0.02, min: 0.0001 },
+    },
+    draw: () => `
+      <path d="M -40 0 H -24 M 24 0 H 40 M -24 -12 V 12 M 24 -12 V 12 M -24 -12 H -8 M 8 -12 H 24 M -24 12 H -8 M 8 12 H 24" />
+      <path class="rgb-off" d="M -8 -20 V -4 L 8 -12 Z" style="fill: ${LIGHT_COLORS.red}" />
+      <path class="seg-lit rgb-lit" data-seg="0" d="M -8 -20 V -4 L 8 -12 Z" style="opacity: 0; fill: ${LIGHT_COLORS.red}" />
+      <path d="M -8 -20 V -4 L 8 -12 Z M 8 -20 V -4" />
+      <path class="rgb-off" d="M 8 4 V 20 L -8 12 Z" style="fill: ${LIGHT_COLORS.green}" />
+      <path class="seg-lit rgb-lit" data-seg="1" d="M 8 4 V 20 L -8 12 Z" style="opacity: 0; fill: ${LIGHT_COLORS.green}" />
+      <path d="M 8 4 V 20 L -8 12 Z M -8 4 V 20" />
+      <path d="M 4 -24 L 11 -31 M 6 -31 H 11 V -26 M 11 -19 L 18 -26 M 13 -26 H 18 V -21" />`,
   },
   // Pins: segments a–g and the dot (dp), then the common pin.
   sevenSeg: {
@@ -1098,6 +1194,99 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
       <path d="M -40 0 H -12" />
       <circle class="bulb tinted" r="12" />`,
   },
+  // CD4511: BCD in (A–D), latch enable LE, lamp test L̄T̄ and blanking B̄L̄
+  // (active low); segment outputs a–g that source current for a common-
+  // cathode display. Pins in DIP order 1–16.
+  cd4511: {
+    name: 'CD4511 decoder',
+    letter: 'K',
+    category: 'chips',
+    group: 'Counters & decoders',
+    pins: [
+      { x: -60, y: -40 }, { x: -60, y: -20 }, { x: -60, y: 20 }, { x: -60, y: 40 }, { x: -60, y: 60 }, { x: -60, y: 0 },
+      { x: -60, y: -60 }, { x: 0, y: 80 }, { x: 60, y: 20 }, { x: 60, y: 0 }, { x: 60, y: -20 }, { x: 60, y: -40 },
+      { x: 60, y: -60 }, { x: 60, y: 60 }, { x: 60, y: 40 }, { x: 0, y: -80 },
+    ],
+    props: { maxCurrent: { label: 'Max output current', unit: 'A', value: 0.025, min: 0.001 } },
+    tag: () => 'CD4511',
+    hit: { w: 120, h: 160 },
+    labelAt: () => [44, -84, 'start'],
+    draw: () =>
+      chip({ w: 40, h: 70 }, '4511', [
+        ['B', 1, -60, -40], ['C', 2, -60, -20], [OVER('LT'), 3, -60, 20], [OVER('BL'), 4, -60, 40], ['LE', 5, -60, 60],
+        ['D', 6, -60, 0], ['A', 7, -60, -60], ['VSS', 8, 0, 80], ['e', 9, 60, 20], ['d', 10, 60, 0], ['c', 11, 60, -20],
+        ['b', 12, 60, -40], ['a', 13, 60, -60], ['g', 14, 60, 60], ['f', 15, 60, 40], ['VDD', 16, 0, -80],
+      ]),
+  },
+  // CD4017: decade counter; each rising CLK edge (with INH low) moves the one
+  // high output Q0 → Q9 → Q0; RST high returns to Q0; CO is high for 0–4.
+  cd4017: {
+    name: 'CD4017 counter',
+    letter: 'K',
+    category: 'chips',
+    group: 'Counters & decoders',
+    pins: [
+      { x: 60, y: 0 }, { x: 60, y: -80 }, { x: 60, y: -100 }, { x: 60, y: -60 }, { x: 60, y: 20 }, { x: 60, y: 40 },
+      { x: 60, y: -40 }, { x: 0, y: 120 }, { x: 60, y: 60 }, { x: 60, y: -20 }, { x: 60, y: 80 }, { x: 60, y: 100 },
+      { x: -60, y: -20 }, { x: -60, y: -60 }, { x: -60, y: 20 }, { x: 0, y: -120 },
+    ],
+    props: { maxCurrent: { label: 'Max output current', unit: 'A', value: 0.01, min: 0.001 } },
+    tag: () => 'CD4017',
+    hit: { w: 120, h: 250 },
+    labelAt: () => [44, -124, 'start'],
+    draw: () =>
+      chip({ w: 40, h: 110 }, '4017', [
+        ['Q5', 1, 60, 0], ['Q1', 2, 60, -80], ['Q0', 3, 60, -100], ['Q2', 4, 60, -60], ['Q6', 5, 60, 20], ['Q7', 6, 60, 40],
+        ['Q3', 7, 60, -40], ['VSS', 8, 0, 120], ['Q8', 9, 60, 60], ['Q4', 10, 60, -20], ['Q9', 11, 60, 80], ['CO', 12, 60, 100],
+        ['INH', 13, -60, -20], ['<tspan dx="5">CLK</tspan>', 14, -60, -60], ['RST', 15, -60, 20], ['VDD', 16, 0, -120],
+      ]) + '<path class="clock-mark" d="M -40 -64 L -34 -60 L -40 -56" />',
+  },
+  // LM358: two op-amps on one supply (GND to VCC); outputs swing from GND up
+  // to about VCC − 1.5 V.
+  lm358: {
+    name: 'LM358 op-amp',
+    letter: 'K',
+    category: 'chips',
+    group: 'Op-amps',
+    pins: [
+      { x: 60, y: -20 }, { x: -60, y: -20 }, { x: -60, y: -40 }, { x: 0, y: 60 },
+      { x: -60, y: 20 }, { x: -60, y: 40 }, { x: 60, y: 20 }, { x: 0, y: -60 },
+    ],
+    props: { maxCurrent: { label: 'Max output current', unit: 'A', value: 0.04, min: 0.001 } },
+    tag: () => 'LM358',
+    hit: { w: 120, h: 120 },
+    labelAt: () => [44, -64, 'start'],
+    draw: () =>
+      chip({ w: 40, h: 50 }, '358', [
+        ['1OUT', 1, 60, -20], ['1IN−', 2, -60, -20], ['1IN+', 3, -60, -40], ['GND', 4, 0, 60],
+        ['2IN+', 5, -60, 20], ['2IN−', 6, -60, 40], ['2OUT', 7, 60, 20], ['VCC', 8, 0, -60],
+      ]),
+  },
+  // ULN2003: seven Darlington sinks. A high input (pins 1–7) pulls its output
+  // (16–10) down to GND; each output has a flyback diode to COM (pin 9).
+  uln2003: {
+    name: 'ULN2003 driver',
+    letter: 'K',
+    category: 'chips',
+    group: 'Drivers',
+    pins: [
+      ...Array.from({ length: 7 }, (_, k) => ({ x: -60, y: -60 + 20 * k })),
+      { x: 0, y: 80 },
+      { x: 0, y: -80 },
+      ...Array.from({ length: 7 }, (_, k) => ({ x: 60, y: 60 - 20 * k })),
+    ],
+    props: { maxCurrent: { label: 'Max output current', unit: 'A', value: 0.5, min: 0.001 } },
+    tag: () => 'ULN2003',
+    hit: { w: 120, h: 160 },
+    labelAt: () => [44, -84, 'start'],
+    draw: () =>
+      chip({ w: 40, h: 70 }, '2003', [
+        ...Array.from({ length: 7 }, (_, k): ChipPin => [`IN${k + 1}`, k + 1, -60, -60 + 20 * k]),
+        ['GND', 8, 0, 80],
+        ['COM', 9, 0, -80],
+        ...Array.from({ length: 7 }, (_, k): ChipPin => [`OUT${7 - k}`, 10 + k, 60, 60 - 20 * k]),
+      ]),
+  },
   // NE555 timer, pins in datasheet order 1–8.
   ne555: {
     name: '555 timer',
@@ -1162,6 +1351,30 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
         <path class="probe-body" d="M -5 10 L 0 16 L 5 10 V -8 H -5 Z" />
         <text class="sym-text upright" y="-13" text-anchor="middle" data-y="-16">${p.channel}</text>
       </g>`,
+  },
+  // Moving-coil panel meter: a needle sweeping a 100° scale (DIN EN 60617
+  // indicating instrument with a pointer); + is pin 0.
+  panelMeter: {
+    name: 'Panel meter',
+    letter: 'P',
+    category: 'meters',
+    group: 'Analog',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      fullScale: { label: 'Full scale', unit: 'V', value: 10, min: 0.001 },
+      resistance: { label: 'Resistance', unit: 'Ω', value: 100e3, min: 1 },
+      mode: METER_MODE,
+    },
+    tag: (p) => `${formatSI(p.fullScale, 'V')} ${p.mode}`,
+    hit: { w: 80, h: 50 },
+    labelAt: (vertical) => (vertical ? [40, 4, 'start'] : [0, -40, 'middle']),
+    draw: () => `
+      <path d="M -40 0 H -28 M 28 0 H 40" />
+      <rect x="-28" y="-32" width="56" height="42" rx="4" />
+      <path class="meter-scale" d="M -21.4 -12 A 28 28 0 0 1 21.4 -12 M -21.4 -12 L -24.5 -14.6 M -11.8 -19.4 L -13.5 -22.3 M 0 -22 V -26 M 11.8 -19.4 L 13.5 -22.3 M 21.4 -12 L 24.5 -14.6" />
+      <line class="needle" x1="0" y1="6" x2="0" y2="-22" transform="rotate(-50 0 6)" />
+      <circle class="needle-hub" cy="6" r="2" />
+      <text class="sym-text" x="-22" y="6">+</text>`,
   },
   // Reads the voltage from + to COM: almost no current drawn.
   voltmeter: {

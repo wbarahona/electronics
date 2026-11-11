@@ -35,10 +35,19 @@ export interface PropsByType {
   ldr: { darkResistance: number; lightResistance: number; ambient: number; powerRating: number };
   ntc: { resistance: number; beta: number; ambient: number; powerRating: number }; // resistance at 25 °C, ambient in °C
   lamp: { color: LampColor; ratedVoltage: number; ratedPower: number };
+  // A panel indicator (pilot) lamp: a lamp behind a coloured lens.
+  pilot: { color: LampColor; ratedVoltage: number; ratedPower: number };
+  // Red, amber and green lamps stacked on a common pin (pins R, A, G, common).
+  stackLight: { ratedVoltage: number; ratedPower: number };
   led: { color: LedColor; forwardVoltage: number; maxCurrent: number };
   // Eight LEDs (segments a–g and the dot) sharing one common pin. Forward
   // voltage and max current are per segment.
   sevenSeg: { color: LedColor; common: 'cathode' | 'anode'; forwardVoltage: number; maxCurrent: number };
+  // Ten LEDs in a row on a common pin; max current is per segment.
+  barGraph: { color: LedColor; common: 'cathode' | 'anode'; forwardVoltage: number; maxCurrent: number };
+  // Red and green LEDs back to back: red lights with pin 0 positive, green
+  // with pin 1 positive.
+  bicolorLed: { redVoltage: number; greenVoltage: number; maxCurrent: number };
   // Red, green and blue LEDs in one package (pins R, G, B, then common);
   // maxCurrent is per colour. Mixed, they make any colour.
   rgbLed: { common: 'cathode' | 'anode'; redVoltage: number; greenVoltage: number; blueVoltage: number; maxCurrent: number };
@@ -86,6 +95,8 @@ export interface PropsByType {
   transformer: { ratio: number; inductance: number; coupling: number; resistance: number; maxCurrent: number };
   // Meters: pin 0 is + (red lead), pin 1 is COM.
   voltmeter: { resistance: number; maxVoltage: number; mode: MeterMode };
+  // Moving-coil panel meter: a needle across a scale to `fullScale` volts.
+  panelMeter: { fullScale: number; resistance: number; mode: MeterMode };
   // An oscilloscope probe: its point's voltage against the board's 0 V, shown
   // as that channel's trace.
   scopeProbe: { channel: 'CH1' | 'CH2' };
@@ -109,6 +120,11 @@ export interface PropsByType {
   // Chips, wired with their own supply pins like the real parts.
   ne555: { maxCurrent: number; maxSupply: number };
   regulator: { outputVoltage: number; dropout: number; maxCurrent: number; powerRating: number };
+  // CMOS logic chips with their own VDD/VSS pins; maxCurrent is per output.
+  cd4511: { maxCurrent: number }; // BCD to 7-segment latch/decoder/driver
+  cd4017: { maxCurrent: number }; // decade counter, ten decoded outputs
+  lm358: { maxCurrent: number }; // dual op-amp
+  uln2003: { maxCurrent: number }; // seven Darlington sink drivers
   // On-resistance is at a gate–source voltage of 10 V.
   nmos: { thresholdVoltage: number; onResistance: number; maxCurrent: number; powerRating: number };
 }

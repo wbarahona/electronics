@@ -22,9 +22,11 @@ EN 81346 reference designations (-R1, -S1, -P1…).
   coloured lamps and LEDs, 7-segment display, switches (on/off, changeover)
   and push buttons, relays and AC contactors, DC and AC (1~ and 3~) motors,
   heater, solenoid, fluorescent tube with ballast and starter, buzzer, piezo,
-  bell and speaker (audible while running), diodes, BJTs, MOSFET, logic
-  gates, flip-flops, 555 timer, voltage regulator, and DC/AC voltmeter and
-  ammeter
+  bell and speaker (audible while running), pilot lamp, stack light,
+  bi-colour LED, LED bar graph, diodes, BJTs, MOSFET, logic gates,
+  flip-flops, 555 timer, CD4511 decoder, CD4017 counter, LM358 op-amp,
+  ULN2003 driver, voltage regulator, DC/AC voltmeter and ammeter, and an
+  analog panel meter
 - **Editing**: snap-to-grid, right-angle wires, joints, drop a part onto a
   wire to splice it in, copy/cut/paste/duplicate, marquee select
 - **Visual feedback**: animated current flow, glowing lights, charge
@@ -72,6 +74,8 @@ src/
   search.ts      part search
   sim/           solver: engine, part models, linear algebra, current flow
 ```
+
+Planned parts and tools are listed in [INCOMING_PARTS.md](INCOMING_PARTS.md).
 
 Built with TypeScript, Vite, SVG and [Material Web](https://github.com/material-components/material-web) (Material Design 3).
 

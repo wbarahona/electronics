@@ -1089,6 +1089,40 @@ body.dragging * {
   mix-blend-mode: screen;
 }
 
+/* LED bar graph: unlit bars faint, lit ones in the LED colour. */
+.part .bar-off,
+.part .bar-lit {
+  stroke: none;
+}
+
+.part .bar-off {
+  fill: color-mix(in srgb, var(--muted) 22%, transparent);
+}
+
+.part .bar-lit {
+  fill: var(--glow-color, transparent);
+}
+
+/* Panel meter: a fine scale and a red needle. */
+.part .meter-scale {
+  stroke-width: 1;
+}
+
+.part .needle {
+  stroke: var(--md-sys-color-error);
+  stroke-width: 1.5;
+}
+
+.part .needle-hub {
+  fill: var(--ink);
+  stroke: none;
+}
+
+/* A chip's clock input marker (the ▷ of DIN EN 60617-12). */
+.part .clock-mark {
+  stroke-width: 1;
+}
+
 /* Seven-segment display: unlit segments faint, lit ones in the LED colour. */
 .part .seg-off,
 .part .seg-lit {

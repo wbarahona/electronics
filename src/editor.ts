@@ -58,10 +58,11 @@ interface Box {
 // `active` whether it's switched on by itself (an energized relay: its symbol
 // shows the contacts moved), `segments` each display segment's brightness,
 // `temp` how hot it runs as a fraction of the heat that destroys it (for the
-// thermal view; undefined for parts that don't heat up).
+// thermal view; undefined for parts that don't heat up), `needle` where a
+// panel meter points (0..1 of full scale).
 export type Live = Map<
   string,
-  { glow: number; heat: number; level?: number; reading?: string; active?: boolean; segments?: number[]; temp?: number }
+  { glow: number; heat: number; level?: number; reading?: string; active?: boolean; segments?: number[]; temp?: number; needle?: number }
 >;
 
 const GAUGE_WIDTH = 15; // inner width of the gauge's fill bar
@@ -356,13 +357,14 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   const glows = new Map<string, { target: number; shown: number }>(); // light levels 0..1
 
   function showLive(live: Live, smooth = false) {
-    for (const [id, { glow, heat, level: charge, reading, active, segments, temp }] of live) {
+    for (const [id, { glow, heat, level: charge, reading, active, segments, temp, needle }] of live) {
       const g = nodes.get(id);
       if (!g) continue;
       if (charge !== undefined) paintGauge(g, charge);
       if (reading !== undefined) paintDisplay(g, reading);
       if (active !== undefined) g.classList.toggle('active', active);
       if (segments) paintSegments(g, segments);
+      if (needle !== undefined) g.querySelector('.needle')?.setAttribute('transform', `rotate(${(-50 + 100 * needle).toFixed(2)} 0 6)`);
       const level = Math.min(1, Math.max(0, glow));
       const s = glows.get(id) ?? { target: level, shown: level };
       s.target = level;
@@ -389,9 +391,10 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     g.style.setProperty('--glow', Math.sqrt(level).toFixed(3));
   }
 
-  // Each lit segment of a display (drawn with class "seg-lit" and data-seg).
+  // Each lit segment of a display (drawn with class "seg-lit" or "bar-lit"
+  // and data-seg).
   function paintSegments(g: SVGElement, levels: number[]) {
-    for (const seg of g.querySelectorAll<SVGElement>('.seg-lit')) {
+    for (const seg of g.querySelectorAll<SVGElement>('.seg-lit, .bar-lit')) {
       const level = Math.min(1, Math.max(0, levels[Number(seg.dataset.seg)] ?? 0));
       seg.style.opacity = Math.sqrt(level).toFixed(3);
     }

@@ -65,7 +65,7 @@ function showResults() {
   const live: Live = new Map();
   sounds = new Map();
   for (const c of circuit.components) {
-    const { brightness, thermal, reading, failure, active, segments, sound } = MODELS[c.type];
+    const { brightness, thermal, reading, failure, active, segments, sound, needle } = MODELS[c.type];
     const r = engine.results.get(c.id);
     const tone = r && sound && !c.broken ? sound(r, c.props) : null;
     if (tone) sounds.set(c.id, tone);
@@ -74,6 +74,7 @@ function showResults() {
       glow: r && brightness ? brightness(r, c.props) : 0,
       heat: r && thermal && !c.broken ? Math.min(1, Math.max(0, (r.heat - 1) / (thermal.limit - 1))) : 0,
       temp: thermal ? (c.broken ? 1 : (r?.heat ?? 0) / thermal.limit) : undefined,
+      needle: r && needle && !c.broken ? needle(r, c.props) : undefined,
       level: r?.level,
       active: r && active ? !c.broken && active(r) : undefined,
       segments: r && segments ? (c.broken ? [] : segments(r, c.props)) : undefined,
