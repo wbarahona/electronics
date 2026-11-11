@@ -208,10 +208,15 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     return select;
   }
 
-  // Free text (a net label's name): an outlined text field, applied as typed.
+  // Free text (a net label's name, a note): an outlined text field (or text
+  // area), applied as typed.
   function textInput(c: Part, key: string, spec: TextSpec) {
     const field = document.createElement('md-outlined-text-field');
     field.label = t(spec.label);
+    if (spec.multiline) {
+      field.type = 'textarea';
+      field.rows = 4;
+    }
     field.value = value(c, key) as string;
     if (spec.maxLength) field.maxLength = spec.maxLength;
     field.spellcheck = false;

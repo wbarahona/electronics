@@ -37,7 +37,7 @@ export const LIGHT_COLORS = {
 
 export type LightColor = keyof typeof LIGHT_COLORS;
 
-export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters';
+export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters' | 'notes';
 
 // Groups shown as the clickable entries of the parts bar, in order. `icon` is
 // a Material Symbols name (it must also be listed in index.html's icon_names),
@@ -58,6 +58,7 @@ export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
   { id: 'loads', label: 'Loads', icon: 'mode_fan' },
   { id: 'switches', label: 'Switches', icon: 'toggle_on' },
   { id: 'meters', label: 'Meters', icon: 'speed' },
+  { id: 'notes', label: 'Notes', icon: 'sticky_note_2' },
 ];
 
 // How the panel edits one value.
@@ -96,6 +97,7 @@ export interface SwitchSpec extends FieldSpec {
 export interface TextSpec extends FieldSpec {
   value: string;
   text: true;
+  multiline?: boolean; // several lines (a note), not one (a name)
   maxLength?: number;
 }
 

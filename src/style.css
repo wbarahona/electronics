@@ -1201,6 +1201,26 @@ body.dragging * {
   fill: var(--burnt);
 }
 
+/* Notes: a card tinted with its colour (--note), the text in ink. */
+.part .note-card {
+  fill: color-mix(in srgb, var(--note) 16%, var(--md-sys-color-surface));
+  stroke: var(--note);
+  stroke-width: 1.5;
+}
+
+.part .note-text {
+  fill: var(--ink);
+  stroke: none;
+  font:
+    11px system-ui,
+    sans-serif;
+}
+
+#board .part.selected .note-card {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
 /* A fault put in on purpose (and shown): drawn dashed in the error colour. */
 #board .part.faulted {
   stroke: var(--md-sys-color-error);
@@ -2532,4 +2552,22 @@ body.dragging * {
   line-height: 20px;
   letter-spacing: 0.25px;
   color: var(--md-sys-color-on-surface-variant);
+}
+
+/* --- Background image dialog -------------------------------------------------- */
+.backdrop-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-body-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-body-group[hidden] {
+  display: none;
 }

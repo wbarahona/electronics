@@ -42,6 +42,7 @@ import type { PartProps as PanelMeterProps } from './parts/meters/panel-meter.ts
 import type { PartProps as MultimeterProps } from './parts/meters/multimeter.ts';
 import type { PartProps as DiodesProps } from './parts/semiconductors/diodes.ts';
 import type { PartProps as TransistorsProps } from './parts/semiconductors/transistors.ts';
+import type { PartProps as NoteProps } from './parts/notes/note.ts';
 
 // Shared shapes of the circuit data: what the editor draws, what gets copied
 // and pasted, and what the simulator reads.
@@ -105,7 +106,8 @@ export interface PropsByType
     PanelMeterProps,
     MultimeterProps,
     DiodesProps,
-    TransistorsProps {}
+    TransistorsProps,
+    NoteProps {}
 
 export interface LogicGate {
   supply: number;

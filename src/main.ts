@@ -5,6 +5,7 @@ import { createAudio } from './audio.ts';
 import { createControls } from './controls.ts';
 import { createCircuit } from './model.ts';
 import { createEditor, type Live } from './editor.ts';
+import { createBackdrop } from './backdrop.ts';
 import { createFileActions } from './files.ts';
 import { createGallery } from './gallery.ts';
 import { createHistory } from './history.ts';
@@ -318,6 +319,8 @@ const printer = createPrint(byId('print-dialog'), {
 byId('file-print').addEventListener('click', () => printer.open());
 byId('file-export-png').addEventListener('click', () => printer.exportImage('png'));
 byId('file-export-svg').addEventListener('click', () => printer.exportImage('svg'));
+const backdrop = createBackdrop(byId('backdrop-dialog'), board);
+byId('file-backdrop').addEventListener('click', () => backdrop.open());
 
 // Zoom buttons and shortcuts at the board's bottom-left corner.
 createZoom(byId('zoom'), board);

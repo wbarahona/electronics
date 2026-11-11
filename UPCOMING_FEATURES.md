@@ -10,18 +10,16 @@ The most value for the effort, roughly in order (the first five, the example
 gallery, net labels, share by link, fault injection and image export, are
 built):
 
-1. **Text notes on the board**: explain a circuit where it's drawn; the
-   examples would use them too.
-2. **Title block and sheet frame**: proper DIN / ISO printouts.
-3. **Challenges and lessons**: builds on the gallery and fault injection
+1. **Title block and sheet frame**: proper DIN / ISO printouts.
+2. **Challenges and lessons**: builds on the gallery and fault injection
    (find the hidden fault, checked by the simulator).
-4. **Subcircuits / blocks**: reuse for larger schematics.
-5. **Component tolerances**: realistic spread, small effort.
+3. **Subcircuits / blocks**: reuse for larger schematics.
+4. **Component tolerances**: realistic spread, small effort.
+5. **Notes in the examples**: the gallery's circuits explained on the board
+   with the new notes.
 
 ## Learning and sharing
 
-- **Text notes on the board**: labels and comments placed among the parts, to
-  explain a circuit or mark its sections.
 - **Challenges and lessons**: tasks such as "make the lamp light only when both
   switches are on", checked by the simulator.
 

@@ -105,6 +105,14 @@ export default {
   'Export as PNG': 'Exportar como PNG',
   'Export as SVG': 'Exportar como SVG',
 
+  'Background image…': 'Imagen de fondo…',
+  'Background image': 'Imagen de fondo',
+  'An image under the grid to trace or follow. It stays in this browser and isn’t saved with the circuit.': 'Una imagen bajo la cuadrícula para calcar o seguir. Se queda en este navegador y no se guarda con el circuito.',
+  'Choose image…': 'Elegir imagen…',
+  Opacity: 'Opacidad',
+  'Centre in view': 'Centrar en la vista',
+  Remove: 'Quitar',
+
   // --- Settings ------------------------------------------------------------------
   Language: 'Idioma',
   'Theme colour': 'Color del tema',
@@ -278,6 +286,14 @@ export default {
   'Net label': 'Etiqueta de red',
   'Net name': 'Nombre de la red',
   Net: 'Red',
+
+  Notes: 'Notas',
+  Note: 'Nota',
+  Text: 'Texto',
+  violet: 'violeta',
+  amber: 'ámbar',
+  coral: 'coral',
+  teal: 'verde azulado',
 
   // --- Settings of parts ---------------------------------------------------------
   'Ambient light': 'Luz ambiente',

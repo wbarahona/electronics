@@ -105,6 +105,14 @@ export default {
   'Export as PNG': 'Als PNG exportieren',
   'Export as SVG': 'Als SVG exportieren',
 
+  'Background image…': 'Hintergrundbild…',
+  'Background image': 'Hintergrundbild',
+  'An image under the grid to trace or follow. It stays in this browser and isn’t saved with the circuit.': 'Ein Bild unter dem Raster zum Nachzeichnen oder Folgen. Es bleibt in diesem Browser und wird nicht mit der Schaltung gespeichert.',
+  'Choose image…': 'Bild auswählen…',
+  Opacity: 'Deckkraft',
+  'Centre in view': 'In der Ansicht zentrieren',
+  Remove: 'Entfernen',
+
   // --- Settings ------------------------------------------------------------------
   Language: 'Sprache',
   'Theme colour': 'Designfarbe',
@@ -278,6 +286,14 @@ export default {
   'Net label': 'Netzbezeichnung',
   'Net name': 'Netzname',
   Net: 'Netz',
+
+  Notes: 'Notizen',
+  Note: 'Notiz',
+  Text: 'Text',
+  violet: 'violett',
+  amber: 'bernstein',
+  coral: 'koralle',
+  teal: 'petrol',
 
   // --- Settings of parts ---------------------------------------------------------
   'Ambient light': 'Umgebungslicht',

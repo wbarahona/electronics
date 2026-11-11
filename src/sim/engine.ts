@@ -300,7 +300,7 @@ export function createEngine(circuit: Circuit) {
     const s = stamper(null, null, x, dt);
     engine.results.clear();
     for (const el of elements) {
-      const v = el.nodes.length > 1 ? s.v(el.nodes[0]) - s.v(el.nodes[1]) : s.v(el.nodes[0]);
+      const v = el.nodes.length > 1 ? s.v(el.nodes[0]) - s.v(el.nodes[1]) : el.nodes.length ? s.v(el.nodes[0]) : 0;
       // Current first: accept() moves an energy store on to this step's value.
       const i = el.short ? G_SHORT * v : el.open ? 0 : el.model.current(el, s);
       const pins = el.short ? [i, -i] : el.open ? el.nodes.map(() => 0) : (el.model.pinCurrents?.(el, s) ?? [i, -i]);

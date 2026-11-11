@@ -44,7 +44,8 @@ export function createReadout(
       el.hidden = true;
       return;
     }
-    if (!isWire(item) && !('type' in item)) {
+    // Joints and notes have nothing to read.
+    if (!isWire(item) && (!('type' in item) || item.type === 'note')) {
       el.hidden = true;
       return;
     }
