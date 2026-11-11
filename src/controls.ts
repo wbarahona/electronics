@@ -1,5 +1,5 @@
 import type { MdFilledButton } from '@material/web/button/filled-button.js';
-import type { MdIconButton } from '@material/web/iconbutton/icon-button.js';
+import type { MdFilledTonalButton } from '@material/web/button/filled-tonal-button.js';
 import { fromControl } from './keys.ts';
 import { formatSI } from './units.ts';
 
@@ -30,8 +30,8 @@ function formatTime(t: number): string {
 // showTime(t), plus toggle() to run or pause and pause().
 export function createControls(root: HTMLElement) {
   const run = root.querySelector<MdFilledButton>('#run')!;
-  const slower = root.querySelector<MdIconButton>('#slower')!;
-  const faster = root.querySelector<MdIconButton>('#faster')!;
+  const slower = root.querySelector<MdFilledTonalButton>('#slower')!;
+  const faster = root.querySelector<MdFilledTonalButton>('#faster')!;
   const speedText = root.querySelector<HTMLElement>('#speed')!;
   const clock = root.querySelector<HTMLElement>('#clock')!;
   let level = SPEEDS.findIndex((s) => s.value === 1); // start at real time

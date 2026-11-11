@@ -14,7 +14,7 @@
     <!-- Only the icons we use; icon_names must stay in alphabetical order. -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_drop_down,autorenew,avg_pace,battery_charging_full,bolt,close,content_copy,content_cut,content_paste,delete,developer_board,electrical_services,fast_forward,fast_rewind,fit_screen,folder,folder_open,library_add,lightbulb,memory,menu,menu_open,mode_fan,monitoring,more_horiz,note_add,pause,play_arrow,print,redo,restart_alt,save,schedule,search,speed,thermostat,toggle_on,undo,zoom_in,zoom_out&display=block"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_drop_down,autorenew,avg_pace,battery_charging_full,bolt,check,close,content_copy,content_cut,content_paste,delete,developer_board,electrical_services,fast_forward,fast_rewind,fit_screen,folder,folder_open,library_add,lightbulb,memory,menu,menu_open,mode_fan,monitoring,more_horiz,note_add,pause,play_arrow,print,redo,restart_alt,save,schedule,search,settings,speed,thermostat,toggle_on,undo,zoom_in,zoom_out&display=block"
     />
     <link rel="stylesheet" href="/reset.css" />
     <link rel="stylesheet" href="/src/theme.css" />
@@ -39,6 +39,10 @@
           <span class="rail-label">Thermal</span>
         </button>
       </div>
+      <button id="rail-settings" class="rail-item rail-settings" type="button" aria-haspopup="dialog" title="Settings">
+        <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>settings</md-icon></span>
+        <span class="rail-label">Settings</span>
+      </button>
     </nav>
     <md-menu id="file-menu" anchor="rail-file" positioning="fixed" anchor-corner="start-end" menu-corner="start-start">
       <md-menu-item id="file-new"><md-icon slot="start">note_add</md-icon><div slot="headline">New circuit</div></md-menu-item>
@@ -98,13 +102,15 @@
             ><md-icon aria-hidden="true">schedule</md-icon
             ><span id="clock"></span
           ></span>
-          <md-icon-button
+          <md-filled-tonal-button
             id="slower"
+            class="speed-step"
             title="Slower (10×, ←)"
             aria-label="Slower"
           >
-            <md-icon>fast_rewind</md-icon>
-          </md-icon-button>
+            <md-icon slot="icon">fast_rewind</md-icon>
+            <span class="speed-step-label">Slower</span>
+          </md-filled-tonal-button>
           <md-filled-button
             id="run"
             title="Run or pause the simulation (Space)"
@@ -112,13 +118,15 @@
             <md-icon slot="icon">play_arrow</md-icon>
             <span>Run</span>
           </md-filled-button>
-          <md-icon-button
+          <md-filled-tonal-button
             id="faster"
+            class="speed-step"
             title="Faster (10×, →)"
             aria-label="Faster"
           >
-            <md-icon>fast_forward</md-icon>
-          </md-icon-button>
+            <md-icon slot="icon">fast_forward</md-icon>
+            <span class="speed-step-label">Faster</span>
+          </md-filled-tonal-button>
           <span class="speed" title="Simulation speed"
             ><md-icon aria-hidden="true">avg_pace</md-icon
             ><span id="speed"></span
@@ -215,6 +223,40 @@
       <canvas></canvas>
     </section>
     </div>
+    <md-dialog id="settings-dialog" class="settings-dialog">
+      <md-icon slot="icon">settings</md-icon>
+      <div slot="headline" class="padded-title">Settings</div>
+      <form slot="content" id="settings-form" method="dialog" class="settings-body">
+        <section class="settings-section">
+          <h3 class="settings-heading">Theme colour</h3>
+          <div class="theme-swatches" role="radiogroup" aria-label="Theme colour"></div>
+        </section>
+        <section class="settings-section">
+          <h3 class="settings-heading">Mode</h3>
+          <div role="radiogroup" aria-label="Mode">
+            <label class="settings-radio"><md-radio name="mode" value="system" touch-target="wrapper"></md-radio>System</label>
+            <label class="settings-radio"><md-radio name="mode" value="light" touch-target="wrapper"></md-radio>Light</label>
+            <label class="settings-radio"><md-radio name="mode" value="dark" touch-target="wrapper"></md-radio>Dark</label>
+          </div>
+        </section>
+        <section class="settings-section">
+          <h3 class="settings-heading">Drawing standard</h3>
+          <div role="radiogroup" aria-label="Drawing standard">
+            <label class="settings-radio">
+              <md-radio name="norm" value="eu" touch-target="wrapper"></md-radio>
+              <span><span class="settings-option">EU: IEC / DIN EN 60617</span><span class="settings-note">European symbols, EN 81346 references (-R1)</span></span>
+            </label>
+            <label class="settings-radio disabled">
+              <md-radio name="norm" value="us" touch-target="wrapper" disabled></md-radio>
+              <span><span class="settings-option">US: ANSI / IEEE 315</span><span class="settings-note">Coming soon</span></span>
+            </label>
+          </div>
+        </section>
+      </form>
+      <div slot="actions" class="dialog-actions">
+        <md-filled-button form="settings-form" value="done">Done</md-filled-button>
+      </div>
+    </md-dialog>
     <md-dialog id="print-dialog" class="print-dialog">
       <div slot="headline" class="padded-title">Print</div>
       <form slot="content" id="print-form" method="dialog" class="print-body">

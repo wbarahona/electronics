@@ -15,6 +15,7 @@ import { createReadout } from './readout.ts';
 import { createPrint } from './print.ts';
 import { createScope } from './scope.ts';
 import { createSearch } from './search.ts';
+import { createSettings } from './settings.ts';
 import { createZoom } from './zoom.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
@@ -29,6 +30,9 @@ function byId<T extends Element = HTMLElement>(id: string): T {
   if (!el) throw new Error(`index.html is missing #${id}`);
   return el as unknown as T;
 }
+
+// Settings first: the theme colours everything else.
+const settings = createSettings(byId('settings-dialog'));
 
 const board = createBoard(byId<SVGSVGElement>('board'));
 const circuit = createCircuit();
@@ -278,6 +282,7 @@ function setRail(expanded: boolean) {
 railToggle.addEventListener('click', () => setRail(!rail.classList.contains('expanded')));
 
 railScope.addEventListener('click', toggleScope);
+byId('rail-settings').addEventListener('click', () => settings.open());
 railThermal.addEventListener('click', toggleThermal);
 scopeSection.querySelector('.scope-close')!.addEventListener('click', syncViews);
 const fileMenu = byId<MdMenu>('file-menu');

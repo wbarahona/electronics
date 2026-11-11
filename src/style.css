@@ -22,22 +22,23 @@
   --smoke: #8a8a8a;
   --flow: #d4a20b;
   --gauge-ok: #2e7d32;
-  /* Oscilloscope: a dark screen in either theme. Traces take the theme's
-     accent (tertiary) for CH1 and primary for CH2, in the bright tones the
-     dark scheme uses, so they read on the screen; on the board and in text,
-     the probes use the roles themselves. */
+  /* Oscilloscope: a dark screen in either theme. The channels keep their
+     own colours whatever the theme, so they stay apart: CH1 green, CH2
+     blue; bright on the screen, deeper (lighter in dark mode) on the board
+     and in text. */
   --scope-bg: #0b0e14;
   --scope-grid: rgb(255 255 255 / 0.09);
   --scope-axis: rgb(255 255 255 / 0.28);
   --ch1: #77de44;
   --ch2: #adc6ff;
-  --ch1-role: var(--md-sys-color-tertiary);
-  --ch2-role: var(--md-sys-color-primary);
+  --ch1-role: #246200;
+  --ch2-role: #0051ae;
   --gauge-mid: #e09b00;
 }
 
+/* Dark: following the device, unless Settings forces a mode (data-theme). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --net: #f0a030;
     --hot: #ff6a2b;
     --burnt: #8a6a52;
@@ -45,7 +46,21 @@
     --flow: #f2cc60;
     --gauge-ok: #81c784;
     --gauge-mid: #ffd54f;
+    --ch1-role: #77de44;
+    --ch2-role: #adc6ff;
   }
+}
+
+:root[data-theme='dark'] {
+  --net: #f0a030;
+  --hot: #ff6a2b;
+  --burnt: #8a6a52;
+  --smoke: #b0b0b0;
+  --flow: #f2cc60;
+  --gauge-ok: #81c784;
+  --gauge-mid: #ffd54f;
+  --ch1-role: #77de44;
+  --ch2-role: #adc6ff;
 }
 
 html,
@@ -561,7 +576,7 @@ body.dragging .search-results {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
 .clock,
@@ -607,9 +622,32 @@ body.dragging .search-results {
   --md-sys-color-on-primary: var(--md-sys-color-on-tertiary);
 }
 
+/* Slower and Faster flank Run as M3 filled tonal buttons (a button group):
+   pill shaped, icon and label, in the accent's container colour, and a
+   size under M3's extra-small (28px tall) so Run stands out between them. */
+.speed-step {
+  --md-sys-color-secondary-container: var(--md-sys-color-tertiary-container);
+  --md-sys-color-on-secondary-container: var(--md-sys-color-on-tertiary-container);
+  --md-filled-tonal-button-container-height: 28px;
+  --md-filled-tonal-button-icon-size: 18px;
+  --md-filled-tonal-button-label-text-size: 13px;
+  --md-filled-tonal-button-with-leading-icon-leading-space: 10px;
+  --md-filled-tonal-button-with-leading-icon-trailing-space: 12px;
+}
+
 @media (max-width: 600px) {
   .clock {
     display: none;
+  }
+
+  /* On phones just the icons, in the same pills. */
+  .speed-step-label {
+    display: none;
+  }
+
+  .speed-step {
+    --md-filled-tonal-button-with-leading-icon-leading-space: 10px;
+    --md-filled-tonal-button-with-leading-icon-trailing-space: 2px;
   }
 }
 
@@ -1966,17 +2004,17 @@ body.dragging * {
   --smoke: #8a8a8a;
   --flow: #d4a20b;
   --gauge-ok: #2e7d32;
-  /* Oscilloscope: a dark screen in either theme. Traces take the theme's
-     accent (tertiary) for CH1 and primary for CH2, in the bright tones the
-     dark scheme uses, so they read on the screen; on the board and in text,
-     the probes use the roles themselves. */
+  /* Oscilloscope: a dark screen in either theme. The channels keep their
+     own colours whatever the theme, so they stay apart: CH1 green, CH2
+     blue; bright on the screen, deeper (lighter in dark mode) on the board
+     and in text. */
   --scope-bg: #0b0e14;
   --scope-grid: rgb(255 255 255 / 0.09);
   --scope-axis: rgb(255 255 255 / 0.28);
   --ch1: #77de44;
   --ch2: #adc6ff;
-  --ch1-role: var(--md-sys-color-tertiary);
-  --ch2-role: var(--md-sys-color-primary);
+  --ch1-role: #246200;
+  --ch2-role: #0051ae;
   --gauge-mid: #e09b00;
 }
 
@@ -2286,4 +2324,133 @@ body.dragging * {
     flex: 1;
   }
 
+}
+
+/* --- Settings ---------------------------------------------------------------------
+   An M3 dialog: theme colour swatches (a radio group of colour circles, the
+   chosen one checked), then mode and drawing standard as M3 radio lists. */
+.settings-dialog {
+  max-width: min(560px, calc(100vw - 48px));
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 16px 16px;
+}
+
+/* M3 title-small */
+.settings-heading {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.theme-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 12px 8px;
+}
+
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+  outline: none;
+}
+
+.theme-swatch-color {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--swatch);
+  color: #ffffff;
+  --md-focus-ring-shape: 24px;
+  --md-icon-size: 24px;
+}
+
+.theme-swatch-color md-icon {
+  visibility: hidden;
+}
+
+.theme-swatch[aria-checked='true'] .theme-swatch-color {
+  box-shadow:
+    0 0 0 3px var(--md-sys-color-surface-container-high),
+    0 0 0 5px var(--swatch);
+}
+
+.theme-swatch[aria-checked='true'] .theme-swatch-color md-icon {
+  visibility: visible;
+}
+
+/* M3 label-small */
+.theme-swatch-label {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.settings-radio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.settings-radio.disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.settings-option,
+.settings-note {
+  display: block;
+}
+
+.settings-note {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.dialog-actions {
+  padding: 8px 16px 32px;
+}
+
+/* Settings sits at the bottom of the rail; on phones it's the bar's last
+   destination. */
+.rail-settings {
+  margin-top: auto;
+}
+
+@media (max-width: 599px) {
+  .rail-settings {
+    margin-top: 0;
+  }
+}
+
+/* The inspector's inputs (text fields, dropdowns, sliders, switches) take the
+   accent colour, as the rest of the app does. */
+.props {
+  --md-sys-color-primary: var(--md-sys-color-tertiary);
+  --md-sys-color-on-primary: var(--md-sys-color-on-tertiary);
+  --md-sys-color-primary-container: var(--md-sys-color-tertiary-container);
+  --md-sys-color-on-primary-container: var(--md-sys-color-on-tertiary-container);
 }

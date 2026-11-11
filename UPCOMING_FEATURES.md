@@ -76,11 +76,11 @@ The most value for the effort, roughly in order:
 - **Touch and tablet support**: pinch zoom, long-press for the context menu,
   larger targets.
 - **Languages**: English, Spanish and German.
-- **Norms and standards: EU or US**: a menu option for the drawing standard.
+- **Norms and standards: EU or US**: the drawing standard, chosen in
+  Settings (the option is there, with US marked "Coming soon").
   EU (today): IEC / DIN EN 60617 symbols and EN 81346 references (-R1).
   US: ANSI / IEEE 315 symbols (zigzag resistors and so on), US reference
   designators (R1, Q1, CR1 for diodes), and US default part numbers (2N3904,
   2N3906, 1N4733A instead of BC547, BC557, BZX55C5V1).
-- **Light / dark toggle**: today the theme follows the system only.
 - **Fit to circuit on open**: optionally fit the view when a file is opened,
   instead of restoring the view saved with it.

@@ -1,5 +1,6 @@
 import type { MdDialog } from '@material/web/dialog/dialog.js';
 import { PARTS, tagOf } from './components.ts';
+import { lightTokens } from './theme.ts';
 import type { Circuit } from './model.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -112,6 +113,8 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
   function sheet(o: PrintOptions): HTMLElement {
     const root = document.createElement('div');
     root.className = 'print-sheet';
+    // The chosen theme's light colours, whatever the screen's mode.
+    for (const [name, value] of Object.entries(lightTokens())) root.style.setProperty(name, value);
     const page = document.createElement('section');
     page.className = 'print-page';
     const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
