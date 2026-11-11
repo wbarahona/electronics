@@ -1,4 +1,4 @@
-import type { MdFab } from '@material/web/fab/fab.js';
+import type { MdMenu } from '@material/web/menu/menu.js';
 import './material.ts';
 import { createBoard } from './board.ts';
 import { createAudio } from './audio.ts';
@@ -151,7 +151,7 @@ function loadCircuit(data: SavedCircuit) {
   history.reset();
 }
 
-const files = createFileActions(byId('file-actions'), {
+const files = createFileActions(byId('file-menu'), {
   circuit,
   getView: () => ({ x: board.view.x, y: board.view.y, scale: board.view.scale }),
   load: loadCircuit,
@@ -223,53 +223,73 @@ requestAnimationFrame(function frame(now) {
   requestAnimationFrame(frame);
 });
 
-// Tools: an M3 FAB menu of instruments and views; each item shows or hides
-// one, and is checked while it shows (the scope can also be closed from its
-// own bar).
-// The FAB is an extended one labelled Tools; while open it turns into a
-// plain close button. Clicking outside or Esc closes it too.
-const tools = byId('tools');
-const toolsFab = byId<MdFab>('tools-fab');
-const scopeItem = byId('tool-scope');
-const thermalItem = byId('tool-thermal');
+// The navigation rail (M3) down the left edge: the menu button, then File (a
+// menu of New / Open / Save / Print), Scope and Thermal. Scope and Thermal
+// show their active indicator while their view is on; on phones the rail is
+// a navigation bar along the bottom (CSS).
+const scopeSection = byId('scope');
 const thermalLegend = byId('thermal-legend');
+const railScope = byId('rail-scope');
+const railThermal = byId('rail-thermal');
 
-function setTools(open: boolean) {
-  tools.classList.toggle('open', open);
-  toolsFab.setAttribute('aria-expanded', String(open));
-  toolsFab.querySelector('md-icon')!.textContent = open ? 'close' : 'build';
-  toolsFab.label = open ? '' : 'Tools';
-  toolsFab.title = open ? 'Close tools' : 'Tools';
-  scopeItem.setAttribute('aria-checked', String(!byId('scope').hidden));
-  thermalItem.setAttribute('aria-checked', String(!thermalLegend.hidden));
+function toggleScope() {
+  scope.toggle();
+  syncViews();
 }
 
-toolsFab.addEventListener('click', () => setTools(!tools.classList.contains('open')));
-scopeItem.addEventListener('click', () => {
-  scope.toggle();
-  setTools(false);
-});
 // The thermal view colours every part that heats up by how close it runs to
 // failing, with a legend on the board.
-thermalItem.addEventListener('click', () => {
+function toggleThermal() {
   thermalLegend.hidden = !thermalLegend.hidden;
   board.svg.classList.toggle('thermal', !thermalLegend.hidden);
-  setTools(false);
-});
-document.addEventListener('pointerdown', (e) => {
-  if (tools.classList.contains('open') && !tools.contains(e.target as Node)) setTools(false);
-});
-// Ahead of other Esc handlers, so closing the menu doesn't also close the tray.
-window.addEventListener(
-  'keydown',
-  (e) => {
-    if (e.key !== 'Escape' || !tools.classList.contains('open')) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setTools(false);
-  },
-  true,
-);
+  syncViews();
+}
+
+// The rail's indicators follow what's showing (the scope can also be closed
+// from its own bar).
+function syncViews() {
+  for (const [item, on] of [
+    [railScope, !scopeSection.hidden],
+    [railThermal, !thermalLegend.hidden],
+  ] as const) {
+    item.setAttribute('aria-pressed', String(on));
+    item.classList.toggle('selected', on);
+  }
+}
+
+// The rail collapses to icons (80px) or expands to icons and labels side by
+// side (220px), from the menu button at its top; the choice is remembered.
+const rail = byId('rail');
+const railToggle = byId('rail-toggle');
+const RAIL_KEY = 'ampage:rail-expanded';
+
+function setRail(expanded: boolean) {
+  rail.classList.toggle('expanded', expanded);
+  railToggle.setAttribute('aria-expanded', String(expanded));
+  railToggle.querySelector('md-icon')!.textContent = expanded ? 'menu_open' : 'menu';
+  railToggle.title = railToggle.ariaLabel = expanded ? 'Collapse navigation' : 'Expand navigation';
+  try {
+    localStorage.setItem(RAIL_KEY, String(expanded));
+  } catch {
+    // no storage here; it just won't be remembered
+  }
+}
+
+railToggle.addEventListener('click', () => setRail(!rail.classList.contains('expanded')));
+
+railScope.addEventListener('click', toggleScope);
+railThermal.addEventListener('click', toggleThermal);
+scopeSection.querySelector('.scope-close')!.addEventListener('click', syncViews);
+const fileMenu = byId<MdMenu>('file-menu');
+byId('rail-file').addEventListener('click', () => (fileMenu.open = !fileMenu.open));
+
+let railExpanded = false;
+try {
+  railExpanded = localStorage.getItem(RAIL_KEY) === 'true';
+} catch {
+  // no storage: start collapsed
+}
+setRail(railExpanded);
 
 // Printing (⌘P, or the Print button): our own dialog with a preview.
 const printer = createPrint(byId('print-dialog'), {

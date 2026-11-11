@@ -62,19 +62,6 @@ The most value for the effort, roughly in order:
   could also drop the part preset to it.
 - **Standard values (E12 / E24)**: for resistors and capacitors, which have
   values rather than part numbers: a dropdown or snap-to-standard option.
-- **Navigation rail**: an M3 navigation rail down the left edge for the
-  app's main destinations and options, e.g. Parts, Tools (oscilloscope,
-  thermal view), Examples, Files and Settings, with the FAB at its top. It
-  would free the top bar, which now holds files, history, search, run
-  controls and the category row. On narrow screens it becomes an M3
-  navigation bar at the bottom.
-- **Properties as an M3 side sheet**: rebuild the part properties panel to
-  the M3 side sheet guidelines: a standard (docked) side sheet on wide
-  screens and a modal one with a scrim on narrow screens, with a headline
-  and close button in its header, M3 container colour, shape and elevation,
-  and the enter/exit motion. It should also slide in and out rather than
-  appearing at once, and the bottom-sheet fallback on phones should follow
-  the M3 bottom sheet guidelines (drag handle, scrim).
 - **M3 sliders for draggable values**: every setting with a natural range
   gets an M3 slider in the properties panel, not just the few that have one
   today (potentiometer and variable resistor position, LDR/NTC ambient). For

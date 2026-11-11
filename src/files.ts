@@ -25,7 +25,7 @@ export interface FileActionsOptions {
   report: (message: string) => void;
 }
 
-// New / Open / Save (buttons in the top bar, ⌘O / ⌘S, dropping a .json file
+// New / Open / Save (the File menu on the navigation rail, ⌘O / ⌘S, dropping a .json file
 // on the window), plus autosave to this browser so a reload loses nothing.
 export function createFileActions(root: HTMLElement, { circuit, getView, load, report }: FileActionsOptions) {
   let handle: FileSystemFileHandle | null = null; // file the last save or open used

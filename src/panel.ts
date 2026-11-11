@@ -6,10 +6,50 @@ import type { Part, PropValue } from './types.ts';
 import { formatNumber, parseSI } from './units.ts';
 
 // Side sheet for editing the selected part's values, built from M3 fields.
+// Laid out per M3 by window size (in CSS): a standard side sheet docked
+// beside the board when wide, a modal side sheet over it (with a scrim) when
+// medium, a modal bottom sheet (with a drag handle) on phones. Its header
+// holds the part's name and the close button, the body scrolls, and Reset
+// sits in the action area at the bottom.
 // Shown while exactly one part is selected; its close button, or Esc from
 // inside it, deselects the part (an open dropdown takes the Esc first).
 export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Editor, 'refreshPart' | 'deselect'>) {
   let current: string | null = null;
+
+  // The scrim behind it when it's modal: a click there closes it.
+  const scrim = document.createElement('div');
+  scrim.className = 'props-scrim';
+  scrim.addEventListener('click', () => editor.deselect());
+  el.before(scrim);
+
+  // The bottom sheet's drag handle: drag it down to dismiss.
+  const handle = document.createElement('div');
+  handle.className = 'props-handle';
+  handle.setAttribute('aria-hidden', 'true');
+  handle.addEventListener('pointerdown', (e) => {
+    const start = e.clientY;
+    handle.setPointerCapture(e.pointerId);
+    el.classList.add('dragging');
+    const move = (ev: PointerEvent) => (el.style.translate = `0 ${Math.max(0, ev.clientY - start)}px`);
+    const up = (ev: PointerEvent) => {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+      handle.removeEventListener('pointercancel', up);
+      el.classList.remove('dragging');
+      el.style.translate = '';
+      if (ev.clientY - start > 80) editor.deselect();
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+  });
+
+  function setOpen(open: boolean) {
+    el.classList.toggle('open', open);
+    el.inert = !open;
+    el.setAttribute('aria-hidden', String(!open));
+  }
+  setOpen(false);
 
   el.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || e.composedPath().some((n) => n instanceof Element && n.matches('md-menu'))) return;
@@ -181,8 +221,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     current = id;
     const c = id === null ? undefined : circuit.part(id);
     if (!c) {
-      el.hidden = true;
-      el.replaceChildren();
+      setOpen(false); // its contents stay while it slides away
       return;
     }
     level = null;
@@ -200,8 +239,9 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const head = document.createElement('div');
     head.className = 'props-head';
     head.append(heading, close);
-    el.replaceChildren(
-      head,
+    const body = document.createElement('div');
+    body.className = 'props-body';
+    body.append(
       ...(c.broken ? [brokenNotice(c)] : []),
       ...(PARTS[c.type].gauge ? [chargeRow(c)] : []),
       ...Object.entries(PARTS[c.type].props)
@@ -215,9 +255,12 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
           return wrap;
         }),
     );
-    el.append(resetButton(c));
+    const actions = document.createElement('div');
+    actions.className = 'props-actions';
+    actions.append(resetButton(c));
+    el.replaceChildren(handle, head, body, actions);
     markModified(c);
-    el.hidden = false;
+    setOpen(true);
     showLive();
   }
 

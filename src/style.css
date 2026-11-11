@@ -53,9 +53,11 @@ body {
   height: 100%;
 }
 
+/* The navigation rail on the left, the app (top bar, tray, board, scope)
+   beside it. */
 body {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   background: var(--bg);
   color: var(--text);
   font: 400 14px/1.43 var(--md-ref-typeface-plain);
@@ -164,12 +166,6 @@ button {
     animation: none;
     background-position: 50% 0;
   }
-}
-
-.file-actions {
-  flex: none;
-  display: flex;
-  margin-left: -8px;
 }
 
 /* Undo / redo: their own group, set off from the file actions by an M3
@@ -869,44 +865,148 @@ body.dragging * {
   --md-menu-item-leading-icon-color: var(--md-sys-color-error);
 }
 
-/* Properties panel: an M3 side sheet on the right, a bottom sheet on phones. */
+/* Properties: an M3 sheet, laid out by window size class.
+   Expanded (≥ 840px): a standard side sheet, docked beside the board and
+   pushing it aside: surface colour, no elevation, a divider on its edge.
+   Medium (600–839px): a modal side sheet over the board: surface container
+   low, rounded inner corners, elevation 1, a scrim behind.
+   Compact (< 600px): a modal bottom sheet with a drag handle and a scrim.
+   It slides in with M3's emphasized decelerate easing (400ms) and out with
+   emphasized accelerate (200ms). */
 .props {
+  --sheet-width: 320px;
+  --enter: 400ms cubic-bezier(0.05, 0.7, 0.1, 1);
+  --exit: 200ms cubic-bezier(0.3, 0, 0.8, 0.15);
   flex: none;
-  width: 280px;
-  padding: 16px 16px 24px;
+  width: var(--sheet-width);
+  margin-right: calc(-1 * var(--sheet-width));
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-  background: var(--md-sys-color-surface-container-low);
+  min-height: 0;
+  background: var(--md-sys-color-surface);
   border-left: 1px solid var(--md-sys-color-outline-variant);
+  visibility: hidden;
+  transition:
+    margin-right var(--exit),
+    visibility 0s 200ms;
 }
 
-.props[hidden] {
+.props.open {
+  margin-right: 0;
+  visibility: visible;
+  transition:
+    margin-right var(--enter),
+    visibility 0s;
+}
+
+.workspace {
+  overflow: hidden; /* the sheet waits off to the right */
+}
+
+.props-handle {
   display: none;
 }
 
-@media (max-width: 600px) {
+.props-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: rgb(0 0 0 / 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--exit, 200ms);
+}
+
+@media (max-width: 839px) {
   .props {
     position: absolute;
-    left: 0;
+    z-index: 5;
+    top: 0;
     right: 0;
     bottom: 0;
-    width: auto;
-    max-height: 50%;
+    margin-right: 0;
     border-left: none;
-    border-radius: 28px 28px 0 0;
-    box-shadow: 0 -2px 6px 2px rgb(0 0 0 / 0.15);
+    border-radius: 16px 0 0 16px;
+    background: var(--md-sys-color-surface-container-low);
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.3),
+      0 1px 3px 1px rgb(0 0 0 / 0.15);
+    transform: translateX(100%);
+    transition:
+      transform var(--exit),
+      visibility 0s 200ms;
+  }
+
+  .props.open {
+    transform: none;
+    transition:
+      transform var(--enter),
+      visibility 0s;
+  }
+
+  .workspace:has(> .props.open) .props-scrim {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
+@media (max-width: 599px) {
+  .props {
+    top: auto;
+    left: 0;
+    width: auto;
+    max-height: 60%;
+    border-radius: 28px 28px 0 0;
+    transform: translateY(100%);
+  }
+
+  .props.dragging {
+    transition: none;
+  }
+
+  /* M3 drag handle: 32 × 4, on-surface-variant at 40 %. */
+  .props-handle {
+    display: block;
+    flex: none;
+    align-self: center;
+    width: 32px;
+    height: 4px;
+    margin: 16px 0 0;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--md-sys-color-on-surface-variant) 40%, transparent);
+    cursor: grab;
+    touch-action: none;
+  }
+}
+
+/* Header (headline and close), scrolling body, action area. */
 .props-head {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin: -4px -8px -4px 0; /* the close button's target sits in the corner */
+  padding: 16px 12px 8px 24px;
 }
+
+.props-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 24px 16px;
+}
+
+.props-actions {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
 
 .props h2 {
   font-size: 22px;
@@ -930,10 +1030,8 @@ body.dragging * {
   position: relative;
 }
 
-/* Reset: at the very bottom of the inspector, in the error colour role. */
+/* Reset, in the action area, in the error colour role. */
 .props-reset {
-  margin-top: auto;
-  align-self: flex-start;
   --md-outlined-button-label-text-color: var(--md-sys-color-error);
   --md-outlined-button-icon-color: var(--md-sys-color-error);
   --md-outlined-button-outline-color: var(--md-sys-color-error);
@@ -1462,112 +1560,6 @@ body.dragging * {
   --md-focus-ring-shape: 8px;
 }
 
-/* Tools: an M3 FAB menu. The tertiary FAB (the brand accent) sits 16px in
-   from the board's bottom-right corner, left of the properties panel when
-   that is open. Opened, its icon turns to a close mark and the items rise
-   above it, right-aligned: full-rounded 56px buttons in the FAB's colour set
-   (tertiary container), each an icon and a label; an instrument that is
-   showing is checked and filled with tertiary. */
-.fab-menu {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  pointer-events: none; /* only the buttons take clicks */
-}
-
-.workspace:has(> .props:not([hidden])) .fab-menu {
-  right: 296px;
-}
-
-.fab-menu-items {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-#tools-fab {
-  pointer-events: auto;
-}
-
-.fab-menu-item {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 56px;
-  padding: 0 24px 0 16px;
-  border: none;
-  border-radius: 28px;
-  background: var(--md-sys-color-tertiary-container);
-  color: var(--md-sys-color-on-tertiary-container);
-  /* M3 title-medium */
-  font: 500 16px/24px var(--md-ref-typeface-plain);
-  letter-spacing: 0.15px;
-  white-space: nowrap;
-  cursor: pointer;
-  outline: none;
-  pointer-events: auto;
-  /* M3 elevation level 3, as the FAB */
-  box-shadow:
-    0 4px 8px 3px rgb(0 0 0 / 0.15),
-    0 1px 3px rgb(0 0 0 / 0.3);
-  --md-icon-size: 24px;
-  --md-focus-ring-shape: 28px;
-  --md-ripple-hover-color: currentColor;
-  --md-ripple-pressed-color: currentColor;
-  transition:
-    opacity 150ms linear,
-    transform 350ms cubic-bezier(0.2, 0, 0, 1),
-    visibility 0s 0s;
-}
-
-.fab-menu-item[aria-checked="true"] {
-  background: var(--md-sys-color-tertiary);
-  color: var(--md-sys-color-on-tertiary);
-}
-
-.fab-menu-check {
-  display: none;
-  margin-right: -8px;
-}
-
-.fab-menu-item[aria-checked="true"] .fab-menu-check {
-  display: inline-block;
-}
-
-/* Closed: the items sink back into the FAB and fade, the nearest last. */
-.fab-menu:not(.open) .fab-menu-item {
-  opacity: 0;
-  transform: translateY(24px) scale(0.85);
-  transform-origin: right bottom;
-  visibility: hidden;
-  pointer-events: none;
-  transition:
-    opacity 100ms linear,
-    transform 200ms cubic-bezier(0.3, 0, 0.8, 0.15),
-    visibility 0s 200ms;
-}
-
-.fab-menu.open .fab-menu-item:nth-last-child(2) {
-  transition-delay: 30ms;
-}
-
-.fab-menu.open .fab-menu-item:nth-last-child(3) {
-  transition-delay: 60ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fab-menu-item,
-  .fab-menu:not(.open) .fab-menu-item {
-    transition: none;
-  }
-}
-
 /* Thermal view: a patch behind every part that heats up, coloured from blue
    (cold) to red (about to fail) by the editor; hidden otherwise. */
 .part .thermo {
@@ -1879,7 +1871,6 @@ body.dragging * {
   overflow: hidden;
 }
 
-
 /* Placed (centred) rather than laid out, so the page's size never pushes the
    dialog wider; it is scaled to the room it's given. */
 .print-preview-page {
@@ -2121,4 +2112,178 @@ body.dragging * {
   #print-sheet .print-page:last-child {
     break-after: auto;
   }
+}
+
+/* --- Navigation rail -----------------------------------------------------------
+   M3 navigation rail: 80px wide on the surface container (like the top bar),
+   the FAB at the top, then the destinations: each an icon in a 56 × 32
+   pill-shaped active indicator with its label below (label-medium). A
+   selected (showing) item fills its indicator with the accent's container
+   colour. On phones it becomes an M3 navigation bar along the bottom. */
+.app {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rail {
+  --rail-width: 80px;
+  flex: none;
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 12px 16px;
+  background: var(--md-sys-color-surface-container);
+  z-index: 6;
+  overflow: visible;
+  transition: width 300ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* The menu button lines up with the 56px indicators (12px in), with room
+   below it before the destinations. */
+.rail-toggle {
+  margin: 0 4px 36px;
+}
+
+
+.rail.expanded {
+  --rail-width: 220px;
+}
+
+.rail-items {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rail-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 56px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  outline: none;
+}
+
+.rail-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 32px;
+  border-radius: 16px;
+  --md-focus-ring-shape: 16px;
+  --md-icon-size: 24px;
+  transition: background-color 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* M3 label-medium */
+.rail-label {
+  font: 500 12px/16px var(--md-ref-typeface-plain);
+  letter-spacing: 0.5px;
+}
+
+.rail-item.selected .rail-indicator {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+
+.rail-item.selected .rail-label {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 700;
+}
+
+.menu-shortcut {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px;
+}
+
+/* Expanded: each destination a 56px row, icon then label, the active
+   indicator a full-width pill behind both. Not on phones, where the rail
+   is a navigation bar. */
+@media (min-width: 600px) {
+  .rail.expanded .rail-items {
+    gap: 0;
+  }
+
+  .rail.expanded .rail-item {
+    flex-direction: row;
+    gap: 12px;
+    width: calc(var(--rail-width) - 24px);
+    height: 56px;
+    padding: 0 16px;
+    border-radius: 28px;
+  }
+
+  .rail.expanded .rail-indicator {
+    position: static; /* the ripple covers the whole row */
+    width: 24px;
+    height: 24px;
+    border-radius: 28px;
+    background: none;
+  }
+
+  .rail.expanded .rail-label {
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
+  }
+
+  .rail.expanded .rail-item.selected {
+    background: var(--md-sys-color-tertiary-container);
+    color: var(--md-sys-color-on-tertiary-container);
+  }
+
+  .rail.expanded .rail-item.selected .rail-label {
+    color: inherit;
+  }
+}
+
+@media (max-width: 599px) {
+  body {
+    flex-direction: column;
+  }
+
+  .rail-toggle {
+    display: none;
+  }
+
+  .app {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .rail {
+    order: 1;
+    width: auto;
+    height: 80px;
+    flex-direction: row;
+    justify-content: center;
+    padding: 12px 0 16px;
+  }
+
+  .rail-items {
+    flex-direction: row;
+    gap: 0;
+    flex: 1;
+    justify-content: space-around;
+  }
+
+  .rail-item {
+    width: auto;
+    flex: 1;
+  }
+
 }
