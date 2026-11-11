@@ -1,4 +1,4 @@
-import { PARTS, applyPreset, isChoiceSpec, isModified, isSwitchSpec, presetOf, type ChoiceSpec, type NumberSpec, type PropSpec, type SwitchSpec } from './components.ts';
+import { PARTS, applyPreset, canReset, isChoiceSpec, isModified, resetValues, isSwitchSpec, presetOf, type ChoiceSpec, type NumberSpec, type PropSpec, type SwitchSpec } from './components.ts';
 import type { Editor, Live } from './editor.ts';
 import type { Circuit } from './model.ts';
 import { MODELS } from './sim/models.ts';
@@ -27,6 +27,25 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     markModified(c);
   }
 
+  // Reset, at the bottom: back to the part number's datasheet values (or the
+  // part's defaults), at once — it's undoable. An M3 outlined button in the
+  // error colour role, enabled only when there's something to reset.
+  let reset: (HTMLElement & { disabled: boolean }) | null = null;
+
+  function resetButton(c: Part) {
+    const button = document.createElement('md-outlined-button');
+    button.className = 'props-reset';
+    button.innerHTML = '<md-icon slot="icon">restart_alt</md-icon>Reset';
+    button.title = presetOf(c.type, c.props) ? 'Back to the datasheet values' : 'Back to the default values';
+    button.addEventListener('click', () => {
+      Object.assign(c.props, resetValues(c.type, c.props));
+      editor.refreshPart(c.id);
+      refresh();
+    });
+    reset = button;
+    return button;
+  }
+
   // A part with a part number: badge each setting that differs from the
   // datasheet (an M3 small badge in the accent colour), and colour the Part
   // number note to match while anything does.
@@ -38,6 +57,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
       wrap.classList.toggle('modified', datasheet !== undefined && value(c, key) !== datasheet);
     }
     partSelect?.classList.toggle('modified', isModified(c.type, c.props));
+    if (reset) reset.disabled = !canReset(c.type, c.props);
   }
 
   // A part with part numbers: its Part number field, whose supporting text
@@ -195,6 +215,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
           return wrap;
         }),
     );
+    el.append(resetButton(c));
     markModified(c);
     el.hidden = false;
     showLive();

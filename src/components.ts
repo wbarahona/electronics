@@ -72,6 +72,24 @@ export function isModified(type: PartType, props: Props): boolean {
   return Object.entries(preset.values).some(([key, v]) => (props as Record<string, unknown>)[key] !== v);
 }
 
+// The values a reset brings a part back to: its part number's datasheet
+// values, or else its defaults. Hidden state (a battery's charge) is left
+// alone, and so is the part number itself.
+export function resetValues(type: PartType, props: Props): Partial<Props> {
+  const preset = presetOf(type, props);
+  if (preset) return preset.values;
+  const fresh = defaults(type) as Record<string, PropValue>;
+  return Object.fromEntries(
+    Object.entries(PARTS[type].props)
+      .filter(([key, spec]) => !spec.hidden && key !== 'partNumber')
+      .map(([key]) => [key, fresh[key]]),
+  ) as Partial<Props>;
+}
+
+// Whether any value differs from what a reset would bring back.
+export const canReset = (type: PartType, props: Props) =>
+  Object.entries(resetValues(type, props)).some(([key, v]) => (props as Record<string, unknown>)[key] !== v);
+
 // What follows the reference on the board: the part number (with * when
 // modified), or the part's own tag (its value) when it has none.
 export function tagOf(type: PartType, props: Props): string | undefined {
