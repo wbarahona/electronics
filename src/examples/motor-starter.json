@@ -1,0 +1,374 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "p1",
+      "ref": "X1",
+      "type": "phase",
+      "x": 100,
+      "y": 160,
+      "rotation": 270,
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "maxCurrent": 16
+      },
+      "broken": false
+    },
+    {
+      "id": "p2",
+      "ref": "X2",
+      "type": "phase",
+      "x": 100,
+      "y": 200,
+      "rotation": 270,
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": -120,
+        "maxCurrent": 16
+      },
+      "broken": false
+    },
+    {
+      "id": "p3",
+      "ref": "X3",
+      "type": "phase",
+      "x": 100,
+      "y": 240,
+      "rotation": 270,
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 120,
+        "maxCurrent": 16
+      },
+      "broken": false
+    },
+    {
+      "id": "p4",
+      "ref": "Q1",
+      "type": "contactor",
+      "x": 500,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "partNumber": "LC1D09P7 (230 V~)",
+        "coil": "AC",
+        "coilVoltage": 230,
+        "coilResistance": 1700,
+        "poles": 3,
+        "aux": "1 NO + 1 NC",
+        "maxCurrent": 9
+      },
+      "broken": false
+    },
+    {
+      "id": "p5",
+      "ref": "M1",
+      "type": "motor",
+      "x": 520,
+      "y": 480,
+      "rotation": 180,
+      "props": {
+        "supply": "AC 3~",
+        "ratedVoltage": 400,
+        "ratedPower": 750
+      },
+      "broken": false
+    },
+    {
+      "id": "p6",
+      "ref": "S1",
+      "type": "buttonNC",
+      "x": 760,
+      "y": 220,
+      "rotation": 90,
+      "props": {
+        "pressed": false,
+        "maxCurrent": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "p7",
+      "ref": "S2",
+      "type": "button",
+      "x": 760,
+      "y": 340,
+      "rotation": 90,
+      "props": {
+        "closed": false,
+        "maxCurrent": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "p8",
+      "ref": "X4",
+      "type": "ground",
+      "x": 440,
+      "y": 400,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    }
+  ],
+  "joints": [
+    {
+      "id": "j1",
+      "x": 480,
+      "y": 160
+    },
+    {
+      "id": "j2",
+      "x": 760,
+      "y": 160
+    },
+    {
+      "id": "j3",
+      "x": 760,
+      "y": 280
+    },
+    {
+      "id": "j4",
+      "x": 760,
+      "y": 400
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "p1",
+        "pin": 0
+      },
+      "to": {
+        "joint": "j1"
+      },
+      "via": []
+    },
+    {
+      "id": "w2",
+      "from": {
+        "joint": "j1"
+      },
+      "to": {
+        "part": "p4",
+        "pin": 2
+      },
+      "via": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "part": "p2",
+        "pin": 0
+      },
+      "to": {
+        "part": "p4",
+        "pin": 4
+      },
+      "via": [
+        {
+          "x": 520,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "id": "w4",
+      "from": {
+        "part": "p3",
+        "pin": 0
+      },
+      "to": {
+        "part": "p4",
+        "pin": 6
+      },
+      "via": [
+        {
+          "x": 560,
+          "y": 240
+        }
+      ]
+    },
+    {
+      "id": "w5",
+      "from": {
+        "part": "p4",
+        "pin": 3
+      },
+      "to": {
+        "part": "p5",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w6",
+      "from": {
+        "part": "p4",
+        "pin": 5
+      },
+      "to": {
+        "part": "p5",
+        "pin": 2
+      },
+      "via": []
+    },
+    {
+      "id": "w7",
+      "from": {
+        "part": "p4",
+        "pin": 7
+      },
+      "to": {
+        "part": "p5",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w8",
+      "from": {
+        "joint": "j1"
+      },
+      "to": {
+        "joint": "j2"
+      },
+      "via": []
+    },
+    {
+      "id": "w9",
+      "from": {
+        "joint": "j2"
+      },
+      "to": {
+        "part": "p6",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w10",
+      "from": {
+        "part": "p6",
+        "pin": 1
+      },
+      "to": {
+        "joint": "j3"
+      },
+      "via": []
+    },
+    {
+      "id": "w11",
+      "from": {
+        "joint": "j3"
+      },
+      "to": {
+        "part": "p7",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w12",
+      "from": {
+        "part": "p7",
+        "pin": 1
+      },
+      "to": {
+        "joint": "j4"
+      },
+      "via": []
+    },
+    {
+      "id": "w13",
+      "from": {
+        "joint": "j3"
+      },
+      "to": {
+        "part": "p4",
+        "pin": 8
+      },
+      "via": [
+        {
+          "x": 700,
+          "y": 280
+        },
+        {
+          "x": 700,
+          "y": 220
+        },
+        {
+          "x": 600,
+          "y": 220
+        }
+      ]
+    },
+    {
+      "id": "w14",
+      "from": {
+        "part": "p4",
+        "pin": 9
+      },
+      "to": {
+        "joint": "j4"
+      },
+      "via": [
+        {
+          "x": 600,
+          "y": 400
+        }
+      ]
+    },
+    {
+      "id": "w15",
+      "from": {
+        "joint": "j4"
+      },
+      "to": {
+        "part": "p4",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 760,
+          "y": 420
+        },
+        {
+          "x": 400,
+          "y": 420
+        },
+        {
+          "x": 400,
+          "y": 240
+        },
+        {
+          "x": 440,
+          "y": 240
+        }
+      ]
+    },
+    {
+      "id": "w16",
+      "from": {
+        "part": "p4",
+        "pin": 1
+      },
+      "to": {
+        "part": "p8",
+        "pin": 0
+      },
+      "via": []
+    }
+  ],
+  "view": {
+    "x": 40,
+    "y": 60,
+    "scale": 1.1
+  }
+}

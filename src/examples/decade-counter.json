@@ -1,0 +1,345 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "p1",
+      "ref": "G1",
+      "type": "clock",
+      "x": 160,
+      "y": 240,
+      "rotation": 0,
+      "props": {
+        "frequency": 4,
+        "duty": 50,
+        "supply": 9
+      },
+      "broken": false
+    },
+    {
+      "id": "p2",
+      "ref": "K1",
+      "type": "cd4017",
+      "x": 300,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "maxCurrent": 0.01
+      },
+      "broken": false
+    },
+    {
+      "id": "p3",
+      "ref": "P1",
+      "type": "barGraph",
+      "x": 440,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "color": "green",
+        "common": "cathode",
+        "forwardVoltage": 2,
+        "maxCurrent": 0.02
+      },
+      "broken": false
+    },
+    {
+      "id": "p4",
+      "ref": "R1",
+      "type": "resistor",
+      "x": 480,
+      "y": 440,
+      "rotation": 90,
+      "props": {
+        "resistance": 100,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "p5",
+      "ref": "X1",
+      "type": "rail",
+      "x": 300,
+      "y": 140,
+      "rotation": 0,
+      "props": {
+        "voltage": 9,
+        "maxCurrent": 3
+      },
+      "broken": false
+    },
+    {
+      "id": "p6",
+      "ref": "X2",
+      "type": "ground",
+      "x": 220,
+      "y": 380,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "p7",
+      "ref": "X3",
+      "type": "ground",
+      "x": 300,
+      "y": 460,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "p8",
+      "ref": "X4",
+      "type": "ground",
+      "x": 480,
+      "y": 520,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    }
+  ],
+  "joints": [
+    {
+      "id": "j1",
+      "x": 220,
+      "y": 280
+    },
+    {
+      "id": "j2",
+      "x": 220,
+      "y": 320
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "p2",
+        "pin": 2
+      },
+      "to": {
+        "part": "p3",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w2",
+      "from": {
+        "part": "p2",
+        "pin": 1
+      },
+      "to": {
+        "part": "p3",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "part": "p2",
+        "pin": 3
+      },
+      "to": {
+        "part": "p3",
+        "pin": 2
+      },
+      "via": []
+    },
+    {
+      "id": "w4",
+      "from": {
+        "part": "p2",
+        "pin": 6
+      },
+      "to": {
+        "part": "p3",
+        "pin": 3
+      },
+      "via": []
+    },
+    {
+      "id": "w5",
+      "from": {
+        "part": "p2",
+        "pin": 9
+      },
+      "to": {
+        "part": "p3",
+        "pin": 4
+      },
+      "via": []
+    },
+    {
+      "id": "w6",
+      "from": {
+        "part": "p2",
+        "pin": 0
+      },
+      "to": {
+        "part": "p3",
+        "pin": 5
+      },
+      "via": []
+    },
+    {
+      "id": "w7",
+      "from": {
+        "part": "p2",
+        "pin": 4
+      },
+      "to": {
+        "part": "p3",
+        "pin": 6
+      },
+      "via": []
+    },
+    {
+      "id": "w8",
+      "from": {
+        "part": "p2",
+        "pin": 5
+      },
+      "to": {
+        "part": "p3",
+        "pin": 7
+      },
+      "via": []
+    },
+    {
+      "id": "w9",
+      "from": {
+        "part": "p2",
+        "pin": 8
+      },
+      "to": {
+        "part": "p3",
+        "pin": 8
+      },
+      "via": []
+    },
+    {
+      "id": "w10",
+      "from": {
+        "part": "p2",
+        "pin": 10
+      },
+      "to": {
+        "part": "p3",
+        "pin": 9
+      },
+      "via": []
+    },
+    {
+      "id": "w11",
+      "from": {
+        "part": "p1",
+        "pin": 0
+      },
+      "to": {
+        "part": "p2",
+        "pin": 13
+      },
+      "via": []
+    },
+    {
+      "id": "w12",
+      "from": {
+        "part": "p2",
+        "pin": 12
+      },
+      "to": {
+        "joint": "j1"
+      },
+      "via": []
+    },
+    {
+      "id": "w13",
+      "from": {
+        "joint": "j1"
+      },
+      "to": {
+        "joint": "j2"
+      },
+      "via": []
+    },
+    {
+      "id": "w14",
+      "from": {
+        "part": "p2",
+        "pin": 14
+      },
+      "to": {
+        "joint": "j2"
+      },
+      "via": []
+    },
+    {
+      "id": "w15",
+      "from": {
+        "joint": "j2"
+      },
+      "to": {
+        "part": "p6",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w16",
+      "from": {
+        "part": "p5",
+        "pin": 0
+      },
+      "to": {
+        "part": "p2",
+        "pin": 15
+      },
+      "via": []
+    },
+    {
+      "id": "w17",
+      "from": {
+        "part": "p2",
+        "pin": 7
+      },
+      "to": {
+        "part": "p7",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w18",
+      "from": {
+        "part": "p3",
+        "pin": 10
+      },
+      "to": {
+        "part": "p4",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w19",
+      "from": {
+        "part": "p4",
+        "pin": 1
+      },
+      "to": {
+        "part": "p8",
+        "pin": 0
+      },
+      "via": []
+    }
+  ],
+  "view": {
+    "x": 60,
+    "y": 60,
+    "scale": 1.2
+  }
+}

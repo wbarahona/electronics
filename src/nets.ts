@@ -1,4 +1,5 @@
 import { pinsOf } from './components.ts';
+import { netName } from './parts/sources/net-label.ts';
 import type { Circuit } from './model.ts';
 import type { End, Point } from './types.ts';
 import { pinPos } from './wires.ts';
@@ -14,8 +15,9 @@ export interface Nets {
   links: [string, string][]; // pairs joined by touching rather than by a wire
 }
 
-// Points are joined by wires, and by sitting on the same grid point (pins
-// touching pins or joints). Wires that merely cross do not connect.
+// Points are joined by wires, by sitting on the same grid point (pins
+// touching pins or joints), and by net labels of the same name. Wires that
+// merely cross do not connect.
 export function buildNets(circuit: Circuit): Nets {
   const parent = new Map<string, string>();
   const find = (k: string): string => {
@@ -50,6 +52,15 @@ export function buildNets(circuit: Circuit): Nets {
   }
   for (const j of circuit.joints) visit(j.id, j);
   for (const w of circuit.wires) union(keyOf(w.from), keyOf(w.to));
+  const labels = new Map<string, string>(); // net name -> the first label's pin
+  for (const c of circuit.components) {
+    if (c.type !== 'netLabel') continue;
+    const name = netName(c.props as { name: string });
+    if (!name) continue;
+    const first = labels.get(name);
+    if (first === undefined) labels.set(name, pinKey(c.id, 0));
+    else union(pinKey(c.id, 0), first);
+  }
 
   const groups = new Map<string, string[]>();
   for (const k of parent.keys()) {

@@ -7,7 +7,7 @@ export default {
   Main: 'Hauptnavigation',
   'Expand navigation': 'Navigation ausklappen',
   'Collapse navigation': 'Navigation einklappen',
-  'New, open, save, print': 'Neu, öffnen, speichern, drucken',
+  'New, open, save, share, export, print': 'Neu, öffnen, speichern, teilen, exportieren, drucken',
   File: 'Datei',
   Oscilloscope: 'Oszilloskop',
   Scope: 'Oszilloskop',
@@ -70,12 +70,40 @@ export default {
   failed: 'ausgefallen',
   broken: 'defekt',
 
+  // --- Examples ---------------------------------------------------------------------
+  'Example circuits': 'Beispielschaltungen',
+  Examples: 'Beispiele',
+  'Stairway light': 'Treppenhauslicht',
+  'Two changeover switches control one lamp from either end of a stairway.': 'Zwei Wechselschalter schalten eine Lampe von beiden Enden einer Treppe.',
+  Doorbell: 'Türklingel',
+  'A bell transformer, a push button and a door chime.': 'Ein Klingeltransformator, ein Taster und ein Türgong.',
+  'Motor starter': 'Motorstarter',
+  'A three-phase motor on a contactor with start, stop and a seal-in contact.': 'Ein Drehstrommotor am Schütz mit Ein, Aus und Selbsthaltung.',
+  'Bridge rectifier': 'Brückengleichrichter',
+  'Mains to a smooth 5 V: transformer, bridge, reservoir capacitor and a transistor regulator.': 'Vom Netz zu glatten 5 V: Transformator, Brücke, Ladekondensator und Transistorregler.',
+  '555 blinker': '555-Blinker',
+  'A 555 timer flashing an LED about once a second.': 'Ein 555-Timer lässt eine LED etwa einmal pro Sekunde blinken.',
+  'Running light': 'Lauflicht',
+  'A clock steps a CD4017 decade counter along a 10-LED bar graph.': 'Ein Taktgeber schaltet einen CD4017-Dekadenzähler über eine 10-LED-Balkenanzeige.',
+  'Rainbow matrix': 'Regenbogenmatrix',
+  'Six phase-shifted generators sweep a rainbow across an RGB dot matrix.': 'Sechs phasenverschobene Generatoren lassen einen Regenbogen über eine RGB-Punktmatrix laufen.',
+  'RGB colour mixing': 'RGB-Farbmischung',
+  'Switch rows and colours of an RGB dot matrix to mix colours.': 'Zeilen und Farben einer RGB-Punktmatrix schalten, um Farben zu mischen.',
+
   // --- Files ---------------------------------------------------------------------
   'Replace the circuit on the board? Anything not saved to a file will be lost.':
     'Die Schaltung auf der Fläche ersetzen? Alles, was nicht in einer Datei gespeichert ist, geht verloren.',
   'Couldn’t open {file}: {error}': '{file} konnte nicht geöffnet werden: {error}',
   'Couldn’t open the file: {error}': 'Die Datei konnte nicht geöffnet werden: {error}',
   'Couldn’t save: {error}': 'Speichern fehlgeschlagen: {error}',
+
+  'Copy share link': 'Link zum Teilen kopieren',
+  'Link copied: anyone with it can open this circuit.': 'Link kopiert: Jeder mit diesem Link kann die Schaltung öffnen.',
+  'Couldn’t make a link: {error}': 'Link konnte nicht erstellt werden: {error}',
+  'This link’s circuit is damaged (was the link cut short?).': 'Die Schaltung in diesem Link ist beschädigt (wurde der Link abgeschnitten?).',
+
+  'Export as PNG': 'Als PNG exportieren',
+  'Export as SVG': 'Als SVG exportieren',
 
   // --- Settings ------------------------------------------------------------------
   Language: 'Sprache',
@@ -132,6 +160,17 @@ export default {
   Replace: 'Ersetzen',
   Generic: 'Allgemein',
   'Part number': 'Typenbezeichnung',
+
+  Fault: 'Fehler',
+  None: 'Keiner',
+  'Open circuit': 'Unterbrechung',
+  'Short circuit': 'Kurzschluss',
+  'Marked on the board': 'Auf der Fläche markiert',
+  'Hidden: find it by measuring': 'Versteckt: durch Messen finden',
+  'Make this part fail on purpose, to practise fault finding': 'Dieses Bauteil absichtlich ausfallen lassen, um Fehlersuche zu üben',
+  'Show on the board': 'Auf der Fläche zeigen',
+  'open circuit (fault)': 'Unterbrechung (Fehler)',
+  'short circuit (fault)': 'Kurzschluss (Fehler)',
 
   // --- Readout -------------------------------------------------------------------
   'No result': 'Kein Ergebnis',
@@ -235,6 +274,10 @@ export default {
   'Voltage regulator': 'Spannungsregler',
   Voltmeter: 'Spannungsmesser',
   'Zener diode': 'Z-Diode',
+
+  'Net label': 'Netzbezeichnung',
+  'Net name': 'Netzname',
+  Net: 'Netz',
 
   // --- Settings of parts ---------------------------------------------------------
   'Ambient light': 'Umgebungslicht',

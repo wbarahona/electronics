@@ -1,4 +1,4 @@
-import { PARTS, applyPreset, canReset, isChoiceSpec, isModified, resetValues, isSwitchSpec, presetOf, type ChoiceSpec, type NumberSpec, type PropSpec, type SliderRange, type SwitchSpec } from './components.ts';
+import { PARTS, applyPreset, canReset, isChoiceSpec, isModified, resetValues, isSwitchSpec, isTextSpec, pinsOf, presetOf, type ChoiceSpec, type NumberSpec, type PropSpec, type SliderRange, type SwitchSpec, type TextSpec } from './components.ts';
 import type { Editor, Live } from './editor.ts';
 import type { Circuit } from './model.ts';
 import { onLanguage, t } from './i18n/index.ts';
@@ -6,6 +6,9 @@ import { MODELS } from './sim/models.ts';
 import type { Part, PropValue } from './types.ts';
 import './slider.ts';
 import { formatNumber, parseSI } from './units.ts';
+
+// Parts with nothing to fail: references and probes.
+const NO_FAULTS = new Set(['ground', 'netLabel', 'scopeProbe']);
 
 // Side sheet for editing the selected part's values, built from M3 fields.
 // Laid out per M3 by window size (in CSS): a standard side sheet docked
@@ -205,6 +208,17 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     return select;
   }
 
+  // Free text (a net label's name): an outlined text field, applied as typed.
+  function textInput(c: Part, key: string, spec: TextSpec) {
+    const field = document.createElement('md-outlined-text-field');
+    field.label = t(spec.label);
+    field.value = value(c, key) as string;
+    if (spec.maxLength) field.maxLength = spec.maxLength;
+    field.spellcheck = false;
+    field.addEventListener('input', () => set(c, key, field.value));
+    return field;
+  }
+
   // On/off values get an M3 switch with its label beside it.
   function switchInput(c: Part, key: string, spec: SwitchSpec) {
     const label = document.createElement('label');
@@ -226,6 +240,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
 
   function field(c: Part, key: string, spec: PropSpec) {
     if (isSwitchSpec(spec)) return switchInput(c, key, spec);
+    if (isTextSpec(spec)) return textInput(c, key, spec);
     if (isChoiceSpec(spec)) return choiceInput(c, key, spec);
     const range = sliderRange(spec);
     return range ? sliderInput(c, key, spec, range) : numberInput(c, key, spec);
@@ -269,6 +284,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
           wrap.append(field(c, key, spec));
           return wrap;
         }),
+      ...(NO_FAULTS.has(c.type) ? [] : [faultField(c)]),
     );
     const actions = document.createElement('div');
     actions.className = 'props-actions';
@@ -330,6 +346,43 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     });
     notice.append(text, replace);
     return notice;
+  }
+
+  // Fault finding: put a fault in the part on purpose, open (it conducts
+  // nothing) or, for two-terminal parts, short (a wire across it), and either
+  // mark it on the board or hide it, to be found by measuring.
+  function faultField(c: Part) {
+    const wrap = document.createElement('div');
+    wrap.className = 'fault-field';
+    const select = document.createElement('md-outlined-select');
+    select.label = t('Fault');
+    const kinds = pinsOf(c.type, c.props).length === 2 ? ['none', 'open', 'short'] : ['none', 'open'];
+    const names: Record<string, string> = { none: 'None', open: 'Open circuit', short: 'Short circuit' };
+    for (const kind of kinds) {
+      const option = document.createElement('md-select-option');
+      option.value = kind;
+      option.selected = kind === (c.fault?.kind ?? 'none');
+      option.innerHTML = `<div slot="headline">${t(names[kind])}</div>`;
+      select.append(option);
+    }
+    select.supportingText = t(c.fault ? (c.fault.shown ? 'Marked on the board' : 'Hidden: find it by measuring') : 'Make this part fail on purpose, to practise fault finding');
+    const show = document.createElement('label');
+    show.className = 'field check';
+    show.hidden = !c.fault;
+    const showName = document.createElement('span');
+    showName.textContent = t('Show on the board');
+    const toggle = document.createElement('md-switch');
+    toggle.selected = c.fault?.shown ?? true;
+    show.append(showName, toggle);
+    const apply = () => {
+      c.fault = select.value === 'none' ? undefined : { kind: select.value as 'open' | 'short', shown: toggle.selected };
+      editor.refreshPart(c.id);
+      refresh();
+    };
+    select.addEventListener('change', apply);
+    toggle.addEventListener('change', apply);
+    wrap.append(select, show);
+    return wrap;
   }
 
   // Rebuild the panel for the same part, e.g. after it failed.

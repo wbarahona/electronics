@@ -1,0 +1,160 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "p1",
+      "ref": "X1",
+      "type": "phase",
+      "x": 100,
+      "y": 100,
+      "rotation": 0,
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "maxCurrent": 16
+      },
+      "broken": false
+    },
+    {
+      "id": "p2",
+      "ref": "T1",
+      "type": "transformer",
+      "x": 240,
+      "y": 200,
+      "rotation": 0,
+      "props": {
+        "ratio": 14.4,
+        "inductance": 10,
+        "coupling": 0.99,
+        "resistance": 1,
+        "maxCurrent": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "p3",
+      "ref": "X2",
+      "type": "ground",
+      "x": 200,
+      "y": 260,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "p4",
+      "ref": "S1",
+      "type": "button",
+      "x": 360,
+      "y": 180,
+      "rotation": 0,
+      "props": {
+        "closed": false,
+        "maxCurrent": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "p5",
+      "ref": "P1",
+      "type": "chime",
+      "x": 480,
+      "y": 220,
+      "rotation": 90,
+      "props": {
+        "ratedVoltage": 16,
+        "ratedCurrent": 0.5
+      },
+      "broken": false
+    }
+  ],
+  "joints": [],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "p1",
+        "pin": 0
+      },
+      "to": {
+        "part": "p2",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 100,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "id": "w2",
+      "from": {
+        "part": "p2",
+        "pin": 1
+      },
+      "to": {
+        "part": "p3",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "part": "p2",
+        "pin": 2
+      },
+      "to": {
+        "part": "p4",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w4",
+      "from": {
+        "part": "p4",
+        "pin": 1
+      },
+      "to": {
+        "part": "p5",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 480,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "id": "w5",
+      "from": {
+        "part": "p5",
+        "pin": 1
+      },
+      "to": {
+        "part": "p2",
+        "pin": 3
+      },
+      "via": [
+        {
+          "x": 480,
+          "y": 300
+        },
+        {
+          "x": 280,
+          "y": 300
+        }
+      ]
+    }
+  ],
+  "view": {
+    "x": 40,
+    "y": 40,
+    "scale": 1.4
+  }
+}

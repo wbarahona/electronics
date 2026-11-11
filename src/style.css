@@ -1201,6 +1201,16 @@ body.dragging * {
   fill: var(--burnt);
 }
 
+/* A fault put in on purpose (and shown): drawn dashed in the error colour. */
+#board .part.faulted {
+  stroke: var(--md-sys-color-error);
+  stroke-dasharray: 4 3;
+}
+
+#board .part.faulted .value {
+  fill: var(--md-sys-color-error);
+}
+
 /* Charge gauge: a small battery icon, green when full, amber then red as it
    empties. */
 .part .gauge {
@@ -1403,6 +1413,15 @@ body.dragging * {
     opacity: 0;
     transform: translate(0, -36px) scale(2.2);
   }
+}
+
+/* Fault finding: the fault menu and whether it's shown, under a divider. */
+.fault-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
 /* M3 error-container card for a failed part. */
@@ -2449,4 +2468,68 @@ body.dragging * {
   --md-sys-color-on-primary: var(--md-sys-color-on-tertiary);
   --md-sys-color-primary-container: var(--md-sys-color-tertiary-container);
   --md-sys-color-on-primary-container: var(--md-sys-color-on-tertiary-container);
+}
+
+/* --- Example gallery ---------------------------------------------------------------
+   An M3 dialog of cards (filled cards on surface-container-highest), one per
+   example: an icon in a tonal circle, the title and a line about it. */
+.gallery-dialog {
+  max-width: min(720px, calc(100vw - 48px));
+}
+
+.gallery-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  padding: 8px 16px 16px;
+}
+
+.gallery-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+  --md-focus-ring-shape: 12px;
+}
+
+.gallery-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+
+.gallery-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* M3 title-medium, then body-medium. */
+.gallery-title {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  letter-spacing: 0.15px;
+}
+
+.gallery-description {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  color: var(--md-sys-color-on-surface-variant);
 }

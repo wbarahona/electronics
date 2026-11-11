@@ -1,5 +1,6 @@
 import type { PartProps as BatteryProps } from './parts/sources/battery.ts';
 import type { PartProps as GroundProps } from './parts/sources/ground.ts';
+import type { PartProps as NetLabelProps } from './parts/sources/net-label.ts';
 import type { PartProps as GeneratorProps } from './parts/sources/generator.ts';
 import type { PartProps as RailsProps } from './parts/sources/rails.ts';
 import type { PartProps as ResistorProps } from './parts/passive/resistor.ts';
@@ -63,6 +64,7 @@ export type MeterMode = 'DC' | 'AC';
 export interface PropsByType
   extends BatteryProps,
     GroundProps,
+    NetLabelProps,
     GeneratorProps,
     RailsProps,
     ResistorProps,
@@ -124,7 +126,15 @@ export interface Part<T extends PartType = PartType> {
   y: number;
   rotation: number; // degrees clockwise, a multiple of 90
   props: PropsByType[T];
-  broken: boolean;
+  broken: boolean; // burnt out (or otherwise failed) in the simulation
+  fault?: Fault; // a fault put in on purpose, for fault-finding practice
+}
+
+// open: the part conducts nothing; short: a wire across its (first) two
+// pins. `shown` marks it on the board; hidden faults are found by measuring.
+export interface Fault {
+  kind: 'open' | 'short';
+  shown: boolean;
 }
 
 // A grid point where wires meet.

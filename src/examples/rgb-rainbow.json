@@ -1,0 +1,1199 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "m",
+      "ref": "P1",
+      "type": "dotMatrix",
+      "x": 600,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "columns": 6,
+        "rows": 4,
+        "color": "RGB",
+        "rowsAre": "cathodes",
+        "forwardVoltage": 2,
+        "maxCurrent": 0.02
+      },
+      "broken": false
+    },
+    {
+      "id": "gnd",
+      "ref": "X1",
+      "type": "ground",
+      "x": 420,
+      "y": 400,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "off",
+      "ref": "X2",
+      "type": "rail",
+      "x": 1220,
+      "y": 360,
+      "rotation": 0,
+      "props": {
+        "voltage": 3,
+        "maxCurrent": 3
+      },
+      "broken": false
+    },
+    {
+      "id": "g0",
+      "ref": "G1",
+      "type": "generator",
+      "x": 1140,
+      "y": 440,
+      "rotation": 0,
+      "props": {
+        "voltage": 0.75,
+        "frequency": 0.5,
+        "phase": 0,
+        "internalResistance": 7,
+        "maxCurrent": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "r0",
+      "ref": "R1",
+      "type": "resistor",
+      "x": 760,
+      "y": 440,
+      "rotation": 0,
+      "props": {
+        "resistance": 3.3,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "d0",
+      "ref": "V1",
+      "type": "diode",
+      "x": 880,
+      "y": 440,
+      "rotation": 180,
+      "props": {
+        "partNumber": "1N4148",
+        "forwardVoltage": 0.75,
+        "maxCurrent": 0.2,
+        "reverseVoltage": 100
+      },
+      "broken": false
+    },
+    {
+      "id": "g1",
+      "ref": "G2",
+      "type": "generator",
+      "x": 1140,
+      "y": 500,
+      "rotation": 0,
+      "props": {
+        "voltage": 0.75,
+        "frequency": 0.5,
+        "phase": -60,
+        "internalResistance": 7,
+        "maxCurrent": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "r1",
+      "ref": "R2",
+      "type": "resistor",
+      "x": 760,
+      "y": 500,
+      "rotation": 0,
+      "props": {
+        "resistance": 3.3,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "d1",
+      "ref": "V2",
+      "type": "diode",
+      "x": 880,
+      "y": 500,
+      "rotation": 180,
+      "props": {
+        "partNumber": "1N4148",
+        "forwardVoltage": 0.75,
+        "maxCurrent": 0.2,
+        "reverseVoltage": 100
+      },
+      "broken": false
+    },
+    {
+      "id": "g2",
+      "ref": "G3",
+      "type": "generator",
+      "x": 1140,
+      "y": 560,
+      "rotation": 0,
+      "props": {
+        "voltage": 0.75,
+        "frequency": 0.5,
+        "phase": -120,
+        "internalResistance": 7,
+        "maxCurrent": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "r2",
+      "ref": "R3",
+      "type": "resistor",
+      "x": 760,
+      "y": 560,
+      "rotation": 0,
+      "props": {
+        "resistance": 3.3,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "d2",
+      "ref": "V3",
+      "type": "diode",
+      "x": 880,
+      "y": 560,
+      "rotation": 180,
+      "props": {
+        "partNumber": "1N4148",
+        "forwardVoltage": 0.75,
+        "maxCurrent": 0.2,
+        "reverseVoltage": 100
+      },
+      "broken": false
+    },
+    {
+      "id": "g3",
+      "ref": "G4",
+      "type": "generator",
+      "x": 1140,
+      "y": 620,
+      "rotation": 0,
+      "props": {
+        "voltage": 0.75,
+        "frequency": 0.5,
+        "phase": -180,
+        "internalResistance": 7,
+        "maxCurrent": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "r3",
+      "ref": "R4",
+      "type": "resistor",
+      "x": 760,
+      "y": 620,
+      "rotation": 0,
+      "props": {
+        "resistance": 3.3,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "d3",
+      "ref": "V4",
+      "type": "diode",
+      "x": 880,
+      "y": 620,
+      "rotation": 180,
+      "props": {
+        "partNumber": "1N4148",
+        "forwardVoltage": 0.75,
+        "maxCurrent": 0.2,
+        "reverseVoltage": 100
+      },
+      "broken": false
+    },
+    {
+      "id": "g4",
+      "ref": "G5",
+      "type": "generator",
+      "x": 1140,
+      "y": 680,
+      "rotation": 0,
+      "props": {
+        "voltage": 0.75,
+        "frequency": 0.5,
+        "phase": 120,
+        "internalResistance": 7,
+        "maxCurrent": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "r4",
+      "ref": "R5",
+      "type": "resistor",
+      "x": 760,
+      "y": 680,
+      "rotation": 0,
+      "props": {
+        "resistance": 3.3,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "d4",
+      "ref": "V5",
+      "type": "diode",
+      "x": 880,
+      "y": 680,
+      "rotation": 180,
+      "props": {
+        "partNumber": "1N4148",
+        "forwardVoltage": 0.75,
+        "maxCurrent": 0.2,
+        "reverseVoltage": 100
+      },
+      "broken": false
+    },
+    {
+      "id": "g5",
+      "ref": "G6",
+      "type": "generator",
+      "x": 1140,
+      "y": 740,
+      "rotation": 0,
+      "props": {
+        "voltage": 0.75,
+        "frequency": 0.5,
+        "phase": 60,
+        "internalResistance": 7,
+        "maxCurrent": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "r5",
+      "ref": "R6",
+      "type": "resistor",
+      "x": 760,
+      "y": 740,
+      "rotation": 0,
+      "props": {
+        "resistance": 3.3,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "d5",
+      "ref": "V6",
+      "type": "diode",
+      "x": 880,
+      "y": 740,
+      "rotation": 180,
+      "props": {
+        "partNumber": "1N4148",
+        "forwardVoltage": 0.75,
+        "maxCurrent": 0.2,
+        "reverseVoltage": 100
+      },
+      "broken": false
+    }
+  ],
+  "joints": [
+    {
+      "id": "jr0",
+      "x": 420,
+      "y": 220
+    },
+    {
+      "id": "jr1",
+      "x": 420,
+      "y": 260
+    },
+    {
+      "id": "jr2",
+      "x": 420,
+      "y": 300
+    },
+    {
+      "id": "jr3",
+      "x": 420,
+      "y": 340
+    },
+    {
+      "id": "jb0",
+      "x": 1220,
+      "y": 440
+    },
+    {
+      "id": "jb1",
+      "x": 1220,
+      "y": 500
+    },
+    {
+      "id": "jb2",
+      "x": 1220,
+      "y": 560
+    },
+    {
+      "id": "jb3",
+      "x": 1220,
+      "y": 620
+    },
+    {
+      "id": "jb4",
+      "x": 1220,
+      "y": 680
+    },
+    {
+      "id": "jb5",
+      "x": 1220,
+      "y": 740
+    },
+    {
+      "id": "jk0",
+      "x": 960,
+      "y": 440
+    },
+    {
+      "id": "jt0",
+      "x": 660,
+      "y": 140
+    },
+    {
+      "id": "jk1",
+      "x": 980,
+      "y": 500
+    },
+    {
+      "id": "jt1",
+      "x": 700,
+      "y": 100
+    },
+    {
+      "id": "jk2",
+      "x": 1000,
+      "y": 560
+    },
+    {
+      "id": "jt2",
+      "x": 640,
+      "y": 60
+    },
+    {
+      "id": "jk3",
+      "x": 1020,
+      "y": 620
+    },
+    {
+      "id": "jt3",
+      "x": 680,
+      "y": 20
+    },
+    {
+      "id": "jk4",
+      "x": 1040,
+      "y": 680
+    },
+    {
+      "id": "jt4",
+      "x": 580,
+      "y": -20
+    },
+    {
+      "id": "jk5",
+      "x": 1060,
+      "y": 740
+    },
+    {
+      "id": "jt5",
+      "x": 620,
+      "y": -60
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "m",
+        "pin": 0
+      },
+      "to": {
+        "joint": "jr0"
+      },
+      "via": []
+    },
+    {
+      "id": "w2",
+      "from": {
+        "part": "m",
+        "pin": 1
+      },
+      "to": {
+        "joint": "jr1"
+      },
+      "via": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "part": "m",
+        "pin": 2
+      },
+      "to": {
+        "joint": "jr2"
+      },
+      "via": []
+    },
+    {
+      "id": "w4",
+      "from": {
+        "part": "m",
+        "pin": 3
+      },
+      "to": {
+        "joint": "jr3"
+      },
+      "via": []
+    },
+    {
+      "id": "w5",
+      "from": {
+        "joint": "jr0"
+      },
+      "to": {
+        "joint": "jr1"
+      },
+      "via": []
+    },
+    {
+      "id": "w6",
+      "from": {
+        "joint": "jr1"
+      },
+      "to": {
+        "joint": "jr2"
+      },
+      "via": []
+    },
+    {
+      "id": "w7",
+      "from": {
+        "joint": "jr2"
+      },
+      "to": {
+        "joint": "jr3"
+      },
+      "via": []
+    },
+    {
+      "id": "w8",
+      "from": {
+        "joint": "jr3"
+      },
+      "to": {
+        "part": "gnd",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w9",
+      "from": {
+        "part": "off",
+        "pin": 0
+      },
+      "to": {
+        "joint": "jb0"
+      },
+      "via": []
+    },
+    {
+      "id": "w10",
+      "from": {
+        "joint": "jb0"
+      },
+      "to": {
+        "joint": "jb1"
+      },
+      "via": []
+    },
+    {
+      "id": "w11",
+      "from": {
+        "joint": "jb1"
+      },
+      "to": {
+        "joint": "jb2"
+      },
+      "via": []
+    },
+    {
+      "id": "w12",
+      "from": {
+        "joint": "jb2"
+      },
+      "to": {
+        "joint": "jb3"
+      },
+      "via": []
+    },
+    {
+      "id": "w13",
+      "from": {
+        "joint": "jb3"
+      },
+      "to": {
+        "joint": "jb4"
+      },
+      "via": []
+    },
+    {
+      "id": "w14",
+      "from": {
+        "joint": "jb4"
+      },
+      "to": {
+        "joint": "jb5"
+      },
+      "via": []
+    },
+    {
+      "id": "w15",
+      "from": {
+        "part": "m",
+        "pin": 4
+      },
+      "to": {
+        "part": "r0",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 480,
+          "y": 440
+        }
+      ]
+    },
+    {
+      "id": "w16",
+      "from": {
+        "part": "r0",
+        "pin": 1
+      },
+      "to": {
+        "part": "d0",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w17",
+      "from": {
+        "part": "d0",
+        "pin": 0
+      },
+      "to": {
+        "joint": "jk0"
+      },
+      "via": []
+    },
+    {
+      "id": "w18",
+      "from": {
+        "joint": "jk0"
+      },
+      "to": {
+        "part": "g0",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w19",
+      "from": {
+        "part": "g0",
+        "pin": 1
+      },
+      "to": {
+        "joint": "jb0"
+      },
+      "via": []
+    },
+    {
+      "id": "w20",
+      "from": {
+        "part": "m",
+        "pin": 12
+      },
+      "to": {
+        "joint": "jt0"
+      },
+      "via": [
+        {
+          "x": 560,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "id": "w21",
+      "from": {
+        "part": "m",
+        "pin": 20
+      },
+      "to": {
+        "joint": "jt0"
+      },
+      "via": []
+    },
+    {
+      "id": "w22",
+      "from": {
+        "joint": "jt0"
+      },
+      "to": {
+        "joint": "jk0"
+      },
+      "via": [
+        {
+          "x": 960,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "id": "w23",
+      "from": {
+        "part": "m",
+        "pin": 5
+      },
+      "to": {
+        "part": "r1",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 520,
+          "y": 500
+        }
+      ]
+    },
+    {
+      "id": "w24",
+      "from": {
+        "part": "r1",
+        "pin": 1
+      },
+      "to": {
+        "part": "d1",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w25",
+      "from": {
+        "part": "d1",
+        "pin": 0
+      },
+      "to": {
+        "joint": "jk1"
+      },
+      "via": []
+    },
+    {
+      "id": "w26",
+      "from": {
+        "joint": "jk1"
+      },
+      "to": {
+        "part": "g1",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w27",
+      "from": {
+        "part": "g1",
+        "pin": 1
+      },
+      "to": {
+        "joint": "jb1"
+      },
+      "via": []
+    },
+    {
+      "id": "w28",
+      "from": {
+        "part": "m",
+        "pin": 13
+      },
+      "to": {
+        "joint": "jt1"
+      },
+      "via": [
+        {
+          "x": 600,
+          "y": 100
+        }
+      ]
+    },
+    {
+      "id": "w29",
+      "from": {
+        "part": "m",
+        "pin": 21
+      },
+      "to": {
+        "joint": "jt1"
+      },
+      "via": []
+    },
+    {
+      "id": "w30",
+      "from": {
+        "joint": "jt1"
+      },
+      "to": {
+        "joint": "jk1"
+      },
+      "via": [
+        {
+          "x": 980,
+          "y": 100
+        }
+      ]
+    },
+    {
+      "id": "w31",
+      "from": {
+        "part": "m",
+        "pin": 6
+      },
+      "to": {
+        "part": "r2",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 560,
+          "y": 560
+        }
+      ]
+    },
+    {
+      "id": "w32",
+      "from": {
+        "part": "r2",
+        "pin": 1
+      },
+      "to": {
+        "part": "d2",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w33",
+      "from": {
+        "part": "d2",
+        "pin": 0
+      },
+      "to": {
+        "joint": "jk2"
+      },
+      "via": []
+    },
+    {
+      "id": "w34",
+      "from": {
+        "joint": "jk2"
+      },
+      "to": {
+        "part": "g2",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w35",
+      "from": {
+        "part": "g2",
+        "pin": 1
+      },
+      "to": {
+        "joint": "jb2"
+      },
+      "via": []
+    },
+    {
+      "id": "w36",
+      "from": {
+        "part": "m",
+        "pin": 16
+      },
+      "to": {
+        "joint": "jt2"
+      },
+      "via": [
+        {
+          "x": 500,
+          "y": 60
+        }
+      ]
+    },
+    {
+      "id": "w37",
+      "from": {
+        "part": "m",
+        "pin": 14
+      },
+      "to": {
+        "joint": "jt2"
+      },
+      "via": []
+    },
+    {
+      "id": "w38",
+      "from": {
+        "joint": "jt2"
+      },
+      "to": {
+        "joint": "jk2"
+      },
+      "via": [
+        {
+          "x": 1000,
+          "y": 60
+        }
+      ]
+    },
+    {
+      "id": "w39",
+      "from": {
+        "part": "m",
+        "pin": 7
+      },
+      "to": {
+        "part": "r3",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 600,
+          "y": 620
+        }
+      ]
+    },
+    {
+      "id": "w40",
+      "from": {
+        "part": "r3",
+        "pin": 1
+      },
+      "to": {
+        "part": "d3",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w41",
+      "from": {
+        "part": "d3",
+        "pin": 0
+      },
+      "to": {
+        "joint": "jk3"
+      },
+      "via": []
+    },
+    {
+      "id": "w42",
+      "from": {
+        "joint": "jk3"
+      },
+      "to": {
+        "part": "g3",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w43",
+      "from": {
+        "part": "g3",
+        "pin": 1
+      },
+      "to": {
+        "joint": "jb3"
+      },
+      "via": []
+    },
+    {
+      "id": "w44",
+      "from": {
+        "part": "m",
+        "pin": 17
+      },
+      "to": {
+        "joint": "jt3"
+      },
+      "via": [
+        {
+          "x": 540,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "w45",
+      "from": {
+        "part": "m",
+        "pin": 15
+      },
+      "to": {
+        "joint": "jt3"
+      },
+      "via": []
+    },
+    {
+      "id": "w46",
+      "from": {
+        "joint": "jt3"
+      },
+      "to": {
+        "joint": "jk3"
+      },
+      "via": [
+        {
+          "x": 1020,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "w47",
+      "from": {
+        "part": "m",
+        "pin": 8
+      },
+      "to": {
+        "part": "r4",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 640,
+          "y": 680
+        }
+      ]
+    },
+    {
+      "id": "w48",
+      "from": {
+        "part": "r4",
+        "pin": 1
+      },
+      "to": {
+        "part": "d4",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w49",
+      "from": {
+        "part": "d4",
+        "pin": 0
+      },
+      "to": {
+        "joint": "jk4"
+      },
+      "via": []
+    },
+    {
+      "id": "w50",
+      "from": {
+        "joint": "jk4"
+      },
+      "to": {
+        "part": "g4",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w51",
+      "from": {
+        "part": "g4",
+        "pin": 1
+      },
+      "to": {
+        "joint": "jb4"
+      },
+      "via": []
+    },
+    {
+      "id": "w52",
+      "from": {
+        "part": "m",
+        "pin": 10
+      },
+      "to": {
+        "joint": "jt4"
+      },
+      "via": [
+        {
+          "x": 480,
+          "y": -20
+        }
+      ]
+    },
+    {
+      "id": "w53",
+      "from": {
+        "part": "m",
+        "pin": 18
+      },
+      "to": {
+        "joint": "jt4"
+      },
+      "via": []
+    },
+    {
+      "id": "w54",
+      "from": {
+        "joint": "jt4"
+      },
+      "to": {
+        "joint": "jk4"
+      },
+      "via": [
+        {
+          "x": 1040,
+          "y": -20
+        }
+      ]
+    },
+    {
+      "id": "w55",
+      "from": {
+        "part": "m",
+        "pin": 9
+      },
+      "to": {
+        "part": "r5",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 680,
+          "y": 740
+        }
+      ]
+    },
+    {
+      "id": "w56",
+      "from": {
+        "part": "r5",
+        "pin": 1
+      },
+      "to": {
+        "part": "d5",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w57",
+      "from": {
+        "part": "d5",
+        "pin": 0
+      },
+      "to": {
+        "joint": "jk5"
+      },
+      "via": []
+    },
+    {
+      "id": "w58",
+      "from": {
+        "joint": "jk5"
+      },
+      "to": {
+        "part": "g5",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w59",
+      "from": {
+        "part": "g5",
+        "pin": 1
+      },
+      "to": {
+        "joint": "jb5"
+      },
+      "via": []
+    },
+    {
+      "id": "w60",
+      "from": {
+        "part": "m",
+        "pin": 11
+      },
+      "to": {
+        "joint": "jt5"
+      },
+      "via": [
+        {
+          "x": 520,
+          "y": -60
+        }
+      ]
+    },
+    {
+      "id": "w61",
+      "from": {
+        "part": "m",
+        "pin": 19
+      },
+      "to": {
+        "joint": "jt5"
+      },
+      "via": []
+    },
+    {
+      "id": "w62",
+      "from": {
+        "joint": "jt5"
+      },
+      "to": {
+        "joint": "jk5"
+      },
+      "via": [
+        {
+          "x": 1060,
+          "y": -60
+        }
+      ]
+    }
+  ],
+  "view": {
+    "x": 360,
+    "y": -140,
+    "scale": 0.8
+  }
+}

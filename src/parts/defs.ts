@@ -92,14 +92,31 @@ export interface SwitchSpec extends FieldSpec {
   value: boolean;
 }
 
-export type PropSpec = NumberSpec | ChoiceSpec | SwitchSpec;
+// Free text, such as a net label's name.
+export interface TextSpec extends FieldSpec {
+  value: string;
+  text: true;
+  maxLength?: number;
+}
+
+export type PropSpec = NumberSpec | ChoiceSpec | SwitchSpec | TextSpec;
 
 export const isSwitchSpec = (s: PropSpec): s is SwitchSpec => typeof s.value === 'boolean';
 
 export const isChoiceSpec = (s: PropSpec): s is ChoiceSpec => 'options' in s;
 
+export const isTextSpec = (s: PropSpec): s is TextSpec => 'text' in s;
+
 // The field kind that matches a value's type ([V] stops unions distributing).
-export type SpecFor<V> = [V] extends [boolean] ? SwitchSpec : [V] extends [number] ? NumberSpec : ChoiceSpec<V & string>;
+// A plain string value is a choice (a part number) or free text; a string
+// union is a choice among its members.
+export type SpecFor<V> = [V] extends [boolean]
+  ? SwitchSpec
+  : [V] extends [number]
+    ? NumberSpec
+    : string extends V
+      ? ChoiceSpec<string> | TextSpec
+      : ChoiceSpec<V & string>;
 
 export type BooleanKeys<P> = { [K in keyof P]: P[K] extends boolean ? K : never }[keyof P] & string;
 

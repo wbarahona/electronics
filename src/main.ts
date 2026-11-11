@@ -6,6 +6,7 @@ import { createControls } from './controls.ts';
 import { createCircuit } from './model.ts';
 import { createEditor, type Live } from './editor.ts';
 import { createFileActions } from './files.ts';
+import { createGallery } from './gallery.ts';
 import { createHistory } from './history.ts';
 import { createMenu } from './menu.ts';
 import type { Nets } from './nets.ts';
@@ -168,6 +169,8 @@ const files = createFileActions(byId('file-menu'), {
 const restored = files.restore();
 if (restored) loadCircuit(restored);
 else history.reset();
+// Opened from a shared link: its circuit (asking first if that replaces one).
+files.openLink();
 
 // While running, simulated time advances at `speed` times real time. Edits are
 // solved immediately even when paused, so readouts stay right, but nothing
@@ -286,6 +289,8 @@ railToggle.addEventListener('click', () => setRail(!rail.classList.contains('exp
 
 railScope.addEventListener('click', toggleScope);
 byId('rail-settings').addEventListener('click', () => settings.open());
+const gallery = createGallery(byId('gallery-dialog'), files.openText);
+byId('rail-examples').addEventListener('click', () => gallery.open());
 railThermal.addEventListener('click', toggleThermal);
 scopeSection.querySelector('.scope-close')!.addEventListener('click', syncViews);
 const fileMenu = byId<MdMenu>('file-menu');
@@ -311,6 +316,8 @@ const printer = createPrint(byId('print-dialog'), {
   thermalShowing: () => !thermalLegend.hidden,
 });
 byId('file-print').addEventListener('click', () => printer.open());
+byId('file-export-png').addEventListener('click', () => printer.exportImage('png'));
+byId('file-export-svg').addEventListener('click', () => printer.exportImage('svg'));
 
 // Zoom buttons and shortcuts at the board's bottom-left corner.
 createZoom(byId('zoom'), board);

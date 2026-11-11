@@ -66,6 +66,7 @@ const AVERAGE_TAU = 0.1; // s
 const LIGHT_REACH = 60;
 const G_GROUND = 1e6; // S; how firmly Ground holds its net at 0 V
 const G_TIE = 1; // S; the tie for a circuit that has no Ground
+const G_SHORT = 1e3; // S; a short-circuit fault (1 mΩ)
 const MAX_SETTLE = 20; // rounds of logic settling after an edit
 
 // Newton is done when every unknown has stopped moving: within an absolute
@@ -172,9 +173,11 @@ export function createEngine(circuit: Circuit) {
         id: c.id,
         props: c.props,
         model,
-        broken: !!c.broken,
-        // A failed part that now conducts nothing.
-        open: !!c.broken && !!model.failure?.open,
+        broken: !!c.broken || !!c.fault,
+        // A failed part that now conducts nothing, or a fault put in on
+        // purpose: open (nothing) or short (a wire across its two pins).
+        open: (!!c.broken && !!model.failure?.open) || !!c.fault,
+        short: c.fault?.kind === 'short',
         nodes: pinsOf(c.type, c.props).map((_, i) => netOf.get(pinKey(c.id, i))!),
         branch: branches ? next : -1,
         state: state.get(c.id)!,
@@ -279,7 +282,10 @@ export function createEngine(circuit: Circuit) {
       for (const [n, g] of refs) A[n][n] += g;
       for (const el of elements) {
         if (!el.open) el.model.stamp(el, s);
-        else if (el.branch >= 0) s.idle(el.branch);
+        else {
+          if (el.short) s.conductance(el.nodes[0], el.nodes[1], G_SHORT);
+          if (el.branch >= 0) s.idle(el.branch);
+        }
       }
       const next = solve(A, b);
       if (!next) return fail('The circuit has no single solution (check for loops of ideal sources).');
@@ -296,11 +302,11 @@ export function createEngine(circuit: Circuit) {
     for (const el of elements) {
       const v = el.nodes.length > 1 ? s.v(el.nodes[0]) - s.v(el.nodes[1]) : s.v(el.nodes[0]);
       // Current first: accept() moves an energy store on to this step's value.
-      const i = el.open ? 0 : el.model.current(el, s);
-      const pins = el.open ? el.nodes.map(() => 0) : (el.model.pinCurrents?.(el, s) ?? [i, -i]);
+      const i = el.short ? G_SHORT * v : el.open ? 0 : el.model.current(el, s);
+      const pins = el.short ? [i, -i] : el.open ? el.nodes.map(() => 0) : (el.model.pinCurrents?.(el, s) ?? [i, -i]);
       const pinV = el.nodes.map((n) => s.v(n));
       // Power taken in: the sum over pins of voltage × current in.
-      const p = el.open ? 0 : (el.model.power?.(el, s) ?? pins.reduce((sum, ik, k) => sum + ik * pinV[k], 0));
+      const p = el.short ? i * v : el.open ? 0 : (el.model.power?.(el, s) ?? pins.reduce((sum, ik, k) => sum + ik * pinV[k], 0));
       if (commit && !el.open) el.model.accept?.(el, s);
       const r: Result = {
         v, i, p, vavg: 0, iavg: 0, vrms: 0, irms: 0, pavg: 0, heat: el.state.heat ?? 0, load: 0, ac: engine.ac,

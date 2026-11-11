@@ -6,27 +6,20 @@ add. Parts and instruments still to come are in
 
 ## Top picks
 
-The most value for the effort, roughly in order:
+The most value for the effort, roughly in order (the first five, the example
+gallery, net labels, share by link, fault injection and image export, are
+built):
 
-1. **Example circuits gallery**: biggest win for newcomers; circuits are
-   already plain JSON files.
-2. **Net labels**: make larger schematics manageable; every real CAD tool has
-   them.
-3. **Share by link**: instant sharing without a server.
-4. **Fault injection**: turns the meters and oscilloscope into real
-   troubleshooting practice.
-5. **Export as PNG / SVG**: small effort, used constantly (builds on the
-   print pipeline).
+1. **Text notes on the board**: explain a circuit where it's drawn; the
+   examples would use them too.
+2. **Title block and sheet frame**: proper DIN / ISO printouts.
+3. **Challenges and lessons**: builds on the gallery and fault injection
+   (find the hidden fault, checked by the simulator).
+4. **Subcircuits / blocks**: reuse for larger schematics.
+5. **Component tolerances**: realistic spread, small effort.
 
 ## Learning and sharing
 
-- **Example circuits gallery**: ready-made circuits (stairway light, motor
-  starter with seal-in, 555 blinker, bridge rectifier, logic counter,
-  doorbell) that open with one click.
-- **Share by link**: the whole circuit packed into the URL; opening the link
-  opens the circuit.
-- **Export as image**: PNG or SVG of the schematic, for documents, slides and
-  chat.
 - **Text notes on the board**: labels and comments placed among the parts, to
   explain a circuit or mark its sections.
 - **Challenges and lessons**: tasks such as "make the lamp light only when both
@@ -34,8 +27,6 @@ The most value for the effort, roughly in order:
 
 ## Schematic editing
 
-- **Net labels**: name a wire (e.g. "+12V", "CLK"); every wire with the same
-  name is connected, without drawing it across the sheet.
 - **Subcircuits / blocks**: turn a selection into one reusable block and drop
   copies of it.
 - **Title block and sheet frame**: a proper DIN / ISO drawing frame for
@@ -44,8 +35,6 @@ The most value for the effort, roughly in order:
 
 ## Simulation depth
 
-- **Fault injection**: make any part fail on purpose (open, short, drifted) to
-  practise fault finding.
 - **Component tolerances**: ±5 % resistors and the like, so "identical"
   circuits differ slightly, as in real life.
 - **Frequency response (Bode plot)**: sweep a frequency through a filter or

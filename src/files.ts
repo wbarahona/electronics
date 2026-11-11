@@ -1,6 +1,7 @@
 import { t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
+import { circuitInLink, clearLink, linkFor } from './share.ts';
 import type { Circuit } from './model.ts';
 
 const AUTOSAVE_KEY = 'electronics:autosave';
@@ -22,7 +23,7 @@ export interface FileActionsOptions {
   getView: () => View;
   // Replace the circuit on screen with a loaded one (or an empty one).
   load: (data: SavedCircuit) => void;
-  // Tell the user something went wrong.
+  // Tell the user something (went wrong, or was done).
   report: (message: string) => void;
 }
 
@@ -160,8 +161,43 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
   }
 
+  // --- Share by link ------------------------------------------------------------
+  // Copy a link that opens this circuit (see share.ts); opening the page from
+  // such a link offers to open its circuit, as does pasting one into this tab.
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(await linkFor(JSON.stringify(serialize(circuit, getView()))));
+      report(t('Link copied: anyone with it can open this circuit.'));
+    } catch (e) {
+      report(t('Couldn’t make a link: {error}', { error: (e as Error).message }));
+    }
+  }
+
+  async function openLink() {
+    let text: string | null;
+    try {
+      text = await circuitInLink();
+    } catch {
+      report(t('This link’s circuit is damaged (was the link cut short?).'));
+      clearLink();
+      return;
+    }
+    if (text === null) return;
+    clearLink();
+    if (replaceOk() && open(text, 'shared-circuit.json')) handle = null;
+  }
+
+  root.querySelector('#file-share')!.addEventListener('click', copyLink);
+  window.addEventListener('hashchange', openLink);
+
+  // A circuit from elsewhere (an example), opened as an unsaved new file.
+  function openText(text: string, fileName: string) {
+    if (replaceOk() && open(text, fileName)) handle = null;
+  }
+
   // The circuit's file name without its extension (for print titles).
   const title = () => name.replace(/\.json$/i, '');
 
-  return { changed, restore, title };
+  return { changed, restore, title, openText, openLink };
 }

@@ -246,5 +246,74 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     true,
   );
 
-  return { open };
+  // --- Export as image ------------------------------------------------------------
+  // The schematic as an SVG or PNG file, as printed (light colours, part
+  // values, the thermal view if it's on) on white. A standalone SVG can't use
+  // the page's stylesheet, so each element's computed look is written onto it
+  // while it's laid out (off screen) in a print sheet.
+
+  const STYLE_PROPS = [
+    'fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'stroke-linecap',
+    'stroke-linejoin', 'opacity', 'font-family', 'font-size', 'font-weight', 'font-style', 'text-anchor',
+    'dominant-baseline', 'paint-order', 'stop-color', 'stop-opacity',
+  ];
+
+  function standalone(): { svg: SVGSVGElement; width: number; height: number } {
+    const o = { ...options(), grid: false, values: true, flow: false, thermal: src.thermalShowing() };
+    const svg = schematic(o);
+    const [x, y, width, height] = svg.getAttribute('viewBox')!.split(' ').map(Number);
+    svg.insertAdjacentHTML('afterbegin', `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="#ffffff" />`);
+    const glows = [...src.board.querySelectorAll('defs radialGradient[id^="glow-"]')].map((g) => g.cloneNode(true));
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    defs.append(...glows);
+    svg.prepend(defs);
+    // Lay it out in a light print sheet to read its styles.
+    const sheet = document.createElement('div');
+    sheet.className = 'print-sheet';
+    sheet.style.cssText = 'position: fixed; left: -10000px; top: 0';
+    for (const [name, value] of Object.entries(lightTokens())) sheet.style.setProperty(name, value);
+    sheet.append(svg);
+    document.body.append(sheet);
+    for (const el of [...svg.querySelectorAll<SVGElement>('*')]) {
+      const style = getComputedStyle(el);
+      if (style.display === 'none') {
+        el.remove();
+        continue;
+      }
+      el.setAttribute('style', STYLE_PROPS.map((name) => `${name}: ${style.getPropertyValue(name)}`).join('; '));
+      el.removeAttribute('class');
+    }
+    sheet.remove();
+    svg.removeAttribute('class');
+    svg.setAttribute('width', String(width));
+    svg.setAttribute('height', String(height));
+    return { svg, width, height };
+  }
+
+  function download(blob: Blob, extension: string) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${src.title() || 'circuit'}.${extension}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // PNGs at twice the size, sharp on high-density screens and in documents.
+  async function exportImage(kind: 'svg' | 'png') {
+    const { svg, width, height } = standalone();
+    const text = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([text], { type: 'image/svg+xml' });
+    if (kind === 'svg') return download(blob, 'svg');
+    const img = new Image();
+    img.src = URL.createObjectURL(blob);
+    await img.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(img.src);
+    canvas.toBlob((png) => png && download(png, 'png'), 'image/png');
+  }
+
+  return { open, exportImage };
 }

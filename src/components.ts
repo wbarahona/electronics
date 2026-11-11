@@ -10,6 +10,7 @@ export {
   LIGHT_COLORS,
   isChoiceSpec,
   isSwitchSpec,
+  isTextSpec,
   type AnyPartDef,
   type CategoryId,
   GENERIC,
@@ -21,6 +22,7 @@ export {
   type PropSpec,
   type SliderRange,
   type SwitchSpec,
+  type TextSpec,
 } from './parts/defs.ts';
 
 export const PARTS = DEFS as unknown as Record<PartType, AnyPartDef>;

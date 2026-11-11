@@ -1,0 +1,428 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "p1",
+      "ref": "G1",
+      "type": "battery",
+      "x": 160,
+      "y": 330,
+      "rotation": 90,
+      "props": {
+        "partNumber": "9 V alkaline (6LR61)",
+        "voltage": 9,
+        "internalResistance": 1.5,
+        "maxCurrent": 0.5,
+        "capacity": 0.55,
+        "charge": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "p2",
+      "ref": "K1",
+      "type": "ne555",
+      "x": 480,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "partNumber": "NE555",
+        "maxCurrent": 0.2,
+        "maxSupply": 16,
+        "highDrop": 1.7,
+        "supplyCurrent": 0.003
+      },
+      "broken": false
+    },
+    {
+      "id": "p3",
+      "ref": "R1",
+      "type": "resistor",
+      "x": 340,
+      "y": 240,
+      "rotation": 90,
+      "props": {
+        "resistance": 1000,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "p4",
+      "ref": "R2",
+      "type": "resistor",
+      "x": 380,
+      "y": 340,
+      "rotation": 90,
+      "props": {
+        "resistance": 47000,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "p5",
+      "ref": "C1",
+      "type": "electrolytic",
+      "x": 400,
+      "y": 460,
+      "rotation": 90,
+      "props": {
+        "capacitance": 0.00001,
+        "ratedVoltage": 16
+      },
+      "broken": false
+    },
+    {
+      "id": "p6",
+      "ref": "R3",
+      "type": "resistor",
+      "x": 600,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "resistance": 470,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "p7",
+      "ref": "P1",
+      "type": "led",
+      "x": 680,
+      "y": 340,
+      "rotation": 90,
+      "props": {
+        "partNumber": "5 mm red",
+        "color": "red",
+        "forwardVoltage": 2,
+        "maxCurrent": 0.02
+      },
+      "broken": false
+    },
+    {
+      "id": "p8",
+      "ref": "X1",
+      "type": "ground",
+      "x": 400,
+      "y": 520,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "p9",
+      "ref": "X2",
+      "type": "ground",
+      "x": 460,
+      "y": 400,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "p10",
+      "ref": "X3",
+      "type": "ground",
+      "x": 160,
+      "y": 410,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "p11",
+      "ref": "X4",
+      "type": "ground",
+      "x": 680,
+      "y": 420,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    }
+  ],
+  "joints": [
+    {
+      "id": "j1",
+      "x": 340,
+      "y": 180
+    },
+    {
+      "id": "j2",
+      "x": 460,
+      "y": 180
+    },
+    {
+      "id": "j3",
+      "x": 380,
+      "y": 280
+    },
+    {
+      "id": "j4",
+      "x": 400,
+      "y": 320
+    },
+    {
+      "id": "j5",
+      "x": 400,
+      "y": 400
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "p1",
+        "pin": 0
+      },
+      "to": {
+        "joint": "j1"
+      },
+      "via": [
+        {
+          "x": 160,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "id": "w2",
+      "from": {
+        "joint": "j1"
+      },
+      "to": {
+        "part": "p3",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 340,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "id": "w3",
+      "from": {
+        "joint": "j1"
+      },
+      "to": {
+        "joint": "j2"
+      },
+      "via": []
+    },
+    {
+      "id": "w4",
+      "from": {
+        "joint": "j2"
+      },
+      "to": {
+        "part": "p2",
+        "pin": 3
+      },
+      "via": []
+    },
+    {
+      "id": "w5",
+      "from": {
+        "joint": "j2"
+      },
+      "to": {
+        "part": "p2",
+        "pin": 7
+      },
+      "via": [
+        {
+          "x": 500,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "id": "w6",
+      "from": {
+        "part": "p3",
+        "pin": 1
+      },
+      "to": {
+        "joint": "j3"
+      },
+      "via": [
+        {
+          "x": 340,
+          "y": 280
+        }
+      ]
+    },
+    {
+      "id": "w7",
+      "from": {
+        "joint": "j3"
+      },
+      "to": {
+        "part": "p2",
+        "pin": 6
+      },
+      "via": []
+    },
+    {
+      "id": "w8",
+      "from": {
+        "joint": "j3"
+      },
+      "to": {
+        "part": "p4",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w9",
+      "from": {
+        "part": "p2",
+        "pin": 5
+      },
+      "to": {
+        "joint": "j4"
+      },
+      "via": [
+        {
+          "x": 400,
+          "y": 300
+        }
+      ]
+    },
+    {
+      "id": "w10",
+      "from": {
+        "part": "p2",
+        "pin": 1
+      },
+      "to": {
+        "joint": "j4"
+      },
+      "via": []
+    },
+    {
+      "id": "w11",
+      "from": {
+        "joint": "j4"
+      },
+      "to": {
+        "joint": "j5"
+      },
+      "via": []
+    },
+    {
+      "id": "w12",
+      "from": {
+        "part": "p4",
+        "pin": 1
+      },
+      "to": {
+        "joint": "j5"
+      },
+      "via": [
+        {
+          "x": 380,
+          "y": 400
+        }
+      ]
+    },
+    {
+      "id": "w13",
+      "from": {
+        "joint": "j5"
+      },
+      "to": {
+        "part": "p5",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w14",
+      "from": {
+        "part": "p5",
+        "pin": 1
+      },
+      "to": {
+        "part": "p8",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w15",
+      "from": {
+        "part": "p2",
+        "pin": 0
+      },
+      "to": {
+        "part": "p9",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w16",
+      "from": {
+        "part": "p1",
+        "pin": 1
+      },
+      "to": {
+        "part": "p10",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w17",
+      "from": {
+        "part": "p2",
+        "pin": 2
+      },
+      "to": {
+        "part": "p6",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w18",
+      "from": {
+        "part": "p6",
+        "pin": 1
+      },
+      "to": {
+        "part": "p7",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 680,
+          "y": 300
+        }
+      ]
+    },
+    {
+      "id": "w19",
+      "from": {
+        "part": "p7",
+        "pin": 1
+      },
+      "to": {
+        "part": "p11",
+        "pin": 0
+      },
+      "via": []
+    }
+  ],
+  "view": {
+    "x": 80,
+    "y": 100,
+    "scale": 1.2
+  }
+}

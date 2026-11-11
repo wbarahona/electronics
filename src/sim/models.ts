@@ -73,7 +73,8 @@ export interface Element<P = Props> {
   props: P;
   model: Model;
   broken: boolean;
-  open: boolean; // failed and now conducting nothing
+  open: boolean; // its model is out: failed open, or with a fault put in
+  short: boolean; // open, but a short circuit between its first two pins (a fault)
   nodes: number[]; // net index of each pin
   branch: number; // its own current unknown, or -1
   state: PartState;

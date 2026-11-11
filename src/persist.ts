@@ -1,6 +1,6 @@
-import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, pinsOf } from './components.ts';
+import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, isTextSpec, pinsOf } from './components.ts';
 import type { Circuit } from './model.ts';
-import type { End, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
+import type { End, Fault, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
 // A circuit as stored in a file (and in the browser's autosave): what was
 // built, not the live simulation, so capacitors load empty and parts cool.
@@ -93,12 +93,21 @@ function readPart(o: Record<string, unknown>): Part {
   const saved = o.props === undefined ? {} : obj(o.props, 'part values');
   for (const [key, spec] of Object.entries(PARTS[type as PartType].props)) {
     const v = saved[key];
-    if (isSwitchSpec(spec) ? typeof v === 'boolean' : isChoiceSpec(spec) ? spec.options.includes(v as string) : Number.isFinite(v)) {
+    const ok = isSwitchSpec(spec)
+      ? typeof v === 'boolean'
+      : isChoiceSpec(spec)
+        ? spec.options.includes(v as string)
+        : isTextSpec(spec)
+          ? typeof v === 'string'
+          : Number.isFinite(v);
+    if (ok) {
       props[key] = v as PropValue;
     }
   }
   // Saved before it had part numbers: its values may be any part's.
   if (PARTS[type as PartType].presets && saved.partNumber === undefined) props.partNumber = GENERIC;
+  const f = o.fault === undefined ? undefined : obj(o.fault, 'part fault');
+  const fault: Fault | undefined = f && (f.kind === 'open' || f.kind === 'short') ? { kind: f.kind, shown: f.shown !== false } : undefined;
   const rotation = num(o.rotation ?? 0, 'part rotation');
   if (rotation % 90 !== 0) throw new Error('A part is rotated by something other than a quarter turn.');
   return {
@@ -110,6 +119,7 @@ function readPart(o: Record<string, unknown>): Part {
     rotation: ((rotation % 360) + 360) % 360,
     props: props as Part['props'],
     broken: o.broken === true,
+    ...(fault ? { fault } : {}),
   };
 }
 

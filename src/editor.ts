@@ -299,6 +299,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     );
     const g = nodes.get(c.id)!;
     g.classList.toggle('broken', c.broken);
+    g.classList.toggle('faulted', !!c.fault?.shown);
     let glow = '';
     if (part.glow) {
       const key = part.glow.color(c.props);

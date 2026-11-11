@@ -28,6 +28,8 @@ export function createReadout(
       lines.push(['Load', `${Math.round(r.load * 100)} %`]);
     }
     if (c.broken && model.failure) lines.push(['Status', model.failure.label]);
+    // A fault put in shows only if it's meant to be seen.
+    if (c.fault?.shown) lines.push(['Status', c.fault.kind === 'open' ? 'open circuit (fault)' : 'short circuit (fault)']);
     return lines;
   }
 

@@ -1,0 +1,149 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "p1",
+      "ref": "X1",
+      "type": "phase",
+      "x": 100,
+      "y": 100,
+      "rotation": 0,
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "maxCurrent": 16
+      },
+      "broken": false
+    },
+    {
+      "id": "p2",
+      "ref": "S1",
+      "type": "changeover",
+      "x": 200,
+      "y": 200,
+      "rotation": 0,
+      "props": {
+        "thrown": false,
+        "maxCurrent": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "p3",
+      "ref": "S2",
+      "type": "changeover",
+      "x": 360,
+      "y": 200,
+      "rotation": 180,
+      "props": {
+        "thrown": false,
+        "maxCurrent": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "p4",
+      "ref": "E1",
+      "type": "lamp",
+      "x": 440,
+      "y": 260,
+      "rotation": 90,
+      "props": {
+        "color": "warm",
+        "ratedVoltage": 230,
+        "ratedPower": 40
+      },
+      "broken": false
+    },
+    {
+      "id": "p5",
+      "ref": "X2",
+      "type": "ground",
+      "x": 440,
+      "y": 340,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    }
+  ],
+  "joints": [],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "p1",
+        "pin": 0
+      },
+      "to": {
+        "part": "p2",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 100,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "id": "w2",
+      "from": {
+        "part": "p2",
+        "pin": 1
+      },
+      "to": {
+        "part": "p3",
+        "pin": 2
+      },
+      "via": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "part": "p2",
+        "pin": 2
+      },
+      "to": {
+        "part": "p3",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w4",
+      "from": {
+        "part": "p3",
+        "pin": 0
+      },
+      "to": {
+        "part": "p4",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 440,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "id": "w5",
+      "from": {
+        "part": "p4",
+        "pin": 1
+      },
+      "to": {
+        "part": "p5",
+        "pin": 0
+      },
+      "via": []
+    }
+  ],
+  "view": {
+    "x": 40,
+    "y": 40,
+    "scale": 1.4
+  }
+}
