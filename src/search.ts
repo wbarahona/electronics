@@ -17,8 +17,9 @@ function highlight(text: string, query: string): string {
 // the text ("gate" finds the gates), by category, with its symbol and the
 // matching piece highlighted.
 // Click a result to drop the part in the middle of the view, or drag it onto
-// the board, as in the tray. From the keyboard: ↑/↓ choose, Enter places,
-// Esc closes the list (or clears the field when the list is already closed).
+// the board, as in the tray. From the keyboard: ⌘K focuses the field, ↑/↓
+// choose, Enter places, Esc closes the list (or clears the field when the
+// list is already closed).
 export function createSearch(root: HTMLElement, palette: Palette) {
   const input = root.querySelector<HTMLInputElement>('#search-input')!;
   const results = root.querySelector<HTMLElement>('#search-results')!;
@@ -123,5 +124,14 @@ export function createSearch(root: HTMLElement, palette: Palette) {
       if (open) show(false);
       else input.value = '';
     }
+  });
+
+  // ⌘K (Ctrl+K) from anywhere jumps to the field, with any earlier text
+  // selected so typing replaces it.
+  window.addEventListener('keydown', (e) => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'k') return;
+    e.preventDefault();
+    input.focus();
+    input.select();
   });
 }
