@@ -17,10 +17,14 @@ EN 81346 reference designations (-R1, -S1, -P1…).
   Newton–Raphson for diodes and transistors), from 1/1000× to 1000× speed
 - **Realistic behaviour**: capacitors charge, batteries drain, parts heat
   up and fail when overloaded
-- **Parts**: batteries, AC generator, resistors, capacitors, inductors,
-  potentiometers, LDR, NTC, transformer, fuse, lamps, LEDs, switches and
-  push buttons, diodes, BJTs, MOSFET, logic gates, flip-flops, 555 timer,
-  voltage regulator, voltmeter and ammeter
+- **Parts**: batteries, AC generator, +V rails and AC phase, resistors,
+  capacitors, inductors, potentiometers, LDR, NTC, transformer, fuse,
+  coloured lamps and LEDs, 7-segment display, switches (on/off, changeover)
+  and push buttons, relays and AC contactors, DC and AC (1~ and 3~) motors,
+  heater, solenoid, fluorescent tube with ballast and starter, buzzer, piezo,
+  bell and speaker (audible while running), diodes, BJTs, MOSFET, logic
+  gates, flip-flops, 555 timer, voltage regulator, and DC/AC voltmeter and
+  ammeter
 - **Editing**: snap-to-grid, right-angle wires, joints, drop a part onto a
   wire to splice it in, copy/cut/paste/duplicate, marquee select
 - **Visual feedback**: animated current flow, glowing lights, charge

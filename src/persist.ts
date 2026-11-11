@@ -1,4 +1,4 @@
-import { PARTS, defaults, isChoiceSpec, isSwitchSpec } from './components.ts';
+import { PARTS, defaults, isChoiceSpec, isSwitchSpec, pinsOf } from './components.ts';
 import type { Circuit } from './model.ts';
 import type { End, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
@@ -65,7 +65,7 @@ export function parse(text: string): SavedCircuit {
     }
     const part = parts.find((p) => p.id === o.part);
     const pin = num(o.pin, `${what} pin`);
-    if (!part || !PARTS[part.type].pins[pin]) throw new Error(`A wire ends at a missing pin (${String(o.part)}:${pin}).`);
+    if (!part || !pinsOf(part.type, part.props)[pin]) throw new Error(`A wire ends at a missing pin (${String(o.part)}:${pin}).`);
     return { part: part.id, pin };
   };
   const wires = list(d.wires, 'wires').map((w, i) => {

@@ -1,4 +1,4 @@
-import { PARTS } from '../components.ts';
+import { pinsOf } from '../components.ts';
 import type { Circuit } from '../model.ts';
 import { pinKey, type Nets } from '../nets.ts';
 import { solve } from './linear.ts';
@@ -28,8 +28,10 @@ import { MODELS, type Element, type Env, type PartState, type Result, type Stamp
 // survivable; sustained overload is not. While anything is still heating or
 // cooling, `heating` is set so time keeps running even in a DC circuit.
 //
-// For AC, every part also keeps running averages of v², i² and power over
-// AVERAGE_TAU of simulated time, giving RMS and average readings.
+// For AC, every part also keeps running averages of v, i, v², i² and power
+// over AVERAGE_TAU of simulated time, giving average and RMS readings. Those
+// of v, i, v² and i² (what meters read) pass through two stages, so little of
+// the waveform leaks through: a 50 Hz sine averages to within 0.1 % of 0.
 //
 // Batteries drain as they deliver current; while any is draining, `draining`
 // is set so time keeps running, and in a DC circuit the solution is refreshed
@@ -95,6 +97,9 @@ export function createEngine(circuit: Circuit) {
     ac: false, // driven by an alternating source: readouts show RMS
     heating: false,
     draining: false,
+    // Called after every time step (with the time reached), for instruments
+    // that record what happens between frames.
+    onStep: null as ((t: number) => void) | null,
     rebuild,
     advance,
     reset,
@@ -170,7 +175,7 @@ export function createEngine(circuit: Circuit) {
         broken: !!c.broken,
         // A failed part that now conducts nothing.
         open: !!c.broken && !!model.failure?.open,
-        nodes: PARTS[c.type].pins.map((_, i) => netOf.get(pinKey(c.id, i))!),
+        nodes: pinsOf(c.type, c.props).map((_, i) => netOf.get(pinKey(c.id, i))!),
         branch: branches ? next : -1,
         state: state.get(c.id)!,
       };
@@ -237,7 +242,8 @@ export function createEngine(circuit: Circuit) {
     const find = (n: number): number => (parent[n] === n ? n : (parent[n] = find(parent[n])));
     for (const el of elements) {
       // Pins of a part are connected inside it, unless it says otherwise.
-      for (const group of el.model.groups ?? [el.nodes.map((_, k) => k)]) {
+      const groups = typeof el.model.groups === 'function' ? el.model.groups(el.props) : el.model.groups;
+      for (const group of groups ?? [el.nodes.map((_, k) => k)]) {
         for (const k of group.slice(1)) parent[find(el.nodes[k])] = find(el.nodes[group[0]]);
       }
     }
@@ -297,7 +303,7 @@ export function createEngine(circuit: Circuit) {
       const p = el.open ? 0 : (el.model.power?.(el, s) ?? pins.reduce((sum, ik, k) => sum + ik * pinV[k], 0));
       if (commit && !el.open) el.model.accept?.(el, s);
       const r: Result = {
-        v, i, p, vrms: 0, irms: 0, pavg: 0, heat: el.state.heat ?? 0, load: 0, ac: engine.ac,
+        v, i, p, vavg: 0, iavg: 0, vrms: 0, irms: 0, pavg: 0, heat: el.state.heat ?? 0, load: 0, ac: engine.ac,
         pins, pinV, state: el.state, extraRms: [],
       };
       r.load = el.model.thermal && !el.broken ? el.model.thermal.load(r, el.props) : 0;
@@ -315,13 +321,21 @@ export function createEngine(circuit: Circuit) {
   function average(el: Element, r: Result, dt: number) {
     const k = engine.dynamic ? 1 - Math.exp(-dt / AVERAGE_TAU) : 1;
     const extras = el.model.extras?.(r) ?? [];
-    const m = (el.state.avg ??= { v2: r.v * r.v, i2: r.i * r.i, p: r.p, x2: extras.map((x) => x * x) });
-    m.v2 += k * (r.v * r.v - m.v2);
-    m.i2 += k * (r.i * r.i - m.i2);
+    const m = (el.state.avg ??= {
+      v: [r.v, r.v], i: [r.i, r.i], v2: [r.v * r.v, r.v * r.v], i2: [r.i * r.i, r.i * r.i],
+      p: r.p, x2: extras.map((x) => x * x),
+    });
+    const smooth = (s: [number, number], x: number) => {
+      s[0] += k * (x - s[0]);
+      s[1] += k * (s[0] - s[1]);
+      return s[1];
+    };
+    r.vavg = smooth(m.v, r.v);
+    r.iavg = smooth(m.i, r.i);
+    r.vrms = Math.sqrt(Math.max(0, smooth(m.v2, r.v * r.v)));
+    r.irms = Math.sqrt(Math.max(0, smooth(m.i2, r.i * r.i)));
     m.p += k * (r.p - m.p);
     extras.forEach((x, j) => (m.x2[j] = (m.x2[j] ?? x * x) + k * (x * x - (m.x2[j] ?? x * x))));
-    r.vrms = Math.sqrt(m.v2);
-    r.irms = Math.sqrt(m.i2);
     r.pavg = m.p;
     r.extraRms = m.x2.map(Math.sqrt);
   }
@@ -398,6 +412,7 @@ export function createEngine(circuit: Circuit) {
       }
       t += dt;
       if (!step(dt)) return [];
+      engine.onStep?.(t);
       respond(dt);
       const failed = heatUp(dt);
       drain(dt);

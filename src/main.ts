@@ -1,5 +1,7 @@
+import type { MdFab } from '@material/web/fab/fab.js';
 import './material.ts';
 import { createBoard } from './board.ts';
+import { createAudio } from './audio.ts';
 import { createControls } from './controls.ts';
 import { createCircuit } from './model.ts';
 import { createEditor, type Live } from './editor.ts';
@@ -9,10 +11,12 @@ import type { Nets } from './nets.ts';
 import { createPalette } from './palette.ts';
 import { createPanel } from './panel.ts';
 import { createReadout } from './readout.ts';
+import { createPrint } from './print.ts';
+import { createScope } from './scope.ts';
 import { createSearch } from './search.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
-import { MODELS } from './sim/models.ts';
+import { MODELS, type Sound } from './sim/models.ts';
 import type { SavedCircuit } from './persist.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
@@ -29,6 +33,21 @@ const circuit = createCircuit();
 const engine = createEngine(circuit);
 let nets: Nets | null = null;
 let currents = new Map<string, number>(); // wire id -> amps
+let sounds = new Map<string, Sound>(); // part id -> the tone it's making
+const audio = createAudio();
+const scope = createScope(byId('scope'));
+let probes: (string | undefined)[] = []; // part id of each scope channel's probe
+
+// The first working probe on each channel; their voltages are recorded after
+// every simulation step, so the scope misses nothing between frames.
+function findProbes() {
+  probes = scope.CHANNELS.map(
+    (ch) => circuit.components.find((c) => c.type === 'scopeProbe' && !c.broken && (c.props as { channel: string }).channel === ch)?.id,
+  );
+}
+engine.onStep = (t) => {
+  if (probes.some(Boolean)) scope.record(t, probes.map((id) => (id ? (engine.results.get(id)?.pinV[0] ?? NaN) : NaN)));
+};
 const readout = createReadout(
   byId('readout'),
   board.svg,
@@ -44,14 +63,20 @@ const readout = createReadout(
 function showResults() {
   const smooth = controls.running;
   const live: Live = new Map();
+  sounds = new Map();
   for (const c of circuit.components) {
-    const { brightness, thermal, reading, failure } = MODELS[c.type];
+    const { brightness, thermal, reading, failure, active, segments, sound } = MODELS[c.type];
     const r = engine.results.get(c.id);
+    const tone = r && sound && !c.broken ? sound(r, c.props) : null;
+    if (tone) sounds.set(c.id, tone);
     live.set(c.id, {
       reading: reading && (c.broken ? (failure?.display ?? '–') : r ? reading(r, c.props) : '–'),
       glow: r && brightness ? brightness(r, c.props) : 0,
       heat: r && thermal && !c.broken ? Math.min(1, Math.max(0, (r.heat - 1) / (thermal.limit - 1))) : 0,
+      temp: thermal ? (c.broken ? 1 : (r?.heat ?? 0) / thermal.limit) : undefined,
       level: r?.level,
+      active: r && active ? !c.broken && active(r) : undefined,
+      segments: r && segments ? (c.broken ? [] : segments(r, c.props)) : undefined,
     });
   }
   editor.showLive(live, smooth);
@@ -65,6 +90,7 @@ const editor = createEditor(board, circuit, {
   onSelect: (ids) => panel.show(ids.length === 1 ? ids[0] : null),
   onChange: (next) => {
     nets = next;
+    findProbes();
     engine.rebuild(nets);
     showResults();
     files.changed();
@@ -103,6 +129,7 @@ function showToast(message: string) {
 function loadCircuit(data: SavedCircuit) {
   circuit.load(data.parts, data.joints, data.wires);
   engine.reset();
+  scope.clear();
   if (data.view) board.setView(data.view);
   editor.reload();
   controls.showTime(engine.time);
@@ -127,12 +154,31 @@ if (restored) loadCircuit(restored);
 // The logo shows the state too: a shining wave while running, burnt brown
 // while any part is burnt out. The wave takes 1.6 s at 1×, twice as fast for
 // each 10× faster (0.2 s at 1000×) and twice as slow for each 10× slower.
-const logo = byId('logo');
+// While burnt it's a button that replaces every burnt-out part; the
+// simulation stays paused until run again.
+const logo = byId<HTMLButtonElement>('logo');
+logo.title = 'Replace burnt-out parts';
+logo.addEventListener('click', () => {
+  const burnt = circuit.components.filter((c) => c.broken);
+  for (const c of burnt) c.broken = false;
+  for (const c of burnt) editor.refreshPart(c.id);
+  panel.refresh();
+  if (burnt.length) showToast(`Replaced ${burnt.map((c) => `-${c.ref}`).join(', ')}.`);
+});
 let waveSpeed = 0;
 let last = performance.now();
 requestAnimationFrame(function frame(now) {
+  scope.draw(engine.time, controls.speed);
+  // Sounders are heard only while the simulation runs.
+  audio.play(controls.running ? sounds : new Map());
   logo.classList.toggle('running', controls.running);
-  logo.classList.toggle('burnt', circuit.components.some((c) => c.broken));
+  const burnt = circuit.components.some((c) => c.broken);
+  logo.classList.toggle('burnt', burnt);
+  if (logo.disabled === burnt) {
+    logo.disabled = !burnt;
+    if (burnt) logo.removeAttribute('aria-hidden');
+    else logo.setAttribute('aria-hidden', 'true');
+  }
   if (controls.speed !== waveSpeed) {
     waveSpeed = controls.speed;
     logo.style.setProperty('--wave-duration', `${1.6 * 2 ** -Math.log10(waveSpeed)}s`);
@@ -158,3 +204,63 @@ requestAnimationFrame(function frame(now) {
   last = now;
   requestAnimationFrame(frame);
 });
+
+// Tools: an M3 FAB menu of instruments and views; each item shows or hides
+// one, and is checked while it shows (the scope can also be closed from its
+// own bar).
+// The FAB is an extended one labelled Tools; while open it turns into a
+// plain close button. Clicking outside or Esc closes it too.
+const tools = byId('tools');
+const toolsFab = byId<MdFab>('tools-fab');
+const scopeItem = byId('tool-scope');
+const thermalItem = byId('tool-thermal');
+const thermalLegend = byId('thermal-legend');
+
+function setTools(open: boolean) {
+  tools.classList.toggle('open', open);
+  toolsFab.setAttribute('aria-expanded', String(open));
+  toolsFab.querySelector('md-icon')!.textContent = open ? 'close' : 'build';
+  toolsFab.label = open ? '' : 'Tools';
+  toolsFab.title = open ? 'Close tools' : 'Tools';
+  scopeItem.setAttribute('aria-checked', String(!byId('scope').hidden));
+  thermalItem.setAttribute('aria-checked', String(!thermalLegend.hidden));
+}
+
+toolsFab.addEventListener('click', () => setTools(!tools.classList.contains('open')));
+scopeItem.addEventListener('click', () => {
+  scope.toggle();
+  setTools(false);
+});
+// The thermal view colours every part that heats up by how close it runs to
+// failing, with a legend on the board.
+thermalItem.addEventListener('click', () => {
+  thermalLegend.hidden = !thermalLegend.hidden;
+  board.svg.classList.toggle('thermal', !thermalLegend.hidden);
+  setTools(false);
+});
+document.addEventListener('pointerdown', (e) => {
+  if (tools.classList.contains('open') && !tools.contains(e.target as Node)) setTools(false);
+});
+// Ahead of other Esc handlers, so closing the menu doesn't also close the tray.
+window.addEventListener(
+  'keydown',
+  (e) => {
+    if (e.key !== 'Escape' || !tools.classList.contains('open')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setTools(false);
+  },
+  true,
+);
+
+// Printing (⌘P, or the Print button): our own dialog with a preview.
+const printer = createPrint(byId('print-dialog'), {
+  circuit,
+  board: board.svg,
+  scope: byId('scope'),
+  scopeSnapshot: scope.snapshot,
+  title: files.title,
+  scopeShowing: () => !byId('scope').hidden,
+  thermalShowing: () => !thermalLegend.hidden,
+});
+byId('file-print').addEventListener('click', () => printer.open());

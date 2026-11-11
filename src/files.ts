@@ -159,5 +159,8 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
   }
 
-  return { changed, restore };
+  // The circuit's file name without its extension (for print titles).
+  const title = () => name.replace(/\.json$/i, '');
+
+  return { changed, restore, title };
 }

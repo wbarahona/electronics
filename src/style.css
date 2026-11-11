@@ -1,8 +1,8 @@
 /* App tokens, mapped onto the Material Design 3 colour roles in theme.css.
    The simulation colours (net, heat, burn, smoke, flow) are our own. */
 :root {
-  --md-ref-typeface-brand: 'Roboto', system-ui, sans-serif;
-  --md-ref-typeface-plain: 'Roboto', system-ui, sans-serif;
+  --md-ref-typeface-brand: "Roboto", system-ui, sans-serif;
+  --md-ref-typeface-plain: "Roboto", system-ui, sans-serif;
   --bg: var(--md-sys-color-surface);
   --text: var(--md-sys-color-on-surface);
   --bar-bg: var(--md-sys-color-surface-container);
@@ -11,7 +11,9 @@
   --grid-major: var(--md-sys-color-outline-variant);
   --hover: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
   --ink: var(--md-sys-color-on-surface);
-  --accent: var(--md-sys-color-tertiary); /* brand green: selection and highlights */
+  --accent: var(
+    --md-sys-color-tertiary
+  ); /* brand green: selection and highlights */
   --muted: var(--md-sys-color-on-surface-variant);
   --danger: var(--md-sys-color-error);
   --net: #d97706;
@@ -20,6 +22,17 @@
   --smoke: #8a8a8a;
   --flow: #d4a20b;
   --gauge-ok: #2e7d32;
+  /* Oscilloscope: a dark screen in either theme. Traces take the theme's
+     accent (tertiary) for CH1 and primary for CH2, in the bright tones the
+     dark scheme uses, so they read on the screen; on the board and in text,
+     the probes use the roles themselves. */
+  --scope-bg: #0b0e14;
+  --scope-grid: rgb(255 255 255 / 0.09);
+  --scope-axis: rgb(255 255 255 / 0.28);
+  --ch1: #77de44;
+  --ch2: #adc6ff;
+  --ch1-role: var(--md-sys-color-tertiary);
+  --ch2-role: var(--md-sys-color-primary);
   --gauge-mid: #e09b00;
 }
 
@@ -35,7 +48,8 @@
   }
 }
 
-html, body {
+html,
+body {
   height: 100%;
 }
 
@@ -91,24 +105,52 @@ button {
 
 /* The logo is drawn as a mask over a coloured layer, so its colour can
    change: brand green; a yellow wave sweeping through while the simulation
-   runs; burnt brown while any part is burnt out. */
+   runs; burnt brown, and clickable to replace them, while any part is burnt
+   out. */
 .title .logo {
+  position: relative;
   flex: none;
   width: 32px;
   height: 32px;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  background: none;
+}
+
+/* The logo itself, on a layer of its own so the mask doesn't also clip the
+   button's focus ring. */
+.title .logo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: #66cc33;
   -webkit-mask: url(/ampage.svg) center / contain no-repeat;
   mask: url(/ampage.svg) center / contain no-repeat;
 }
 
-.title .logo.running {
-  background: linear-gradient(115deg, #66cc33 35%, #ffd60a 50%, #66cc33 65%) 100% 0 / 300% 100%;
+.title .logo.running::before {
+  background: linear-gradient(115deg, #66cc33 35%, #ffd60a 50%, #66cc33 65%)
+    100% 0 / 300% 100%;
   animation: logo-wave var(--wave-duration, 1.6s) linear infinite;
 }
 
 .title .logo.burnt {
+  cursor: pointer;
+}
+
+.title .logo.burnt::before {
   background: var(--burnt);
   animation: none;
+}
+
+.title .logo.burnt:hover::before {
+  background: color-mix(in srgb, var(--burnt) 75%, white);
+}
+
+.title .logo:focus-visible {
+  outline: 2px solid var(--md-sys-color-secondary);
+  outline-offset: 2px;
 }
 
 @keyframes logo-wave {
@@ -118,7 +160,7 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .title .logo.running {
+  .title .logo.running::before {
     animation: none;
     background-position: 50% 0;
   }
@@ -200,7 +242,9 @@ md-icon svg {
   grid-template-rows: 0fr;
   background: var(--md-sys-color-surface-container-low);
   border-bottom: 0 solid var(--md-sys-color-outline-variant);
-  transition: grid-template-rows 0.22s cubic-bezier(0.2, 0, 0, 1), border-width 0.22s;
+  transition:
+    grid-template-rows 0.22s cubic-bezier(0.2, 0, 0, 1),
+    border-width 0.22s;
 }
 
 .tray.open {
@@ -346,7 +390,11 @@ md-icon svg {
 }
 
 .search-bar:hover {
-  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high));
+  background: color-mix(
+    in srgb,
+    var(--md-sys-color-on-surface) 8%,
+    var(--md-sys-color-surface-container-high)
+  );
 }
 
 .search-bar md-icon {
@@ -441,7 +489,11 @@ body.dragging .search-results {
 }
 
 .search-option.active {
-  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--md-sys-color-on-surface) 12%,
+    transparent
+  );
 }
 
 .search-option-icon {
@@ -595,7 +647,9 @@ body.dragging * {
 .part .gate-text {
   fill: var(--ink);
   stroke: none;
-  font: 600 13px system-ui, sans-serif;
+  font:
+    600 13px system-ui,
+    sans-serif;
 }
 
 /* Chips: the part name in the middle, pin names inside the box, pin numbers
@@ -603,26 +657,34 @@ body.dragging * {
 .part .chip-title {
   fill: var(--ink);
   stroke: none;
-  font: 600 10px system-ui, sans-serif;
+  font:
+    600 10px system-ui,
+    sans-serif;
 }
 
 .part .chip-pin {
   fill: var(--ink);
   stroke: none;
-  font: 7px system-ui, sans-serif;
+  font:
+    7px system-ui,
+    sans-serif;
 }
 
 .part .chip-num {
   fill: var(--muted);
   stroke: none;
-  font: 6.5px system-ui, sans-serif;
+  font:
+    6.5px system-ui,
+    sans-serif;
 }
 
 /* A meter's letter (V, A) inside its circle. */
 .part .meter-letter {
   fill: var(--ink);
   stroke: none;
-  font: 600 14px system-ui, sans-serif;
+  font:
+    600 14px system-ui,
+    sans-serif;
 }
 
 /* A meter's on-board digital readout. */
@@ -638,7 +700,11 @@ body.dragging * {
 .part .meter-text {
   fill: var(--md-sys-color-inverse-on-surface);
   stroke: none;
-  font: 500 10px ui-monospace, 'SF Mono', Menlo, monospace;
+  font:
+    500 10px ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
   font-variant-numeric: tabular-nums;
 }
 
@@ -646,11 +712,38 @@ body.dragging * {
   fill: var(--danger);
 }
 
+/* A meter's DC/AC knob: a tab on its display, clicked to turn it. */
+.part .selector {
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.part .sel-bg {
+  fill: var(--md-sys-color-tertiary-container);
+  stroke: none;
+}
+
+.part .selector:hover .sel-bg {
+  fill: var(--accent);
+}
+
+.part .sel-text {
+  fill: var(--md-sys-color-on-tertiary-container);
+  stroke: none;
+  font:
+    700 8px ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+}
+
 /* Lettering that is part of a symbol, like the thermistor's −ϑ. */
 .part .sym-text {
   fill: var(--ink);
   stroke: none;
-  font: 9px system-ui, sans-serif;
+  font:
+    9px system-ui,
+    sans-serif;
 }
 
 /* Light from lamps and LEDs: --glow (0..1) is set from the simulation,
@@ -673,7 +766,9 @@ body.dragging * {
 .part .value {
   fill: var(--ink);
   stroke: none;
-  font: 11px system-ui, sans-serif;
+  font:
+    11px system-ui,
+    sans-serif;
   pointer-events: none;
 }
 
@@ -697,7 +792,9 @@ body.dragging * {
   color: var(--md-sys-color-on-surface-variant);
   background: var(--md-sys-color-surface-container);
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.3),
+    0 2px 6px 2px rgb(0 0 0 / 0.15);
   pointer-events: none;
 }
 
@@ -893,7 +990,11 @@ body.dragging * {
 #board .part {
   cursor: move;
   /* Overloaded parts turn red-hot as they approach failure (--heat 0..1). */
-  stroke: color-mix(in srgb, var(--hot) calc(var(--heat, 0) * 100%), var(--ink));
+  stroke: color-mix(
+    in srgb,
+    var(--hot) calc(var(--heat, 0) * 100%),
+    var(--ink)
+  );
 }
 
 #board .part.broken {
@@ -948,9 +1049,71 @@ body.dragging * {
   opacity: 0.4;
 }
 
-/* Dashed link from a push button's actuator to its contact. */
+/* Dashed link from a push button's actuator to its contact, or a relay's
+   coil to its contacts. */
 .part .link {
   stroke-dasharray: 3 3;
+}
+
+/* A relay's contacts as at rest, or (.active) with the coil energized. */
+.part .when-on,
+.part.active .when-off {
+  display: none;
+}
+
+.part.active .when-on {
+  display: inline;
+}
+
+/* A running motor's spinning rotor mark; a sounder's sound arcs. */
+.part .rotor,
+.part .waves {
+  stroke-width: 1.5;
+}
+
+/* RGB LED: faint colour spots, lit ones adding their light together. */
+.part .rgb-mix {
+  isolation: isolate;
+}
+
+.part .rgb-off,
+.part .rgb-lit {
+  stroke: none;
+}
+
+.part .rgb-off {
+  fill-opacity: 0.15;
+}
+
+.part .rgb-lit {
+  mix-blend-mode: screen;
+}
+
+/* Seven-segment display: unlit segments faint, lit ones in the LED colour. */
+.part .seg-off,
+.part .seg-lit {
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.part .seg-off {
+  stroke: color-mix(in srgb, var(--muted) 25%, transparent);
+}
+
+.part .seg-lit {
+  stroke: var(--glow-color, transparent);
+}
+
+.part .dot {
+  stroke-width: 0;
+}
+
+.part .seg-off.dot {
+  fill: color-mix(in srgb, var(--muted) 25%, transparent);
+}
+
+.part .seg-lit.dot {
+  fill: var(--glow-color, transparent);
 }
 
 /* On-board controls for switches and push buttons. */
@@ -1169,6 +1332,308 @@ body.dragging * {
   position: relative;
 }
 
+/* Tools: an M3 FAB menu. The tertiary FAB (the brand accent) sits 16px in
+   from the board's bottom-right corner, left of the properties panel when
+   that is open. Opened, its icon turns to a close mark and the items rise
+   above it, right-aligned: full-rounded 56px buttons in the FAB's colour set
+   (tertiary container), each an icon and a label; an instrument that is
+   showing is checked and filled with tertiary. */
+.fab-menu {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none; /* only the buttons take clicks */
+}
+
+.workspace:has(> .props:not([hidden])) .fab-menu {
+  right: 296px;
+}
+
+.fab-menu-items {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+#tools-fab {
+  pointer-events: auto;
+}
+
+.fab-menu-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 24px 0 16px;
+  border: none;
+  border-radius: 28px;
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+  /* M3 title-medium */
+  font: 500 16px/24px var(--md-ref-typeface-plain);
+  letter-spacing: 0.15px;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  pointer-events: auto;
+  /* M3 elevation level 3, as the FAB */
+  box-shadow:
+    0 4px 8px 3px rgb(0 0 0 / 0.15),
+    0 1px 3px rgb(0 0 0 / 0.3);
+  --md-icon-size: 24px;
+  --md-focus-ring-shape: 28px;
+  --md-ripple-hover-color: currentColor;
+  --md-ripple-pressed-color: currentColor;
+  transition:
+    opacity 150ms linear,
+    transform 350ms cubic-bezier(0.2, 0, 0, 1),
+    visibility 0s 0s;
+}
+
+.fab-menu-item[aria-checked="true"] {
+  background: var(--md-sys-color-tertiary);
+  color: var(--md-sys-color-on-tertiary);
+}
+
+.fab-menu-check {
+  display: none;
+  margin-right: -8px;
+}
+
+.fab-menu-item[aria-checked="true"] .fab-menu-check {
+  display: inline-block;
+}
+
+/* Closed: the items sink back into the FAB and fade, the nearest last. */
+.fab-menu:not(.open) .fab-menu-item {
+  opacity: 0;
+  transform: translateY(24px) scale(0.85);
+  transform-origin: right bottom;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 100ms linear,
+    transform 200ms cubic-bezier(0.3, 0, 0.8, 0.15),
+    visibility 0s 200ms;
+}
+
+.fab-menu.open .fab-menu-item:nth-last-child(2) {
+  transition-delay: 30ms;
+}
+
+.fab-menu.open .fab-menu-item:nth-last-child(3) {
+  transition-delay: 60ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab-menu-item,
+  .fab-menu:not(.open) .fab-menu-item {
+    transition: none;
+  }
+}
+
+/* Thermal view: a patch behind every part that heats up, coloured from blue
+   (cold) to red (about to fail) by the editor; hidden otherwise. */
+.part .thermo {
+  fill: none;
+  stroke: none;
+  pointer-events: none;
+}
+
+#board.thermal .part .thermo,
+.print-board.thermal .part .thermo {
+  fill: var(--thermo, transparent);
+  fill-opacity: 0.45;
+}
+
+/* Its legend: a small M3 card (surface container high, medium corners) in
+   the board's top-left corner. The gradient matches the editor's colours;
+   most parts reach their rating at two thirds of the way to failing. */
+.thermal-legend {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 216px;
+  padding: 12px 16px 10px;
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.3),
+    0 1px 3px 1px rgb(0 0 0 / 0.15);
+  pointer-events: none;
+}
+
+.thermal-legend[hidden] {
+  display: none;
+}
+
+/* M3 label-large */
+.thermal-legend-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  --md-icon-size: 20px;
+}
+
+.thermal-legend-title md-icon {
+  color: var(--md-sys-color-tertiary);
+}
+
+.thermal-legend-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    hsl(220 90% 55%),
+    hsl(131 90% 55%) 33%,
+    hsl(52 90% 55%) 67%,
+    hsl(0 90% 55%)
+  );
+}
+
+/* M3 label-small */
+.thermal-legend-labels {
+  position: relative;
+  height: 16px;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.thermal-legend-labels span {
+  position: absolute;
+}
+
+.thermal-legend-labels span:nth-child(2) {
+  left: 67%;
+  transform: translateX(-50%);
+}
+
+.thermal-legend-labels span:last-child {
+  right: 0;
+}
+
+/* Oscilloscope: an M3 standard bottom sheet docked under the board (surface
+   container low, extra-large top corners, elevation 1), the screen inset in
+   it like a card's content. */
+.scope {
+  flex: none;
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 16px 16px;
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  border-radius: 28px 28px 0 0;
+  box-shadow:
+    0 -1px 2px rgb(0 0 0 / 0.3),
+    0 -1px 3px 1px rgb(0 0 0 / 0.15);
+  position: relative; /* above the board's edge for its shadow */
+  z-index: 1;
+}
+
+.scope[hidden] {
+  display: none;
+}
+
+.scope-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  margin-right: -8px; /* the close button's target meets the sheet's edge */
+}
+
+.scope-head > md-icon {
+  color: var(--md-sys-color-tertiary);
+  --md-icon-size: 24px;
+}
+
+/* M3 title-medium */
+.scope-title {
+  margin-right: 8px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  letter-spacing: 0.15px;
+}
+
+/* Each channel as an M3 assist-chip-style label: outlined, 32px tall,
+   label-large text, a dot in the trace's colour. */
+.scope-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.scope-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.scope-channel.ch1 .scope-dot {
+  background: var(--ch1-role);
+}
+
+.scope-channel.ch2 .scope-dot {
+  background: var(--ch2-role);
+}
+
+/* M3 body-medium, secondary */
+.scope-time {
+  margin-left: auto;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.scope canvas {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: block; /* the screen inside it is drawn with M3's medium 12px corners */
+}
+
+/* A scope probe on the board, in its channel's colour. */
+.part .scope-probe.ch1 .probe-body,
+.part .scope-probe.ch1 text {
+  fill: var(--ch1-role);
+}
+
+.part .scope-probe.ch2 .probe-body,
+.part .scope-probe.ch2 text {
+  fill: var(--ch2-role);
+}
+
 #board {
   flex: 1 1 0;
   display: block;
@@ -1205,4 +1670,325 @@ body.dragging * {
   fill: none;
   stroke: var(--grid-major);
   stroke-width: var(--px);
+}
+
+/* --- Printing ---------------------------------------------------------------
+   An M3 dialog: options on the left, a live preview of the first page on the
+   right. The sheet itself is drawn in fixed print colours, whatever the
+   screen's theme. */
+/* Wider than M3's default dialog, but never past 24px from the window's
+   edges. */
+.print-dialog {
+  width: min(960px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+}
+
+.padded-title {
+  padding: 32px 16px 8px;
+}
+
+.print-body {
+  display: flex;
+  gap: 24px;
+  min-height: 420px;
+  padding: 8px 16px 16px; /* 8px: room for the first field's floating label */
+}
+
+.print-actions {
+  padding: 8px 16px 32px;
+}
+
+.print-options {
+  flex: none;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.print-options md-outlined-text-field {
+  margin-bottom: 12px;
+}
+
+.print-row {
+  display: flex;
+  gap: 8px;
+}
+
+.print-row md-outlined-select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* M3 title-small */
+.print-group {
+  margin: 16px 0 4px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.print-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  cursor: pointer;
+}
+
+.print-preview {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-container-highest);
+  overflow: hidden;
+}
+
+
+/* Placed (centred) rather than laid out, so the page's size never pushes the
+   dialog wider; it is scaled to the room it's given. */
+.print-preview-page {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.3),
+    0 2px 6px 2px rgb(0 0 0 / 0.15);
+}
+
+.print-preview-page .print-sheet {
+  transform-origin: 0 0;
+}
+
+@media (max-width: 760px) {
+  .print-body {
+    flex-direction: column;
+  }
+
+  .print-options {
+    width: auto;
+  }
+
+  .print-preview {
+    min-height: 240px;
+  }
+}
+
+/* The printed sheet, always in the light theme whatever the screen's: the
+   light colour roles (copied from theme.css) and the app's tokens declared
+   again here, so those built from the roles pick up the light ones. Keep in
+   step with theme.css and the :root block above. */
+.print-sheet {
+  color-scheme: light;
+  --md-sys-color-primary: #0051ae;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #0969da;
+  --md-sys-color-on-primary-container: #ecefff;
+  --md-sys-color-secondary: #485e8a;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #b6ccfe;
+  --md-sys-color-on-secondary-container: #405681;
+  --md-sys-color-tertiary: #246200;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #307d00;
+  --md-sys-color-on-tertiary-container: #cbffad;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #93000a;
+  --md-sys-color-background: #f9f9ff;
+  --md-sys-color-on-background: #191c22;
+  --md-sys-color-surface: #f9f9ff;
+  --md-sys-color-on-surface: #191c22;
+  --md-sys-color-surface-variant: #dee2f2;
+  --md-sys-color-on-surface-variant: #424753;
+  --md-sys-color-surface-dim: #d8d9e3;
+  --md-sys-color-surface-bright: #f9f9ff;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f2f3fd;
+  --md-sys-color-surface-container: #ecedf7;
+  --md-sys-color-surface-container-high: #e6e8f1;
+  --md-sys-color-surface-container-highest: #e1e2ec;
+  --md-sys-color-outline: #727785;
+  --md-sys-color-outline-variant: #c2c6d6;
+  --md-sys-color-inverse-surface: #2e3038;
+  --md-sys-color-inverse-on-surface: #eff0fa;
+  --md-sys-color-inverse-primary: #adc6ff;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-surface-tint: #005bc0;
+
+  --md-ref-typeface-brand: "Roboto", system-ui, sans-serif;
+  --md-ref-typeface-plain: "Roboto", system-ui, sans-serif;
+  --bg: var(--md-sys-color-surface);
+  --text: var(--md-sys-color-on-surface);
+  --bar-bg: var(--md-sys-color-surface-container);
+  --bar-border: var(--md-sys-color-outline-variant);
+  --grid-minor: var(--md-sys-color-surface-container-high);
+  --grid-major: var(--md-sys-color-outline-variant);
+  --hover: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+  --ink: var(--md-sys-color-on-surface);
+  --accent: var(
+    --md-sys-color-tertiary
+  ); /* brand green: selection and highlights */
+  --muted: var(--md-sys-color-on-surface-variant);
+  --danger: var(--md-sys-color-error);
+  --net: #d97706;
+  --hot: #ff4d00;
+  --burnt: #6b4f3a;
+  --smoke: #8a8a8a;
+  --flow: #d4a20b;
+  --gauge-ok: #2e7d32;
+  /* Oscilloscope: a dark screen in either theme. Traces take the theme's
+     accent (tertiary) for CH1 and primary for CH2, in the bright tones the
+     dark scheme uses, so they read on the screen; on the board and in text,
+     the probes use the roles themselves. */
+  --scope-bg: #0b0e14;
+  --scope-grid: rgb(255 255 255 / 0.09);
+  --scope-axis: rgb(255 255 255 / 0.28);
+  --ch1: #77de44;
+  --ch2: #adc6ff;
+  --ch1-role: var(--md-sys-color-tertiary);
+  --ch2-role: var(--md-sys-color-primary);
+  --gauge-mid: #e09b00;
+}
+
+.print-page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+  padding: 10mm;
+  background: #ffffff;
+  color: #191c22;
+  font:
+    400 10pt/1.4 "Roboto",
+    system-ui,
+    sans-serif;
+}
+
+.print-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8mm;
+  padding-bottom: 2mm;
+  border-bottom: 0.4mm solid #191c22;
+}
+
+.print-title {
+  font-size: 16pt;
+  font-weight: 500;
+}
+
+.print-meta {
+  color: #5f6368;
+}
+
+.print-drawing {
+  flex: 1;
+  min-height: 0;
+  border: 0.25mm solid #c2c6d6;
+  border-radius: 2mm;
+  overflow: hidden;
+}
+
+.print-drawing svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.print-board .actuator,
+.print-board .pin-hit,
+.print-board .joint-hit,
+.print-board .wire-hits,
+.print-board.no-values .value,
+.print-board.no-flow .wire-flow {
+  display: none;
+}
+
+.print-extras {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 6mm;
+}
+
+.print-scope {
+  margin: 0;
+}
+
+.print-scope img {
+  display: block;
+  height: 42mm;
+}
+
+.print-scope figcaption,
+.print-legend {
+  margin-top: 1.5mm;
+  font-size: 8pt;
+  color: #424753;
+}
+
+.print-legend {
+  width: 55mm;
+}
+
+.print-legend .thermal-legend-bar {
+  margin: 1.5mm 0 1mm;
+}
+
+.print-legend-labels {
+  display: flex;
+  justify-content: space-between;
+}
+
+.print-parts {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.print-parts th,
+.print-parts td {
+  padding: 1.5mm 3mm;
+  text-align: left;
+  border-bottom: 0.25mm solid #c2c6d6;
+}
+
+.print-parts th {
+  font-weight: 500;
+  border-bottom-color: #191c22;
+}
+
+#print-sheet {
+  display: none;
+}
+
+@media print {
+  body > :not(#print-sheet) {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  #print-sheet {
+    display: block;
+  }
+
+  #print-sheet .print-page {
+    break-after: page;
+  }
+
+  #print-sheet .print-page:last-child {
+    break-after: auto;
+  }
 }

@@ -1,4 +1,4 @@
-import { PARTS } from './components.ts';
+import { pinsOf } from './components.ts';
 import type { Circuit } from './model.ts';
 import type { End, Point } from './types.ts';
 import { pinPos } from './wires.ts';
@@ -46,7 +46,7 @@ export function buildNets(circuit: Circuit): Nets {
   };
 
   for (const c of circuit.components) {
-    PARTS[c.type].pins.forEach((_, i) => visit(pinKey(c.id, i), pinPos(c, i)));
+    pinsOf(c.type, c.props).forEach((_, i) => visit(pinKey(c.id, i), pinPos(c, i)));
   }
   for (const j of circuit.joints) visit(j.id, j);
   for (const w of circuit.wires) union(keyOf(w.from), keyOf(w.to));

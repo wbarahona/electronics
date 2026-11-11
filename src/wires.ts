@@ -1,5 +1,5 @@
 import { snap } from './board.ts';
-import { PARTS } from './components.ts';
+import { pinsOf } from './components.ts';
 import type { Circuit } from './model.ts';
 import type { End, Part, Point, Wire } from './types.ts';
 
@@ -17,14 +17,14 @@ function turn(x: number, y: number, deg: number): Point {
 
 // World position of pin `i` on part `c`.
 export function pinPos(c: Part, i: number): Point {
-  const p = PARTS[c.type].pins[i];
+  const p = pinsOf(c.type, c.props)[i];
   const o = turn(p.x, p.y, c.rotation);
   return { x: c.x + o.x, y: c.y + o.y };
 }
 
 // Whether the pin points left/right (true) or up/down (false) from its part.
 export function pinHorizontal(c: Part, i: number): boolean {
-  const p = PARTS[c.type].pins[i];
+  const p = pinsOf(c.type, c.props)[i];
   const o = turn(p.x, p.y, c.rotation);
   return Math.abs(o.x) >= Math.abs(o.y);
 }

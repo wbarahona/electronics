@@ -30,7 +30,13 @@
 //                   returns through 0 V (logic parts)
 //   groundTie       holds its net at 0 V itself (Ground)
 //   groups          pins that are electrically connected inside the part,
-//                   when not all are (a transformer's isolated windings)
+//                   when not all are (a transformer's isolated windings, a
+//                   relay's coil and contacts); may depend on the props
+//   active(r)       whether the part is switched on by itself (an energized
+//                   relay), which its symbol shows
+//   segments(r, props)  light output of each segment of a display, 0..1
+//   sound(r, props) the tone a sounder makes now: { frequency, wave, level }
+//                   with level 0..1, or null when silent
 //   extras(r)       further values to keep RMS averages of (r.extraRms)
 //   reading(r)      what a meter's display shows
 //   level(r, props) how full an energy store is, 0..1 (the board's gauge)
@@ -47,18 +53,21 @@
 // s.t and is marked `dynamic`; a capacitor would stamp a companion model from
 // s.dt and the voltage kept in el.state by accept().
 
-import type { PartType, Props, PropsByType } from '../types.ts';
+import { contactorPoles, relayContacts, relayPins } from '../components.ts';
+import type { MeterMode, PartType, Props, PropsByType } from '../types.ts';
 import { formatSI } from '../units.ts';
 
 // A solved part. v, i, p are instantaneous (v and i between pins 0 and 1;
 // `pins` has the current into the part at every pin, `pinV` each pin's
-// voltage against the circuit's reference); vrms, irms, pavg
+// voltage against the circuit's reference); vavg, iavg, vrms, irms, pavg
 // are running averages; `ac` is set when an AC source drives the circuit, in
 // which case readouts show RMS and average values.
 export interface Result {
   v: number;
   i: number;
   p: number;
+  vavg: number;
+  iavg: number;
   vrms: number;
   irms: number;
   pavg: number;
@@ -90,8 +99,21 @@ export interface PartState {
   vbc?: number;
   vgs?: number;
   vds?: number;
+  segV?: number[]; // a display's segment junction voltages at the last iteration
+  energized?: boolean; // a relay's coil has pulled in; a sounder is sounding
+  speed?: number; // a motor's speed, 1 = rated (negative: turning backwards)
+  temp?: number; // a heater's element temperature, 1 = at rated power
+  crossAt?: number; // a speaker's last upward zero crossing (s), the period
+  span?: number; //   it measured, and its signal (AC part) at the last step
+  last?: number;
+  struck?: boolean; // a fluorescent tube's arc is lit; its filaments' warmth
+  filament?: number; //   0..1 and the arc current, smoothed (A)
+  arc?: number;
+  glow?: number; // a starter's smoothed voltage (V) and whether it's glowing
+  glowing?: boolean;
+  windings?: number[]; // a motor's winding currents at the end of the last step
   broken?: boolean;
-  avg?: { v2: number; i2: number; p: number; x2: number[] };
+  avg?: { v: [number, number]; i: [number, number]; v2: [number, number]; i2: [number, number]; p: number; x2: number[] };
   i1?: number; // transformer winding currents at the end of the last step
   i2?: number;
 }
@@ -124,6 +146,13 @@ export interface Stamper {
 
 export type Lines = [string, string][];
 
+// A tone for the speakers.
+export interface Sound {
+  frequency: number;
+  wave: OscillatorType;
+  level: number;
+}
+
 // What a part can sense around it.
 export interface Env {
   readonly time: number; // simulated time, s
@@ -153,7 +182,10 @@ interface ModelDef<P> {
   level?(r: Result, p: P): number;
   drain?(el: Element<P>, r: Result, dt: number): boolean;
   pinCurrents?(el: Element<P>, s: Stamper): number[];
-  groups?: number[][];
+  groups?: number[][] | ((p: P) => number[][]);
+  active?(r: Result): boolean;
+  segments?(r: Result, p: P): number[];
+  sound?(r: Result, p: P): Sound | null;
   extras?(r: Result): number[];
   reading?(r: Result, p: P): string;
   power?(el: Element<P>, s: Stamper): number;
@@ -169,6 +201,7 @@ export const THERMAL_VOLTAGE = 0.025852; // kT/q at 27 °C
 const R_SWITCH_ON = 1e-3;
 const G_GROUND = 1e6; // S; Ground holds its net at 0 V this firmly
 const R_FUSE = 0.01;
+const G_SCOPE = 1e-7; // S; a 10 MΩ probe input
 const R_MIN = 1e-3; // a wiper or setting at its very end still has a little resistance
 const LDR_TAU = 0.05; // s; LDRs follow light with a short lag
 const KELVIN = 273.15;
@@ -235,9 +268,19 @@ const powerThermal = <P extends { powerRating: number }>(tau: number, limit: num
   limit,
 });
 
-const meterReading = (r: Result, unit: 'V' | 'A') => {
-  if (r.ac) return `${fmt(unit === 'V' ? r.vrms : r.irms, unit)} ~`;
-  return fmt(unit === 'V' ? r.v : r.i, unit);
+// DC: the average, signed (negative with the leads reversed), so a sine reads
+// 0. AC: the true RMS of what's left once the average is taken out, so a
+// battery reads 0 and a rectifier's output reads just its ripple. Like a
+// meter on the range for the whole signal, either part reads 0 when it's
+// under 0.5 % of the signal's RMS.
+const METER_RESOLUTION = 0.005;
+
+const meterReading = (r: Result, p: { mode: MeterMode }, unit: 'V' | 'A') => {
+  const [avg, rms] = unit === 'V' ? [r.vavg, r.vrms] : [r.iavg, r.irms];
+  const floor = METER_RESOLUTION * rms;
+  if (p.mode === 'DC') return fmt(Math.abs(avg) < floor ? 0 : avg, unit);
+  const ac = Math.sqrt(Math.max(0, rms * rms - avg * avg));
+  return fmt(ac < floor ? 0 : ac, unit);
 };
 
 // A filament is too slow to follow AC, so it shines by average power.
@@ -917,6 +960,576 @@ const sourceThermal: Thermal<{ maxCurrent: number }> = {
   limit: 1.5,
 };
 
+// --- Rails -------------------------------------------------------------------
+
+// A supply rail holds its net at `volts` against the board's 0 V through a
+// tiny resistance, as Ground holds its net at 0 V. Its return is 0 V itself,
+// so a circuit fed by rails needs a Ground for current to come back.
+const G_RAIL = 1e6;
+
+function rail<P extends { maxCurrent: number }>(
+  volts: (p: P, t: number) => number,
+): Pick<ModelDef<P>, 'grounded' | 'stamp' | 'current' | 'pinCurrents' | 'thermal' | 'failure'> {
+  // Current supplied into the net.
+  const out = (el: Element<P>, s: Stamper) => G_RAIL * (volts(el.props, s.t) - s.v(el.nodes[0]));
+  return {
+    grounded: true,
+    stamp(el, s) {
+      s.draw(el.nodes[0], [[el.nodes[0], G_RAIL]], -G_RAIL * volts(el.props, s.t));
+    },
+    current: out,
+    pinCurrents: (el, s) => [-out(el, s)],
+    // Its breaker trips on a sustained overload.
+    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.1, limit: 1.5 },
+    failure: { label: 'tripped', open: true },
+  };
+}
+
+// --- LED groups: seven-segment display, RGB LED ------------------------------
+
+// Several LEDs between their own pins (0 .. n−1) and one common pin (n):
+// anodes on their own pins for common cathode, the other way round for
+// common anode. Each is linearised like the single LED, with its own forward
+// voltage (`fv`) and the shared max current. `names` label them in readouts.
+type LedGroupProps = { common: 'cathode' | 'anode'; maxCurrent: number };
+
+function ledGroup<P extends LedGroupProps>(names: string[], fv: (p: P, k: number) => number): ModelDef<P> {
+  const n = names.length;
+  const junction = (p: P, k: number) => diode({ forwardVoltage: fv(p, k), maxCurrent: p.maxCurrent });
+  // An LED's anode and cathode nodes.
+  const ends = (el: Element<P>, k: number) => (el.props.common === 'cathode' ? [el.nodes[k], el.nodes[n]] : [el.nodes[n], el.nodes[k]]);
+  const forward = (el: Element<P>, s: Stamper) =>
+    names.map((_, k) => {
+      const [a, c] = ends(el, k);
+      return junction(el.props, k).current(s.v(a) - s.v(c));
+    });
+  // Forward current of each LED, from the current into its pin.
+  const currents = (r: Result, p: P) => r.pins.slice(0, n).map((i) => Math.max(0, p.common === 'cathode' ? i : -i));
+  const segments = (r: Result, p: P) => currents(r, p).map((i) => i / p.maxCurrent);
+  return {
+    nonlinear: true,
+    stamp(el, s) {
+      const segV = (el.state.segV ??= Array(n).fill(0));
+      for (let k = 0; k < n; k++) {
+        const d = junction(el.props, k);
+        const [a, c] = ends(el, k);
+        const v = s.v(a) - s.v(c);
+        const vd = limitJunction(v, segV[k], d.nVt, d.vcrit);
+        if (Math.abs(vd - v) > 1e-6) s.converged = false;
+        segV[k] = vd;
+        const gd = (d.is * Math.exp(Math.min(vd / d.nVt, 80))) / d.nVt;
+        s.conductance(a, c, gd);
+        s.current(a, c, d.current(vd) - gd * vd);
+      }
+    },
+    current: (el, s) => forward(el, s).reduce((sum, i) => sum + i, 0),
+    pinCurrents(el, s) {
+      const i = forward(el, s);
+      const sign = el.props.common === 'cathode' ? 1 : -1;
+      return [...i.map((x) => sign * x), -sign * i.reduce((sum, x) => sum + x, 0)];
+    },
+    segments,
+    brightness: (r, p) => Math.max(0, ...segments(r, p)),
+    readout: (r, p) => {
+      const lit = currents(r, p).flatMap((i, k) => (i > p.maxCurrent * 0.01 ? [names[k]] : []));
+      return [
+        ['Lit', lit.join(' ') || 'none'],
+        ['Current', fmt(currents(r, p).reduce((sum, i) => sum + i, 0), 'A')],
+      ];
+    },
+    thermal: { load: (r, p) => Math.max(0, ...currents(r, p)) / p.maxCurrent, tau: 0.05, limit: 1.5 },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
+// --- Relays and contactors ---------------------------------------------------
+
+// The coil is a resistance between pins 0 and 1. It pulls in at PULL_IN of
+// its rated voltage and, once in, holds until it falls below DROP_OUT, so a
+// relay doesn't chatter at the threshold. `contacts` lists [a, b, closed when
+// energized] for each pair of pins the contacts join. An AC coil judges its
+// RMS voltage (`ac`), a DC one the voltage at that instant.
+const PULL_IN = 0.75;
+const DROP_OUT = 0.4;
+
+type CoilProps = { coilVoltage: number; coilResistance: number; maxCurrent: number };
+
+function relayModel<P extends CoilProps>(
+  contacts: (p: P) => [number, number, boolean][],
+  groups: (p: P) => number[][],
+  ac: boolean,
+): ModelDef<P> {
+  const level = (r: Result) => (ac ? r.vrms : Math.abs(r.v));
+  const closed = (el: Element<P>) =>
+    contacts(el.props).filter(([, , whenOn]) => whenOn === (el.state.energized ?? false));
+  // The largest current through any contact pin; on AC, its RMS.
+  const contactCurrent = (r: Result) => Math.max(0, ...(r.ac ? r.extraRms : r.pins.slice(2).map(Math.abs)));
+  return {
+    stamp(el, s) {
+      s.conductance(el.nodes[0], el.nodes[1], 1 / el.props.coilResistance);
+      for (const [a, b] of closed(el)) s.conductance(el.nodes[a], el.nodes[b], 1 / R_SWITCH_ON);
+    },
+    current: (el, s) => (s.v(el.nodes[0]) - s.v(el.nodes[1])) / el.props.coilResistance,
+    pinCurrents(el, s) {
+      const i = (s.v(el.nodes[0]) - s.v(el.nodes[1])) / el.props.coilResistance;
+      const pins = el.nodes.map(() => 0);
+      pins[0] = i;
+      pins[1] = -i;
+      for (const [a, b] of closed(el)) {
+        const ic = (s.v(el.nodes[a]) - s.v(el.nodes[b])) / R_SWITCH_ON;
+        pins[a] += ic;
+        pins[b] -= ic;
+      }
+      return pins;
+    },
+    respond(el, _env, r) {
+      const was = el.state.energized ?? false;
+      el.state.energized = level(r) >= (was ? DROP_OUT : PULL_IN) * el.props.coilVoltage;
+      return el.state.energized !== was;
+    },
+    active: (r) => !!r.state.energized,
+    groups,
+    extras: (r) => r.pins.slice(2),
+    readout: (r) => [
+      ['Coil', `${fmt(level(r), 'V')}${ac ? ' rms' : ''}, ${fmt(ac ? r.irms : Math.abs(r.i), 'A')}`],
+      ['State', r.state.energized ? 'energized' : 'released'],
+      ['Contact current', `${fmt(contactCurrent(r), 'A')}${r.ac ? ' rms' : ''}`],
+    ],
+    // Its coil overheats well past its rated voltage; its contacts past their
+    // rated current.
+    thermal: {
+      load: (r, p) => Math.max(level(r) / (1.3 * p.coilVoltage), Math.max(0, ...r.pins.slice(2).map(Math.abs)) / p.maxCurrent),
+      tau: 0.5,
+      limit: 1.5,
+    },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
+// Contact k joins its common to its make pin when energized and, if it's a
+// changeover, to its break pin at rest.
+const relayPinIndex = (p: PropsByType['relay']) => {
+  const names = relayPins(p).map(({ name }) => name);
+  return (name: string) => names.indexOf(name);
+};
+const relay = relayModel<PropsByType['relay']>(
+  (p) => {
+    const at = relayPinIndex(p);
+    return Array.from({ length: relayContacts(p) }, (_, k): [number, number, boolean][] => [
+      ...(p.contactType === 'SPDT' ? [[at(`c${k}`), at(`nc${k}`), false] as [number, number, boolean]] : []),
+      [at(`c${k}`), at(`no${k}`), true],
+    ]).flat();
+  },
+  (p) => {
+    const at = relayPinIndex(p);
+    const contact = (k: number) => [`c${k}`, `nc${k}`, `no${k}`].map(at).filter((i) => i >= 0);
+    return [[0, 1], ...Array.from({ length: relayContacts(p) }, (_, k) => contact(k))];
+  },
+  false,
+);
+// Each pole k joins its pins 2 + 2k and 3 + 2k when energized.
+const poles = (p: PropsByType['contactor']) => Array.from({ length: contactorPoles(p) }, (_, k) => [2 + 2 * k, 3 + 2 * k]);
+const contactor = relayModel<PropsByType['contactor']>(
+  (p) => poles(p).map(([a, b]): [number, number, boolean] => [a, b, true]),
+  (p) => [[0, 1], ...poles(p)],
+  true,
+);
+
+// --- Changeover switch -------------------------------------------------------
+
+// Common (0) to throw 1 (1) at rest, to throw 2 (2) when thrown.
+const changeoverModel: ModelDef<PropsByType['changeover']> = {
+  stamp(el, s) {
+    s.conductance(el.nodes[0], el.nodes[el.props.thrown ? 2 : 1], 1 / R_SWITCH_ON);
+  },
+  current: (el, s) => (s.v(el.nodes[0]) - s.v(el.nodes[el.props.thrown ? 2 : 1])) / R_SWITCH_ON,
+  pinCurrents(el, s) {
+    const to = el.props.thrown ? 2 : 1;
+    const i = (s.v(el.nodes[0]) - s.v(el.nodes[to])) / R_SWITCH_ON;
+    const pins = [i, 0, 0];
+    pins[to] = -i;
+    return pins;
+  },
+  readout: (r, p) => [
+    ['Position', p.thrown ? '2' : '1'],
+    ['Current', `${fmt(r.ac ? r.irms : Math.abs(r.i), 'A')}${r.ac ? ' rms' : ''}`],
+  ],
+  thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.2, limit: 1.5 },
+  failure: { label: 'burnt out', open: true },
+};
+
+// --- Motors ------------------------------------------------------------------
+
+// DC: armature resistance plus a back-EMF that grows with speed. Sized so that
+// at its rated voltage it runs at rated speed drawing its rated current
+// (efficiency MOTOR_EFFICIENCY), and stalled it draws 5×; speed follows the
+// current it draws with a time constant of DC_SPIN_UP, so it accelerates on a
+// surge and settles where the two balance (speed ∝ voltage).
+//
+// AC: induction windings, a resistance and inductance in series whose values
+// slide with speed from locked rotor (a fifth of the running impedance, power
+// factor 0.4: the starting surge) to running (power factor 0.8). It runs up
+// over AC_SPIN_UP once its supply is above AC_START of rated, and runs down
+// below. Three-phase windings are in delta, one between each pair of
+// terminals; a three-phase motor runs only with all three lines present.
+// Inductances are sized for 50 Hz.
+const MOTOR_EFFICIENCY = 0.8;
+const MOTOR_PF = 0.8;
+const LOCKED_RATIO = 5;
+const LOCKED_PF = 0.4;
+const DC_SPIN_UP = 0.5; // s
+const AC_SPIN_UP = 1; // s
+const AC_START = 0.7;
+const MOTOR_FREQ = 50;
+
+type MotorEl = Element<PropsByType['motor']>;
+
+const dcRated = (p: PropsByType['motor']) => {
+  const current = p.ratedPower / (MOTOR_EFFICIENCY * p.ratedVoltage);
+  return { current, r: p.ratedVoltage / (LOCKED_RATIO * current), emf: p.ratedVoltage * (1 - 1 / LOCKED_RATIO) };
+};
+
+// One winding's resistance and inductance at `speed` (0..1).
+function winding(p: PropsByType['motor'], speed: number) {
+  const phases = p.supply === 'AC 3~' ? 3 : 1;
+  const z = (p.ratedVoltage ** 2 * phases * MOTOR_EFFICIENCY * MOTOR_PF) / p.ratedPower; // running |Z| per winding
+  const s = Math.min(1, Math.max(0, speed));
+  const lockedZ = z / LOCKED_RATIO;
+  const r = lockedZ * LOCKED_PF + (z * MOTOR_PF - lockedZ * LOCKED_PF) * s;
+  const x = lockedZ * Math.sqrt(1 - LOCKED_PF ** 2) + (z * Math.sqrt(1 - MOTOR_PF ** 2) - lockedZ * Math.sqrt(1 - LOCKED_PF ** 2)) * s;
+  return { r, l: x / (2 * Math.PI * MOTOR_FREQ) };
+}
+
+// The terminals each winding joins.
+const motorWindings = (p: PropsByType['motor']): [number, number][] =>
+  p.supply === 'AC 3~' ? [[0, 1], [1, 2], [2, 0]] : [[0, 1]];
+
+function windingCurrents(el: MotorEl, s: Stamper): number[] {
+  const { r, l } = winding(el.props, el.state.speed ?? 0);
+  const k = l / s.dt;
+  return motorWindings(el.props).map(([a, b], w) => (s.v(el.nodes[a]) - s.v(el.nodes[b]) + k * (el.state.windings?.[w] ?? 0)) / (r + k));
+}
+
+function motorCurrents(el: MotorEl, s: Stamper): number[] {
+  if (el.props.supply === 'DC') {
+    const { r, emf } = dcRated(el.props);
+    const i = (s.v(el.nodes[0]) - s.v(el.nodes[1]) - emf * (el.state.speed ?? 0)) / r;
+    return [i, -i];
+  }
+  const iw = windingCurrents(el, s);
+  const pins = el.nodes.map(() => 0);
+  motorWindings(el.props).forEach(([a, b], w) => {
+    pins[a] += iw[w];
+    pins[b] -= iw[w];
+  });
+  return pins;
+}
+
+// Rated line current, for judging overload.
+const motorRatedCurrent = (p: PropsByType['motor']) =>
+  p.supply === 'DC'
+    ? dcRated(p).current
+    : p.ratedPower / (MOTOR_EFFICIENCY * MOTOR_PF * p.ratedVoltage * (p.supply === 'AC 3~' ? Math.sqrt(3) : 1));
+
+const motorModel: ModelDef<PropsByType['motor']> = {
+  dynamic: true,
+  stamp(el, s) {
+    if (el.props.supply === 'DC') {
+      const { r, emf } = dcRated(el.props);
+      s.conductance(el.nodes[0], el.nodes[1], 1 / r);
+      s.current(el.nodes[0], el.nodes[1], (-emf * (el.state.speed ?? 0)) / r);
+      return;
+    }
+    const { r, l } = winding(el.props, el.state.speed ?? 0);
+    const k = l / s.dt;
+    const g = 1 / (r + k);
+    motorWindings(el.props).forEach(([a, b], w) => {
+      s.conductance(el.nodes[a], el.nodes[b], g);
+      s.current(el.nodes[a], el.nodes[b], g * k * (el.state.windings?.[w] ?? 0));
+    });
+  },
+  // Line current at the first terminal.
+  current: (el, s) => motorCurrents(el, s)[0],
+  pinCurrents: motorCurrents,
+  accept(el, s) {
+    if (el.props.supply !== 'DC') el.state.windings = windingCurrents(el, s);
+  },
+  // The other line voltages of a three-phase motor, to check all are there.
+  extras: (r) => (r.pinV.length === 3 ? [r.pinV[1] - r.pinV[2], r.pinV[2] - r.pinV[0]] : []),
+  respond(el, _env, r, dt) {
+    if (dt === null) return false;
+    const p = el.props;
+    const speed = el.state.speed ?? 0;
+    let target: number;
+    let tau: number;
+    if (p.supply === 'DC') {
+      target = r.i / dcRated(p).current;
+      tau = DC_SPIN_UP;
+    } else {
+      const supply = Math.min(r.vrms, ...r.extraRms);
+      target = supply >= AC_START * p.ratedVoltage ? 1 : 0;
+      tau = AC_SPIN_UP;
+    }
+    el.state.speed = speed + (target - speed) * (1 - Math.exp(-dt / tau));
+    return false;
+  },
+  active: (r) => Math.abs(r.state.speed ?? 0) > 0.05,
+  readout: (r, p) => {
+    const speed = r.state.speed ?? 0;
+    return [
+      ['Speed', `${Math.round(Math.abs(speed) * 100)} %${speed < -0.05 ? ' (reverse)' : ''}`],
+      ['Current', p.supply === 'DC' ? fmt(Math.abs(r.i), 'A') : `${fmt(r.irms, 'A')} rms`],
+      ['Power', p.supply === 'DC' ? fmt(Math.abs(r.p), 'W') : `${fmt(Math.abs(r.pavg), 'W')} avg`],
+    ];
+  },
+  // Its windings overheat from sustained overcurrent, such as a stalled rotor.
+  thermal: { load: (r, p) => (p.supply === 'DC' ? Math.abs(r.i) : r.irms) / motorRatedCurrent(p), tau: 8, limit: 2 },
+  failure: { label: 'burnt out', open: true },
+};
+
+// --- Heater ------------------------------------------------------------------
+
+// A fixed resistance (V²/P at its rating). Its element warms toward the
+// power it takes over HEATER_TAU and glows once well warm.
+const HEATER_TAU = 8; // s
+
+const heaterPower = (r: Result) => Math.abs(r.ac ? r.pavg : r.p);
+const heaterModel: ModelDef<PropsByType['heater']> = {
+  ...ohmic((p) => p.ratedVoltage ** 2 / p.ratedPower, (r) => [
+    ...basicReadout(r),
+    ['Element', `${Math.round((r.state.temp ?? 0) * 100)} % hot`],
+  ]),
+  respond(el, _env, r, dt) {
+    if (dt === null) return false;
+    const target = heaterPower(r) / el.props.ratedPower;
+    const t = el.state.temp ?? 0;
+    el.state.temp = t + (target - t) * (1 - Math.exp(-dt / HEATER_TAU));
+    return false;
+  },
+  dynamic: true,
+  brightness: (r) => Math.max(0, ((r.state.temp ?? 0) - 0.3) / 0.7),
+  thermal: { load: (r, p) => heaterPower(r) / p.ratedPower, tau: 5, limit: 1.5 },
+  failure: { label: 'burnt out', open: true },
+};
+
+// --- Inductive coils ---------------------------------------------------------
+
+// v = R·i + L·di/dt, as a companion model over each step (see inductor).
+function coil<P>(r: (p: P) => number, l: (p: P) => number): Pick<ModelDef<P>, 'dynamic' | 'stamp' | 'current' | 'accept'> {
+  const parts = (el: Element<P>, s: Stamper) => {
+    const k = l(el.props) / s.dt;
+    return { k, g: 1 / (r(el.props) + k) };
+  };
+  return {
+    dynamic: true,
+    stamp(el, s) {
+      const { k, g } = parts(el, s);
+      s.conductance(el.nodes[0], el.nodes[1], g);
+      s.current(el.nodes[0], el.nodes[1], g * k * (el.state.i ?? 0));
+    },
+    current(el, s) {
+      const { k, g } = parts(el, s);
+      return g * (s.v(el.nodes[0]) - s.v(el.nodes[1])) + g * k * (el.state.i ?? 0);
+    },
+    accept(el, s) {
+      el.state.i = this.current(el, s);
+    },
+  };
+}
+
+const inductorModel: ModelDef<PropsByType['inductor']> = {
+  ...coil((p) => p.resistance, (p) => p.inductance),
+  readout: (r, p) => [...basicReadout(r), ['Energy', fmt(0.5 * p.inductance * r.i * r.i, 'J')]],
+  thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 1, limit: 1.5 },
+  failure: { label: 'burnt out', open: true },
+};
+
+// The plunger pulls in at PULL_IN of the rated current and drops out below
+// DROP_OUT, like a relay (judged by RMS on AC).
+const solenoidModel: ModelDef<PropsByType['solenoid']> = {
+  ...coil((p) => p.ratedVoltage / p.ratedCurrent, (p) => p.inductance),
+  respond(el, _env, r) {
+    const was = el.state.energized ?? false;
+    const i = r.ac ? r.irms : Math.abs(r.i);
+    el.state.energized = i >= (was ? DROP_OUT : PULL_IN) * el.props.ratedCurrent;
+    return el.state.energized !== was;
+  },
+  active: (r) => !!r.state.energized,
+  readout: (r) => [...basicReadout(r), ['Plunger', r.state.energized ? 'pulled in' : 'out']],
+  thermal: { load: (r, p) => (r.ac ? r.irms : Math.abs(r.i)) / p.ratedCurrent, tau: 5, limit: 1.6 },
+  failure: { label: 'burnt out', open: true },
+};
+
+// --- Speaker -----------------------------------------------------------------
+
+// A resistance (its impedance) that sounds the AC part of the voltage across
+// it at that signal's own frequency, measured from its upward zero crossings
+// (in simulated time, placed between steps by interpolation), as loud as
+// that is against its rated power.
+const speakerModel: ModelDef<PropsByType['speaker']> = {
+  ...ohmic((p) => p.impedance),
+  respond(el, env, r, dt) {
+    if (dt === null) return false;
+    const now = r.v - r.vavg;
+    const last = el.state.last;
+    if (last !== undefined && last <= 0 && now > 0) {
+      const at = env.time - (dt * now) / (now - last);
+      if (el.state.crossAt !== undefined) el.state.span = at - el.state.crossAt;
+      el.state.crossAt = at;
+    }
+    el.state.last = now;
+    // Silent once no crossing has come for a while.
+    if (el.state.crossAt !== undefined && env.time - el.state.crossAt > 0.1) el.state.span = undefined;
+    return false;
+  },
+  sound(r, p) {
+    const span = r.state.span;
+    const ac = Math.sqrt(Math.max(0, r.vrms ** 2 - r.vavg ** 2));
+    const level = Math.min(1, ac / Math.sqrt(p.ratedPower * p.impedance));
+    if (!span || level < 0.02 || 1 / span < 20 || 1 / span > 20000) return null;
+    return { frequency: 1 / span, wave: 'square', level };
+  },
+  readout(r, p) {
+    const tone = this.sound!(r, p);
+    return [...basicReadout(r), ['Tone', tone ? fmt(tone.frequency, 'Hz') : 'silent']];
+  },
+  thermal: { load: (r, p) => Math.abs(r.ac ? r.pavg : r.p) / p.ratedPower, tau: 0.5, limit: 2 },
+  failure: { label: 'burnt out', open: true },
+};
+
+// --- Fluorescent lighting ----------------------------------------------------
+
+// Glow starter: while open with enough voltage across it, it glows (drawing a
+// little current), which warms its bimetal until it closes; closed, the glow
+// goes out and the bimetal cools until it opens again. Its smoothed voltage
+// follows the rectified average, capped so a voltage spike reads as no more
+// than a strong glow.
+const STARTER_HEAT = 0.8; // s of glowing to close
+const STARTER_COOL = 0.6; // s closed before it opens
+const R_GLOW = 50e3;
+
+const starterModel: ModelDef<PropsByType['starter']> = {
+  stamp(el, s) {
+    if (el.state.energized) s.conductance(el.nodes[0], el.nodes[1], 1 / R_SWITCH_ON);
+    else if (el.state.glowing) s.conductance(el.nodes[0], el.nodes[1], 1 / R_GLOW);
+  },
+  current: (el, s) =>
+    (s.v(el.nodes[0]) - s.v(el.nodes[1])) / (el.state.energized ? R_SWITCH_ON : el.state.glowing ? R_GLOW : Infinity),
+  respond(el, _env, r, dt) {
+    if (dt === null) return false;
+    const p = el.props;
+    const v = Math.min(Math.abs(r.v), 3 * p.glowVoltage);
+    el.state.glow = (el.state.glow ?? 0) + (v - (el.state.glow ?? 0)) * (1 - Math.exp(-dt / 0.05));
+    const closed = el.state.energized ?? false;
+    const glowing = !closed && el.state.glow >= 0.9 * p.glowVoltage;
+    // The bimetal's warmth, 0 cold .. 1 bent shut (kept in el.state.temp).
+    const t = Math.min(1, Math.max(0, (el.state.temp ?? 0) + (glowing ? dt / STARTER_HEAT : -dt / STARTER_COOL)));
+    el.state.temp = t;
+    const next = closed ? t > 0 : t >= 1;
+    const changed = next !== closed || glowing !== (el.state.glowing ?? false);
+    el.state.energized = next;
+    el.state.glowing = glowing;
+    return changed;
+  },
+  dynamic: true,
+  active: (r) => !!r.state.energized,
+  brightness: (r) => (r.state.glowing ? 1 : 0),
+  readout: (r) => [['State', r.state.energized ? 'closed' : r.state.glowing ? 'glowing' : 'open']],
+};
+
+// Tube: filaments A (pins 0–1) and B (pins 2–3) are resistances; the arc
+// runs between pins 1 and 3, in parallel with the starter. Unlit, the gap
+// breaks down past the strike voltage (clamping the ballast's kick there);
+// that strikes the arc once the filaments are warm, and the lit arc is a
+// resistance dropping about the arc voltage at rated current. It goes out
+// when its current dies away.
+const R_FILAMENT = 5;
+const G_BREAKDOWN = 1;
+const tubeArc = (p: PropsByType['tube']) => p.arcVoltage ** 2 / p.ratedPower;
+const tubeRated = (p: PropsByType['tube']) => p.ratedPower / p.arcVoltage;
+
+function tubeCurrents(el: Element<PropsByType['tube']>, s: Stamper): number[] {
+  const v = (k: number) => s.v(el.nodes[k]);
+  const ia = (v(0) - v(1)) / R_FILAMENT;
+  const ib = (v(2) - v(3)) / R_FILAMENT;
+  const gap = v(1) - v(3);
+  let arc = 0;
+  if (el.state.struck) arc = gap / tubeArc(el.props);
+  else if (Math.abs(gap) > el.props.strikeVoltage) arc = G_BREAKDOWN * (gap - Math.sign(gap) * el.props.strikeVoltage);
+  return [ia, -ia + arc, ib, -ib - arc];
+}
+
+const tubeModel: ModelDef<PropsByType['tube']> = {
+  nonlinear: true,
+  dynamic: true,
+  stamp(el, s) {
+    const [a0, a1, b0, b1] = el.nodes;
+    s.conductance(a0, a1, 1 / R_FILAMENT);
+    s.conductance(b0, b1, 1 / R_FILAMENT);
+    if (el.state.struck) {
+      s.conductance(a1, b1, 1 / tubeArc(el.props));
+      return;
+    }
+    const gap = s.v(a1) - s.v(b1);
+    if (Math.abs(gap) > el.props.strikeVoltage) {
+      s.conductance(a1, b1, G_BREAKDOWN);
+      s.current(a1, b1, -G_BREAKDOWN * Math.sign(gap) * el.props.strikeVoltage);
+    }
+  },
+  // The arc current.
+  current: (el, s) => tubeCurrents(el, s)[1] + tubeCurrents(el, s)[0],
+  pinCurrents: tubeCurrents,
+  respond(el, _env, r, dt) {
+    if (dt === null) return false;
+    const p = el.props;
+    const ease = (now: number, to: number, tau: number) => now + (to - now) * (1 - Math.exp(-dt / tau));
+    el.state.filament = ease(el.state.filament ?? 0, Math.abs(r.pins[0]) > 0.05 ? 1 : 0, 0.4);
+    el.state.arc = ease(el.state.arc ?? 0, Math.abs(r.i), 0.05);
+    const was = el.state.struck ?? false;
+    if (!was && Math.abs(r.pinV[1] - r.pinV[3]) >= 0.98 * p.strikeVoltage && el.state.filament >= 0.6) {
+      el.state.struck = true;
+      el.state.arc = tubeRated(p);
+    } else if (was && el.state.arc < 0.05 * tubeRated(p)) {
+      el.state.struck = false;
+    }
+    return el.state.struck !== was;
+  },
+  brightness: (r, p) => (r.state.struck ? Math.min(1.2, ((r.state.arc ?? 0) / (0.9 * tubeRated(p))) ** 2) : 0),
+  readout: (r, p) => [
+    ['State', r.state.struck ? 'lit' : (r.state.filament ?? 0) > 0.5 ? 'preheating' : 'off'],
+    ['Arc current', `${fmt(r.state.struck ? (r.state.arc ?? 0) / 0.9 : 0, 'A')}`],
+    ['Arc voltage', `${fmt(Math.abs(r.pinV[1] - r.pinV[3]), 'V')}`],
+    ['Rated', fmt(p.ratedPower, 'W')],
+  ],
+};
+
+// --- Sounders ----------------------------------------------------------------
+
+// A resistive load that sounds while the average voltage across it, + to −,
+// is at least SOUND_FROM of its rating, louder up to the rating.
+const SOUND_FROM = 0.5;
+
+function sounder<P extends { ratedVoltage: number; ratedCurrent: number }>(
+  tone: (p: P) => { frequency: number; wave: OscillatorType },
+  ac = false, // driven by RMS (a bell), rather than + to − (a buzzer)
+): ModelDef<P> {
+  const drive = (r: Result, p: P) => (ac ? r.vrms : r.vavg) / p.ratedVoltage;
+  return {
+    ...ohmic((p) => p.ratedVoltage / p.ratedCurrent, (r, p) => [
+      ...basicReadout(r),
+      ['Sound', r.state.energized ? `${Math.round(Math.min(1, drive(r, p)) * 100)} %` : 'silent'],
+    ]),
+    respond(el, _env, r) {
+      el.state.energized = drive(r, el.props) >= SOUND_FROM;
+      return false;
+    },
+    active: (r) => !!r.state.energized,
+    sound: (r, p) => (r.state.energized ? { ...tone(p), level: Math.min(1, drive(r, p)) } : null),
+    thermal: { load: (r, p) => Math.abs(r.v) / p.ratedVoltage, tau: 1, limit: 2 },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
 // Overloaded contacts weld shut: a failed switch conducts whatever its setting.
 const switchModel: ModelDef<PropsByType['switch']> = {
   ...ohmic((p, el) => (p.closed || el.broken ? R_SWITCH_ON : Infinity)),
@@ -972,6 +1585,30 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
     failure: { label: 'damaged', open: true },
   },
 
+  rail: {
+    ...rail((p) => p.voltage),
+    readout: (r) => [
+      ['Voltage', fmt(r.v, 'V')],
+      ['Current', fmt(r.i, 'A')],
+      ['Power', fmt(r.v * r.i, 'W')],
+    ],
+  },
+
+  // v(t) = Vrms·√2·sin(2πft + φ) against neutral (0 V).
+  phase: {
+    ...rail((p, t) => p.voltage * Math.SQRT2 * Math.sin(2 * Math.PI * p.frequency * t + (p.phase * Math.PI) / 180)),
+    dynamic: true,
+    alternating: true,
+    maxStep: (p) => 1 / (20 * p.frequency),
+    readout: (r, p) => [
+      ['Voltage', `${fmt(r.vrms, 'V')} rms`],
+      ['Current', `${fmt(r.irms, 'A')} rms`],
+      ['Power', `${fmt(r.pavg === 0 ? 0 : -r.pavg, 'W')} avg`],
+      ['Frequency', fmt(p.frequency, 'Hz')],
+      ['Now', `${fmt(r.v, 'V')}, ${fmt(r.i, 'A')}`],
+    ],
+  },
+
   resistor: {
     ...ohmic((p) => p.resistance),
     thermal: { load: (r, p) => Math.abs(r.p) / p.powerRating, tau: 2, limit: 2 },
@@ -987,26 +1624,8 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
 
   // v = R·i + L·di/dt. Over a step: i = g·v + g·(L/dt)·i_prev with
   // g = 1/(R + L/dt), so its current carries on from the previous step.
-  inductor: {
-    dynamic: true,
-    stamp(el, s) {
-      const k = el.props.inductance / s.dt;
-      const g = 1 / (el.props.resistance + k);
-      s.conductance(el.nodes[0], el.nodes[1], g);
-      s.current(el.nodes[0], el.nodes[1], g * k * (el.state.i ?? 0));
-    },
-    current(el, s) {
-      const k = el.props.inductance / s.dt;
-      const g = 1 / (el.props.resistance + k);
-      return g * (s.v(el.nodes[0]) - s.v(el.nodes[1])) + g * k * (el.state.i ?? 0);
-    },
-    accept(el, s) {
-      el.state.i = this.current(el, s);
-    },
-    readout: (r, p) => [...basicReadout(r), ['Energy', fmt(0.5 * p.inductance * r.i * r.i, 'J')]],
-    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 1, limit: 1.5 },
-    failure: { label: 'burnt out', open: true },
-  },
+  inductor: inductorModel,
+
 
   // Two resistors sharing the wiper: track pin 0 → wiper → pin 1.
   potentiometer: {
@@ -1152,18 +1771,27 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
     ],
   },
 
-  // Meters show DC signed (negative with the leads reversed), or the RMS
-  // value marked ~ when an AC source drives the circuit.
+  // Barely loads its point (like a 10 MΩ scope input) to the board's 0 V.
+  scopeProbe: {
+    stamp(el, s) {
+      s.draw(el.nodes[0], [[el.nodes[0], G_SCOPE]], 0);
+    },
+    current: (el, s) => G_SCOPE * s.v(el.nodes[0]),
+    pinCurrents: (el, s) => [G_SCOPE * s.v(el.nodes[0])],
+    readout: (r, p) => [[p.channel, fmt(r.pinV[0], 'V')]],
+  },
+
+  // Meters read DC or AC as their mode is set (see meterReading).
   voltmeter: {
-    ...ohmic((p) => p.resistance, (r) => [['Reading', meterReading(r, 'V')]]),
-    reading: (r) => meterReading(r, 'V'),
+    ...ohmic((p) => p.resistance, (r, p) => [['Reading', `${meterReading(r, p, 'V')} ${p.mode}`]]),
+    reading: (r, p) => meterReading(r, p, 'V'),
     // Past its rating the input is destroyed almost at once.
     thermal: { load: (r, p) => Math.abs(r.v) / p.maxVoltage, tau: 0.05, limit: 1.2 },
     failure: { label: 'destroyed', open: true, display: 'ERR' },
   },
   ammeter: {
-    ...ohmic((p) => p.resistance, (r) => [['Reading', meterReading(r, 'A')]]),
-    reading: (r) => meterReading(r, 'A'),
+    ...ohmic((p) => p.resistance, (r, p) => [['Reading', `${meterReading(r, p, 'A')} ${p.mode}`]]),
+    reading: (r, p) => meterReading(r, p, 'A'),
     // Its internal fuse.
     thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.05, limit: 1.5 },
     failure: { label: 'fuse blown', open: true, display: 'FUSE' },
@@ -1188,6 +1816,18 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
   },
 
   switch: switchModel,
+  changeover: changeoverModel,
+  motor: motorModel,
+  // A magnetic buzzer's harsh low buzz; a piezo's shrill tone.
+  buzzer: sounder(() => ({ frequency: 400, wave: 'sawtooth' })),
+  piezo: sounder((p) => ({ frequency: p.frequency, wave: 'square' })),
+  bell: sounder(() => ({ frequency: 1100, wave: 'triangle' }), true),
+  speaker: speakerModel,
+  heater: heaterModel,
+  solenoid: solenoidModel,
+  tube: tubeModel,
+  ballast: inductorModel,
+  starter: starterModel,
 
   // A push button is electrically a switch that is only closed while held.
   button: switchModel,
@@ -1198,6 +1838,9 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
     thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.2, limit: 1.5 },
     failure: { label: 'contacts welded', open: false },
   },
+
+  relay,
+  contactor,
 
   diode: {
     ...diodeModel((p) => junction(p.forwardVoltage, DIODE_N)),
@@ -1256,6 +1899,10 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
     thermal: { load: (r, p) => Math.max(0, r.i) / p.maxCurrent, tau: 0.05, limit: 1.5 },
     failure: { label: 'burnt out', open: true },
   },
+
+  sevenSeg: ledGroup<PropsByType['sevenSeg']>(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'], (p) => p.forwardVoltage),
+  // Typical forward voltages: red 2 V, green and blue 3 V.
+  rgbLed: ledGroup<PropsByType['rgbLed']>(['red', 'green', 'blue'], (p, k) => [p.redVoltage, p.greenVoltage, p.blueVoltage][k]),
 };
 
 // Every part type's model, seen generally (each is checked against its own

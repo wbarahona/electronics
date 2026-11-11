@@ -1,4 +1,4 @@
-import type { Point, Props, PropsByType, PartType, PropValue } from './types.ts';
+import type { MeterMode, Point, Props, PropsByType, PartType, PropValue } from './types.ts';
 import { formatNumber, formatSI } from './units.ts';
 
 // Schematic symbols follow DIN EN 60617 and are drawn in local coordinates around (0, 0), spanning x -40..40.
@@ -18,7 +18,9 @@ import { formatNumber, formatSI } from './units.ts';
 // `group` is the subcategory the part is listed under in its category's tray.
 // Parts that store energy have a `gauge`: a small battery icon on the board
 // showing how full they are (the model's `level`). Meters have a `display`:
-// a small readout on the board showing the model's `reading`. `noLabel`
+// a small readout on the board showing the model's `reading`; a `selector`
+// (a two-option choice prop, like a meter's AC/DC mode) is shown as a tab on
+// that readout and flips between its options when clicked. `noLabel`
 // parts show no reference on the board (Ground). `hit` sizes the invisible
 // grab box when the symbol is bigger than the usual 80×40. `labelBelow` moves the
 // label under the symbol when something else (like a third pin) is above it;
@@ -26,7 +28,7 @@ import { formatNumber, formatSI } from './units.ts';
 // part lying horizontally or vertically.
 
 export const LIGHT_COLORS = {
-  lamp: '#ffc94d',
+  warm: '#ffc94d', // a plain filament lamp
   red: '#ff3b30',
   yellow: '#ffd60a',
   green: '#30d158',
@@ -36,7 +38,7 @@ export const LIGHT_COLORS = {
 
 export type LightColor = keyof typeof LIGHT_COLORS;
 
-export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'lights' | 'switches' | 'meters';
+export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters';
 
 // Groups shown as the clickable entries of the parts bar, in order. `icon` is
 // a Material Symbols name (it must also be listed in index.html's icon_names),
@@ -52,7 +54,8 @@ export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
   { id: 'semiconductors', label: 'Semiconductors', icon: DIODE_ICON },
   { id: 'digital', label: 'Digital', icon: 'developer_board' },
   { id: 'chips', label: 'Chips', icon: 'memory' },
-  { id: 'lights', label: 'Lights', icon: 'lightbulb' },
+  { id: 'signals', label: 'Signals', icon: 'lightbulb' },
+  { id: 'loads', label: 'Loads', icon: 'mode_fan' },
   { id: 'switches', label: 'Switches', icon: 'toggle_on' },
   { id: 'meters', label: 'Meters', icon: 'speed' },
 ];
@@ -84,6 +87,7 @@ export const isChoiceSpec = (s: PropSpec): s is ChoiceSpec => 'options' in s;
 // The field kind that matches a value's type ([V] stops unions distributing).
 type SpecFor<V> = [V] extends [boolean] ? SwitchSpec : [V] extends [number] ? NumberSpec : ChoiceSpec<V & string>;
 type BooleanKeys<P> = { [K in keyof P]: P[K] extends boolean ? K : never }[keyof P] & string;
+type ChoiceKeys<P> = { [K in keyof P]: P[K] extends string ? K : never }[keyof P] & string;
 
 // One part type's definition, checked against its values P.
 interface PartDef<P> {
@@ -91,21 +95,31 @@ interface PartDef<P> {
   letter: string;
   category: CategoryId;
   group?: string;
-  pins: Point[];
+  pins: Point[] | ((p: P) => Point[]);
+  pinNames?: (p: P) => string[];
   props: { [K in keyof P]: SpecFor<P[K]> };
   tag?: (p: P) => string;
   glow?: { color: (p: P) => LightColor; radius: number };
   actuator?: { prop: BooleanKeys<P>; momentary: boolean };
   gauge?: boolean;
   display?: boolean;
+  selector?: ChoiceKeys<P>;
   noLabel?: boolean;
-  hit?: { w: number; h: number };
+  hit?: HitBox | ((p: P) => HitBox);
   labelBelow?: boolean;
-  labelAt?: (vertical: boolean) => LabelSpot;
+  labelAt?: (vertical: boolean, p: P, rotation: number) => LabelSpot;
   draw: (p: P, broken: boolean) => string;
 }
 
 export type LabelSpot = [number, number, 'start' | 'middle' | 'end'];
+
+// The invisible grab box: its size, centred on the part unless `x` says
+// otherwise.
+export interface HitBox {
+  w: number;
+  h: number;
+  x?: number;
+}
 
 // The same, seen by code that handles any part type.
 export interface AnyPartDef {
@@ -113,17 +127,19 @@ export interface AnyPartDef {
   letter: string;
   category: CategoryId;
   group?: string;
-  pins: Point[];
+  pins: Point[] | ((p: Props) => Point[]);
+  pinNames?: (p: Props) => string[];
   props: Record<string, PropSpec>;
   tag?: (p: Props) => string;
   glow?: { color: (p: Props) => LightColor; radius: number };
   actuator?: { prop: string; momentary: boolean };
   gauge?: boolean;
   display?: boolean;
+  selector?: string;
   noLabel?: boolean;
-  hit?: { w: number; h: number };
+  hit?: HitBox | ((p: Props) => HitBox);
   labelBelow?: boolean;
-  labelAt?: (vertical: boolean) => LabelSpot;
+  labelAt?: (vertical: boolean, p: Props, rotation: number) => LabelSpot;
   draw: (p: Props, broken: boolean) => string;
 }
 
@@ -216,6 +232,120 @@ function flipFlop(name: string, title: string, inputs: [string, number][]) {
   };
 }
 
+// A meter's knob: DC (average) or AC (true RMS of the AC part).
+const METER_MODE: ChoiceSpec<MeterMode> = { label: 'Mode', value: 'DC', options: ['DC', 'AC'] };
+
+// A small pin number or name beside a lead, kept level.
+const pinText = (text: string, x: number, y: number, anchor = 'start') =>
+  `<text class="chip-num upright" x="${x}" y="${y}" text-anchor="${anchor}" data-x="${x}" data-y="${y - 3}">${text}</text>`;
+
+// Supply rails (one pin, against the board's 0 V): a bar with the voltage
+// written over it.
+const railSymbol = (text: string) => `
+  <path d="M 0 20 V 0 M -12 0 H 12" />
+  <text class="sym-text upright" y="-6" text-anchor="middle" data-y="-10">${text}</text>`;
+
+// Arcs above a sounder while it sounds (shown when the part is .active).
+const SOUND_WAVES = `
+  <path class="when-on waves" d="M 18 -14 A 10 10 0 0 1 18 -26 M 23 -10 A 16 16 0 0 1 23 -30" />`;
+
+// Seven-segment display: segments a–g, then the dot, as [path or circle].
+const SEGMENTS = [
+  'M -8 -22 H 8', // a
+  'M 10 -20 V -6', // b
+  'M 10 -2 V 12', // c
+  'M -8 14 H 8', // d
+  'M -10 -2 V 12', // e
+  'M -10 -20 V -6', // f
+  'M -8 -4 H 8', // g
+];
+const segmentMarkup = (cls: string, lit: boolean) =>
+  SEGMENTS.map((d, k) => `<path class="${cls}" d="${d}"${lit ? ` data-seg="${k}" style="opacity: 0"` : ''} />`).join('') +
+  `<circle class="${cls} dot" cx="16" cy="14" r="2"${lit ? ' data-seg="7" style="opacity: 0"' : ''} />`;
+
+// Relays and contactors (DIN EN 60617-7): the coil is a rectangle between A1
+// (top) and A2, its contacts stand beside it, joined to it by a dashed line
+// of action. Contacts are drawn at rest; while the coil is energized (the
+// part is .active) the moving blades show in their other position. Further
+// contacts are added to the right, so changing how many contacts a relay
+// has leaves the coil and the other pins (and their wires) where they are; a
+// make contact stands in one line, its make pin straight above the common.
+
+// How many contacts a relay has: its setting, as a whole number from 1 to 4.
+export const relayContacts = (p: { contacts: number }) => Math.min(4, Math.max(1, Math.round(p.contacts)));
+
+function relayLayout(p: { contacts: number }) {
+  const coil = -40;
+  const contacts = Array.from({ length: relayContacts(p) }, (_, k) => coil + 60 + 60 * k);
+  return { coil, contacts };
+}
+
+// A relay's pins, named: the coil's A1 and A2, then per contact k its common
+// (`c<k>`), break (`nc<k>`, changeover only) and make (`no<k>`).
+export function relayPins(p: PropsByType['relay']): (Point & { name: string })[] {
+  const { coil, contacts } = relayLayout(p);
+  return [
+    { name: 'A1', x: coil, y: -40 },
+    { name: 'A2', x: coil, y: 40 },
+    ...contacts.flatMap((x, k) => [
+      { name: `c${k}`, x, y: 40 },
+      ...(p.contactType === 'SPDT'
+        ? [{ name: `nc${k}`, x: x - 20, y: -40 }, { name: `no${k}`, x: x + 20, y: -40 }]
+        : [{ name: `no${k}`, x, y: -40 }]),
+    ]),
+  ];
+}
+
+// Label to the left of the coil, wherever that ends up on screen.
+function coilLabel(coil: number, rotation: number): LabelSpot {
+  const x = coil - 18;
+  switch (((rotation % 360) + 360) % 360) {
+    case 90:
+      return [0, x, 'middle'];
+    case 180:
+      return [-x, 4, 'start'];
+    case 270:
+      return [0, -x + 8, 'middle'];
+    default:
+      return [x, 4, 'end'];
+  }
+}
+
+const coilMarkup = (c: number) => `
+  <path d="M ${c} -40 V -8 M ${c} 8 V 40" />
+  <rect x="${c - 14}" y="-8" width="28" height="16" />
+  ${pinText('A1', c + 4, -30)}${pinText('A2', c + 4, 36)}`;
+
+// Contact k around x, numbered as in EN 50005: a changeover's common (k1)
+// below, break (k2) and make (k4) above; a make contact's k3 below, k4 above.
+const changeover = (x: number, k: number) => `
+  <path d="M ${x} 40 V 14 M ${x - 20} -40 V -14 H ${x - 8} M ${x + 20} -40 V -14 H ${x + 8}" />
+  <path class="when-off" d="M ${x} 14 L ${x - 9} -16" />
+  <path class="when-on" d="M ${x} 14 L ${x + 9} -16" />
+  ${pinText(`${k}1`, x + 4, 36)}${pinText(`${k}2`, x - 17, -30)}${pinText(`${k}4`, x + 23, -30)}`;
+
+const makeContact = (x: number, k: number) => `
+  <path d="M ${x} 40 V 14 M ${x} -40 V -12" />
+  <path class="when-off" d="M ${x} 14 L ${x - 10} -10" />
+  <path class="when-on" d="M ${x} 14 V -12" />
+  ${pinText(`${k}3`, x + 4, 36)}${pinText(`${k}4`, x + 4, -30)}`;
+
+// How many main poles a contactor has: its setting, as a whole number 1–4.
+// They stand at 40-unit steps right of the coil, so adding or removing one
+// leaves the others (and their wires) in place.
+export const contactorPoles = (p: { poles: number }) => Math.min(4, Math.max(1, Math.round(p.poles)));
+const poleXs = (p: { poles: number }) => Array.from({ length: contactorPoles(p) }, (_, k) => -20 + 40 * k);
+
+// A contactor's make contact at x, with the contactor function's half-circle
+// closing the end of its fixed contact (on the side away from the blade);
+// pins numbered `top` and `top + 1`.
+const mainContact = (x: number, top: number) => `
+  <path d="M ${x} -40 V -10 M ${x} 40 V 14" />
+  <path d="M ${x} -18 A 4 4 0 0 1 ${x} -10" />
+  <path class="when-off" d="M ${x} 14 L ${x - 10} -10" />
+  <path class="when-on" d="M ${x} 14 V -10" />
+  ${pinText(String(top), x + 4, -30)}${pinText(String(top + 1), x + 4, 36)}`;
+
 // Indicating instrument (DIN EN 60617): a circle with the quantity's letter,
 // + marking the red-lead pin.
 const meterSymbol = (letter: string) => `
@@ -277,6 +407,37 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
       <path d="M -40 0 H -16 M 16 0 H 40" />
       <circle r="16" />
       <path class="upright" d="M -10 0 C -7 -10 -3 -10 0 0 S 7 10 10 0" />`,
+  },
+  // Supply rails, each held against the board's 0 V (Ground) like a supply
+  // whose other terminal is grounded.
+  rail: {
+    name: '+V rail',
+    letter: 'X',
+    category: 'sources',
+    group: 'Rails',
+    pins: [{ x: 0, y: 20 }],
+    props: {
+      voltage: { label: 'Voltage', unit: 'V', value: 5 },
+      maxCurrent: { label: 'Max current', unit: 'A', value: 3, min: 0.001 },
+    },
+    noLabel: true,
+    draw: (p) => railSymbol(`${p.voltage >= 0 ? '+' : ''}${formatSI(p.voltage, 'V')}`),
+  },
+  // One phase of the mains (voltage as RMS), against neutral at 0 V.
+  phase: {
+    name: 'AC phase',
+    letter: 'X',
+    category: 'sources',
+    group: 'Rails',
+    pins: [{ x: 0, y: 20 }],
+    props: {
+      voltage: { label: 'Voltage (rms)', unit: 'V', value: 120, min: 0 },
+      frequency: { label: 'Frequency', unit: 'Hz', value: 50, min: 0.01, max: 1000 },
+      phase: { label: 'Phase', unit: '°', value: 0 },
+      maxCurrent: { label: 'Breaker rating', unit: 'A', value: 16, min: 0.001 },
+    },
+    noLabel: true,
+    draw: (p) => railSymbol(`L ${formatSI(p.voltage, 'V')}~ ${formatSI(p.frequency, 'Hz')}`),
   },
   resistor: {
     name: 'Resistor',
@@ -460,14 +621,16 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
   lamp: {
     name: 'Lamp',
     letter: 'E',
-    category: 'lights',
+    category: 'signals',
+    group: 'Lights',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
+      color: { label: 'Colour', value: 'warm', options: ['warm', 'red', 'yellow', 'green', 'blue', 'white'] },
       ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 6, min: 0.001 },
       ratedPower: { label: 'Rated power', unit: 'W', value: 1, min: 0.001 },
     },
     tag: (p) => `${formatSI(p.ratedVoltage, 'V')} ${formatSI(p.ratedPower, 'W')}`,
-    glow: { color: () => 'lamp', radius: 40 },
+    glow: { color: (p) => p.color, radius: 40 },
     draw: () => `
       <circle class="bulb" r="14" />
       <path d="M -40 0 H -14 M 14 0 H 40 M -10 -10 L 10 10 M 10 -10 L -10 10" />`,
@@ -475,7 +638,8 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
   led: {
     name: 'LED',
     letter: 'P',
-    category: 'lights',
+    category: 'signals',
+    group: 'Lights',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }], // anode, cathode
     props: {
       color: { label: 'Colour', value: 'red', options: ['red', 'yellow', 'green', 'blue', 'white'] },
@@ -487,6 +651,65 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
       <path class="bulb tinted" d="M -10 -10 V 10 L 10 0 Z" />
       <path d="M -40 0 H 40 M 10 -10 V 10" />
       <path d="M -2 -14 L 6 -22 M 1 -22 H 6 V -17 M 6 -12 L 14 -20 M 9 -20 H 14 V -15" />`,
+  },
+  // Pins R, G, B, then the common one. Inside, a spot of each colour lights
+  // with its LED; where spots overlap their light adds up (red + green =
+  // yellow, all three = white).
+  rgbLed: {
+    name: 'RGB LED',
+    letter: 'P',
+    category: 'signals',
+    group: 'Lights',
+    pins: [{ x: -40, y: -20 }, { x: -40, y: 0 }, { x: -40, y: 20 }, { x: 40, y: 0 }],
+    props: {
+      common: { label: 'Common', value: 'cathode', options: ['cathode', 'anode'] },
+      redVoltage: { label: 'Red forward voltage', unit: 'V', value: 2, min: 0.1 },
+      greenVoltage: { label: 'Green forward voltage', unit: 'V', value: 3, min: 0.1 },
+      blueVoltage: { label: 'Blue forward voltage', unit: 'V', value: 3, min: 0.1 },
+      maxCurrent: { label: 'Max current (each)', unit: 'A', value: 0.02, min: 0.0001 },
+    },
+    draw: (p) => `
+      <path d="M -40 -20 H -24 L -13 -9 M -40 0 H -16 M -40 20 H -24 L -13 9 M 40 0 H 16" />
+      <circle r="16" />
+      <g class="rgb-mix">
+        ${['red', 'green', 'blue']
+          .map((c, k) => {
+            const [x, y] = [[-3.5, -3], [3.5, -3], [0, 3.5]][k];
+            return `<circle class="rgb-off" cx="${x}" cy="${y}" r="7" style="fill: ${LIGHT_COLORS[c as LightColor]}" />
+              <circle class="seg-lit rgb-lit" data-seg="${k}" cx="${x}" cy="${y}" r="7" style="opacity: 0; fill: ${LIGHT_COLORS[c as LightColor]}" />`;
+          })
+          .join('')}
+      </g>
+      <path d="M 8 -18 L 15 -25 M 10 -25 H 15 V -20 M 15 -13 L 22 -20 M 17 -20 H 22 V -15" />
+      ${pinText('R', -37, -24)}${pinText('G', -37, -4)}${pinText('B', -37, 16)}${pinText(p.common === 'cathode' ? 'K' : 'A', 30, -4)}`,
+  },
+  // Pins: segments a–g and the dot (dp), then the common pin.
+  sevenSeg: {
+    name: '7-segment display',
+    letter: 'P',
+    category: 'signals',
+    group: 'Displays',
+    pins: [
+      ...[-30, -10, 10, 30].map((y) => ({ x: -60, y })),
+      ...[-30, -10, 10, 30].map((y) => ({ x: 60, y })),
+      { x: 0, y: 60 },
+    ],
+    props: {
+      color: { label: 'Colour', value: 'red', options: ['red', 'yellow', 'green', 'blue', 'white'] },
+      common: { label: 'Common', value: 'cathode', options: ['cathode', 'anode'] },
+      forwardVoltage: { label: 'Forward voltage', unit: 'V', value: 2, min: 0.1 },
+      maxCurrent: { label: 'Max current (segment)', unit: 'A', value: 0.02, min: 0.0001 },
+    },
+    glow: { color: (p) => p.color, radius: 44 },
+    hit: { w: 120, h: 100 },
+    labelAt: (vertical) => (vertical ? [64, -44, 'start'] : [44, -46, 'start']),
+    draw: (p) =>
+      chip({ w: 40, h: 40 }, '', [
+        ['a', null, -60, -30], ['b', null, -60, -10], ['c', null, -60, 10], ['d', null, -60, 30],
+        ['e', null, 60, -30], ['f', null, 60, -10], ['g', null, 60, 10], ['dp', null, 60, 30],
+        [p.common === 'cathode' ? 'K' : 'A', null, 0, 60],
+      ]) +
+      `<g class="segments">${segmentMarkup('seg-off', false)}${segmentMarkup('seg-lit', true)}</g>`,
   },
   switch: {
     name: 'Switch',
@@ -503,6 +726,22 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     draw: ({ closed }, broken) => `
       <path d="M -40 0 H -14 L ${closed || broken ? '14 0' : '16 -12'} M 14 0 H 40" />
       ${broken ? '<circle class="weld" cx="14" r="3.5" />' : ''}`,
+  },
+  // Two-way (stairway) switch, DIN: the blade from the common (left) rests on
+  // throw 1 (top right) or, thrown, on throw 2 (bottom right).
+  changeover: {
+    name: 'Changeover switch',
+    letter: 'S',
+    category: 'switches',
+    group: 'Toggle',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: -20 }, { x: 40, y: 20 }], // common, 1, 2
+    props: {
+      thrown: { label: 'Thrown (to 2)', value: false },
+      maxCurrent: { label: 'Max current', unit: 'A', value: 5, min: 0.001 },
+    },
+    actuator: { prop: 'thrown', momentary: false },
+    draw: ({ thrown }) => `
+      <path d="M -40 0 H -14 L 14 ${thrown ? 20 : -20} M 40 -20 H 14 M 40 20 H 14" />`,
   },
   // Normally-open push button: closed only while held down.
   button: {
@@ -549,6 +788,253 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
         <path d="M -6 ${head - 4} V ${head} H 8 V ${head - 4}" />
         <path class="link" d="M 1 ${head} V ${open ? -14 : -7}" />
         ${broken ? '<circle class="weld" cx="14" cy="-9" r="3.5" />' : ''}`;
+    },
+  },
+  // DIN EN 60617: a circle with M, and = (DC), 1~ or 3~ under it. Pins 0
+  // and 1 left and right (+ and − for DC); a three-phase motor's third
+  // terminal below. While it turns, a rotor mark spins round it.
+  motor: {
+    name: 'Motor',
+    letter: 'M',
+    category: 'loads',
+    group: 'Motors',
+    pins: (p) => [{ x: -40, y: 0 }, { x: 40, y: 0 }, ...(p.supply === 'AC 3~' ? [{ x: 0, y: 40 }] : [])],
+    props: {
+      supply: { label: 'Supply', value: 'DC', options: ['DC', 'AC 1~', 'AC 3~'] },
+      ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 12, min: 0.1 },
+      ratedPower: { label: 'Rated power', unit: 'W', value: 10, min: 0.01 },
+    },
+    tag: (p) => `${formatSI(p.ratedVoltage, 'V')} ${formatSI(p.ratedPower, 'W')}`,
+    labelAt: (vertical) => (vertical ? [30, 4, 'start'] : [0, -30, 'middle']),
+    draw: (p) => `
+      <path d="M -40 0 H -18 M 18 0 H 40${p.supply === 'AC 3~' ? ' M 0 18 V 40' : ''}" />
+      <circle r="18" />
+      <text class="meter-letter upright" y="2" text-anchor="middle" data-y="-2">M</text>
+      <text class="sym-text upright" y="12" text-anchor="middle" data-y="9">${p.supply === 'DC' ? '=' : p.supply === 'AC 1~' ? '1~' : '3~'}</text>
+      ${p.supply === 'DC' ? '<text class="sym-text" x="-30" y="-6" text-anchor="middle">+</text>' : ''}
+      <g class="when-on">
+        <path class="rotor" d="M 0 -23 A 23 23 0 0 1 20 -11.5 M 20 -11.5 l -1 -5 M 20 -11.5 l -5 1" />
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="0.8s" repeatCount="indefinite" />
+      </g>`,
+  },
+  // Heating element (a resistance with heating marks); glows red when hot.
+  heater: {
+    name: 'Heater',
+    letter: 'E',
+    category: 'loads',
+    group: 'Heat',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 120, min: 0.1 },
+      ratedPower: { label: 'Rated power', unit: 'W', value: 1000, min: 0.01 },
+    },
+    tag: (p) => `${formatSI(p.ratedVoltage, 'V')} ${formatSI(p.ratedPower, 'W')}`,
+    glow: { color: () => 'red', radius: 36 },
+    draw: () => `
+      <path d="M -40 0 H -20 M 20 0 H 40" />
+      <rect class="bulb" x="-20" y="-8" width="40" height="16" />
+      <path d="M -16 4 L -12 -4 M -6 4 L -2 -4 M 4 4 L 8 -4 M 14 4 L 18 -4" />`,
+  },
+  // A coil (DIN actuator rectangle) with its plunger above: out at rest, in
+  // when pulled.
+  solenoid: {
+    name: 'Solenoid',
+    letter: 'M',
+    category: 'loads',
+    group: 'Electromagnetic',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 12, min: 0.1 },
+      ratedCurrent: { label: 'Rated current', unit: 'A', value: 0.5, min: 0.0001 },
+      inductance: { label: 'Inductance', unit: 'H', value: 0.05, min: 1e-6 },
+    },
+    tag: (p) => formatSI(p.ratedVoltage, 'V'),
+    draw: () => `
+      <path d="M -40 0 H -14 M 14 0 H 40" />
+      <rect x="-14" y="-8" width="28" height="16" />
+      <path class="when-off" d="M 0 -8 V -22 M -6 -22 H 6" />
+      <path class="when-on" d="M 0 -8 V -13 M -6 -13 H 6" />`,
+  },
+  // Fluorescent tube: filament A (pins 0–1) at the left end, B (pins 2–3) at
+  // the right; the arc runs between them.
+  tube: {
+    name: 'Fluorescent tube',
+    letter: 'E',
+    category: 'loads',
+    group: 'Fluorescent',
+    pins: [{ x: -60, y: -20 }, { x: -60, y: 20 }, { x: 60, y: -20 }, { x: 60, y: 20 }],
+    props: {
+      ratedPower: { label: 'Rated power', unit: 'W', value: 20, min: 0.1 },
+      arcVoltage: { label: 'Arc voltage', unit: 'V', value: 60, min: 1 },
+      strikeVoltage: { label: 'Strike voltage', unit: 'V', value: 250, min: 1 },
+    },
+    tag: (p) => formatSI(p.ratedPower, 'W'),
+    glow: { color: () => 'white', radius: 60 },
+    hit: { w: 130, h: 60 },
+    draw: () => `
+      <rect class="bulb" x="-50" y="-10" width="100" height="20" rx="3" />
+      <path d="M -60 -20 H -44 V 6 M -60 20 H -44 V 6 M 60 -20 H 44 V 6 M 60 20 H 44 V 6" />
+      <path d="M -44 -6 V 6 M 44 -6 V 6" />`,
+  },
+  // The tube's choke: a coil on an iron core.
+  ballast: {
+    name: 'Ballast',
+    letter: 'R',
+    category: 'loads',
+    group: 'Fluorescent',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      inductance: { label: 'Inductance', unit: 'H', value: 0.95, min: 1e-6 },
+      resistance: { label: 'Winding resistance', unit: 'Ω', value: 10, min: 0 },
+      maxCurrent: { label: 'Max current', unit: 'A', value: 0.6, min: 0.001 },
+    },
+    tag: (p) => formatSI(p.inductance, 'H'),
+    draw: () => `
+      <path d="M -40 0 H -20 A 5 5 0 0 1 -10 0 A 5 5 0 0 1 0 0 A 5 5 0 0 1 10 0 A 5 5 0 0 1 20 0 H 40 M -20 -9 H 20" />`,
+  },
+  // Glow starter: a bimetal contact inside a small glow lamp.
+  starter: {
+    name: 'Starter',
+    letter: 'S',
+    category: 'loads',
+    group: 'Fluorescent',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      glowVoltage: { label: 'Glow voltage (rms)', unit: 'V', value: 80, min: 1 },
+    },
+    glow: { color: () => 'red', radius: 22 },
+    draw: () => `
+      <path d="M -40 0 H -12 M 12 0 H 40" />
+      <circle class="bulb" r="12" />
+      <path class="when-off" d="M -12 0 H -6 V -5 Q 0 -10 4 -5" />
+      <path class="when-on" d="M -12 0 H -6 V -5 Q 2 -7 6 0" />
+      <path d="M 6 0 H 12" />`,
+  },
+  // Magnetic buzzer (DIN: a dome on its base); + is pin 0.
+  buzzer: {
+    name: 'Buzzer',
+    letter: 'P',
+    category: 'signals',
+    group: 'Sounders',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 12, min: 0.1 },
+      ratedCurrent: { label: 'Rated current', unit: 'A', value: 0.03, min: 0.0001 },
+    },
+    draw: () => `
+      <path d="M -40 0 H 40 M -14 0 A 14 14 0 0 1 14 0" />
+      <text class="sym-text" x="-30" y="-6" text-anchor="middle">+</text>
+      ${SOUND_WAVES}`,
+  },
+  // Piezo sounder: a crystal between two plates; + is pin 0.
+  piezo: {
+    name: 'Piezo buzzer',
+    letter: 'P',
+    category: 'signals',
+    group: 'Sounders',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 5, min: 0.1 },
+      ratedCurrent: { label: 'Rated current', unit: 'A', value: 0.01, min: 0.0001 },
+      frequency: { label: 'Tone', unit: 'Hz', value: 2700, min: 100, max: 8000 },
+    },
+    draw: () => `
+      <path d="M -40 0 H -8 M 8 0 H 40 M -8 -12 V 12 M 8 -12 V 12" />
+      <rect x="-4" y="-9" width="8" height="18" />
+      <text class="sym-text" x="-30" y="-6" text-anchor="middle">+</text>
+      ${SOUND_WAVES}`,
+  },
+  // Electromechanical bell (DIN: a bowl under its base).
+  bell: {
+    name: 'Bell',
+    letter: 'P',
+    category: 'signals',
+    group: 'Sounders',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      ratedVoltage: { label: 'Rated voltage (rms)', unit: 'V', value: 120, min: 0.1 },
+      ratedCurrent: { label: 'Rated current', unit: 'A', value: 0.1, min: 0.0001 },
+    },
+    draw: () => `
+      <path d="M -40 0 H 40 M -14 0 A 14 14 0 0 0 14 0" />
+      ${SOUND_WAVES}`,
+  },
+  // Loudspeaker (DIN: magnet and cone).
+  speaker: {
+    name: 'Speaker',
+    letter: 'P',
+    category: 'signals',
+    group: 'Sounders',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      impedance: { label: 'Impedance', unit: 'Ω', value: 8, min: 0.1 },
+      ratedPower: { label: 'Rated power', unit: 'W', value: 0.5, min: 0.001 },
+    },
+    tag: (p) => formatSI(p.impedance, 'Ω'),
+    draw: () => `
+      <path d="M -40 0 H -14 M 40 0 H 24 V 20 H -9 V 6" />
+      <rect x="-14" y="-6" width="10" height="12" />
+      <path d="M -4 -6 L 8 -16 V 16 L -4 6" />
+      ${SOUND_WAVES}`,
+  },
+  // Pins: see relayPins.
+  relay: {
+    name: 'Relay',
+    letter: 'K',
+    category: 'switches',
+    group: 'Relays',
+    pins: (p) => relayPins(p).map(({ x, y }) => ({ x, y })),
+    pinNames: (p) => relayPins(p).map(({ name }) => name),
+    props: {
+      coilVoltage: { label: 'Coil voltage', unit: 'V', value: 12, min: 0.1 },
+      coilResistance: { label: 'Coil resistance', unit: 'Ω', value: 400, min: 0.1 },
+      contacts: { label: 'Contacts', unit: '', value: 1, min: 1, max: 4 },
+      contactType: { label: 'Contact type', value: 'SPDT', options: ['SPDT', 'SPST'] },
+      maxCurrent: { label: 'Contact rating', unit: 'A', value: 10, min: 0.001 },
+    },
+    hit: (p) => {
+      const { coil, contacts } = relayLayout(p);
+      const [left, right] = [coil - 16, contacts[contacts.length - 1] + 26];
+      return { w: right - left, h: 90, x: (left + right) / 2 };
+    },
+    labelAt: (_vertical, p, rotation) => coilLabel(relayLayout(p).coil, rotation),
+    draw: (p) => {
+      const { coil, contacts } = relayLayout(p);
+      return `
+        ${coilMarkup(coil)}
+        ${contacts.map((x, k) => (p.contactType === 'SPDT' ? changeover : makeContact)(x, k + 1)).join('')}
+        <path class="link" d="M ${coil + 14} 0 H ${contacts[contacts.length - 1] - 4}" />`;
+    },
+  },
+  // Pins: A1, A2, then per pole its line and load side: 1–2, 3–4, 5–6, 7–8
+  // (L1–T1, L2–T2, L3–T3, and a fourth pole).
+  contactor: {
+    name: 'Contactor (AC)',
+    letter: 'Q',
+    category: 'switches',
+    group: 'Relays',
+    pins: (p) => [
+      { x: -60, y: -40 },
+      { x: -60, y: 40 },
+      ...poleXs(p).flatMap((x) => [{ x, y: -40 }, { x, y: 40 }]),
+    ],
+    props: {
+      coilVoltage: { label: 'Coil voltage (rms)', unit: 'V', value: 120, min: 0.1 },
+      coilResistance: { label: 'Coil impedance', unit: 'Ω', value: 2400, min: 0.1 },
+      poles: { label: 'Poles', unit: '', value: 3, min: 1, max: 4 },
+      maxCurrent: { label: 'Contact rating', unit: 'A', value: 16, min: 0.001 },
+    },
+    hit: (p) => {
+      const right = poleXs(p)[contactorPoles(p) - 1] + 16;
+      return { w: right + 76, h: 90, x: (right - 76) / 2 };
+    },
+    labelAt: (_vertical, _p, rotation) => coilLabel(-60, rotation),
+    draw: (p) => {
+      const xs = poleXs(p);
+      return `
+        ${coilMarkup(-60)}
+        ${xs.map((x, k) => mainContact(x, 2 * k + 1)).join('')}
+        <path class="link" d="M -46 0 H ${xs[xs.length - 1] - 5}" />`;
     },
   },
   and: gate('AND', '&amp;', false, 2),
@@ -658,17 +1144,39 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     draw: (p) =>
       chip({ w: 32, h: 18 }, `${formatNumber(p.outputVoltage)} V`, [['IN', 1, -40, 0], ['GND', 2, 0, 40], ['OUT', 3, 40, 0]]),
   },
+  // A probe tip touching its pin, the channel written above it in the
+  // trace's colour.
+  scopeProbe: {
+    name: 'Scope probe',
+    letter: 'P',
+    category: 'meters',
+    group: 'Oscilloscope',
+    pins: [{ x: 0, y: 20 }],
+    props: {
+      channel: { label: 'Channel', value: 'CH1', options: ['CH1', 'CH2'] },
+    },
+    noLabel: true,
+    draw: (p) => `
+      <g class="scope-probe ${p.channel.toLowerCase()}">
+        <path d="M 0 20 V 10" />
+        <path class="probe-body" d="M -5 10 L 0 16 L 5 10 V -8 H -5 Z" />
+        <text class="sym-text upright" y="-13" text-anchor="middle" data-y="-16">${p.channel}</text>
+      </g>`,
+  },
   // Reads the voltage from + to COM: almost no current drawn.
   voltmeter: {
     name: 'Voltmeter',
     letter: 'P',
     category: 'meters',
+    group: 'Multimeter',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       resistance: { label: 'Input resistance', unit: 'Ω', value: 10e6, min: 1000 },
       maxVoltage: { label: 'Max voltage', unit: 'V', value: 1000, min: 1 },
+      mode: METER_MODE,
     },
     display: true,
+    selector: 'mode',
     draw: () => meterSymbol('V'),
   },
   // Reads the current flowing in at + and out at COM: almost no voltage
@@ -677,12 +1185,15 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Ammeter',
     letter: 'P',
     category: 'meters',
+    group: 'Multimeter',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       resistance: { label: 'Internal resistance', unit: 'Ω', value: 0.05, min: 0.0001 },
       maxCurrent: { label: 'Fuse rating', unit: 'A', value: 10, min: 0.001 },
+      mode: METER_MODE,
     },
     display: true,
+    selector: 'mode',
     draw: () => meterSymbol('A'),
   },
   // Pin 0 is the anode, pin 1 the cathode (the bar), as for the LED.
@@ -797,6 +1308,22 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
 export const PARTS = DEFINITIONS as unknown as Record<PartType, AnyPartDef>;
 
 // The values a new part of this type starts with.
+// A part's pins and grab box, which for some parts (a relay's contacts)
+// depend on its values.
+export const pinsOf = (type: PartType, props: Props): Point[] => {
+  const pins = PARTS[type].pins;
+  return typeof pins === 'function' ? pins(props) : pins;
+};
+// What each pin is, so a wire can follow its pin when a change of values
+// adds, removes or reorders pins. Parts whose pins never change don't name
+// them: their pins are simply numbered.
+export const pinNamesOf = (type: PartType, props: Props): string[] =>
+  PARTS[type].pinNames?.(props) ?? pinsOf(type, props).map((_, i) => String(i));
+export const hitOf = (type: PartType, props: Props): HitBox | undefined => {
+  const hit = PARTS[type].hit;
+  return typeof hit === 'function' ? hit(props) : hit;
+};
+
 export function defaults<T extends PartType>(type: T): PropsByType[T] {
   const entries = Object.entries(PARTS[type].props).map(([key, spec]): [string, PropValue] => [key, spec.value]);
   return Object.fromEntries(entries) as PropsByType[T];
@@ -813,6 +1340,6 @@ export function keepUpright(root: Element, rotation: number) {
 
 export function symbolMarkup(type: PartType, props: Props, broken = false): string {
   const part = PARTS[type];
-  const pins = part.pins.map((p, i) => `<circle class="pin" data-pin="${i}" cx="${p.x}" cy="${p.y}" r="3" />`);
+  const pins = pinsOf(type, props).map((p, i) => `<circle class="pin" data-pin="${i}" cx="${p.x}" cy="${p.y}" r="3" />`);
   return part.draw(props, broken) + pins.join('');
 }

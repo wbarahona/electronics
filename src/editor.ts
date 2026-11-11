@@ -1,5 +1,5 @@
 import { GRID, snap, type Board } from './board.ts';
-import { LIGHT_COLORS, PARTS, keepUpright, symbolMarkup } from './components.ts';
+import { LIGHT_COLORS, PARTS, defaults, hitOf, keepUpright, pinNamesOf, pinsOf, symbolMarkup, type ChoiceSpec } from './components.ts';
 import { fromControl } from './keys.ts';
 import type { Circuit } from './model.ts';
 import { buildNets, keyOf, pinKey, type Nets } from './nets.ts';
@@ -20,7 +20,11 @@ const FLOW_SPEED = 40; // world units/s per decade of current above FLOW_REF
 // a 50 Hz flicker blurs into a steady glow, in slow motion it shows.
 const PERSISTENCE = 0.04; // s
 // Invisible box over each symbol so thin strokes are easy to grab.
-const hitBox = (w = PART_W, h = PART_H) => `<rect class="hit" x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" />`;
+// Behind each part, the patch the thermal view colours.
+const thermoBox = ({ w = PART_W, h = PART_H, x = 0 } = {}) =>
+  `<rect class="thermo" x="${x - w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="10" />`;
+const hitBox = ({ w = PART_W, h = PART_H, x = 0 } = {}) =>
+  `<rect class="hit" x="${x - w / 2}" y="${-h / 2}" width="${w}" height="${h}" />`;
 
 // Things with a position of their own (wires take theirs from their ends).
 type Placed = Part | Joint;
@@ -50,8 +54,15 @@ interface Box {
 
 // Live simulation state per part id: `glow` is brightness (1 = at its rating),
 // `heat` is 0..1 from its rating up to the point where it fails, `level` how
-// full an energy store is (for its gauge), `reading` what a meter shows.
-export type Live = Map<string, { glow: number; heat: number; level?: number; reading?: string }>;
+// full an energy store is (for its gauge), `reading` what a meter shows,
+// `active` whether it's switched on by itself (an energized relay: its symbol
+// shows the contacts moved), `segments` each display segment's brightness,
+// `temp` how hot it runs as a fraction of the heat that destroys it (for the
+// thermal view; undefined for parts that don't heat up).
+export type Live = Map<
+  string,
+  { glow: number; heat: number; level?: number; reading?: string; active?: boolean; segments?: number[]; temp?: number }
+>;
 
 const GAUGE_WIDTH = 15; // inner width of the gauge's fill bar
 
@@ -191,7 +202,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const text = g.querySelector('.value');
     if (text) {
       const other = !!PARTS[n.type].actuator || !!PARTS[n.type].labelBelow;
-      const [lx, ly, anchor] = PARTS[n.type].labelAt?.(vertical) ??
+      const [lx, ly, anchor] = PARTS[n.type].labelAt?.(vertical, n.props, rotation) ??
         (vertical ? [other ? -26 : 26, 4, other ? 'end' : 'start'] : [0, other ? 32 : -26, 'middle']);
       text.setAttribute('transform', `rotate(${-rotation}) translate(${lx} ${ly})`);
       text.setAttribute('text-anchor', anchor);
@@ -206,21 +217,43 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '-46 0' : '0 32'})`);
   }
 
-  // A meter's small digital readout.
-  const DISPLAY = `
-    <g class="meter-display">
-      <rect class="meter-screen" x="-20" y="-8" width="40" height="16" rx="3" />
-      <text class="meter-text" y="4" text-anchor="middle">–</text>
-    </g>`;
+  // A meter's small digital readout, with a tab on its left for the part's
+  // selector (a meter's DC/AC knob) when it has one.
+  const SELECTOR_WIDTH = 20;
+
+  function displayMarkup(c: Part): string {
+    const key = PARTS[c.type].selector;
+    const tab = key
+      ? `<g class="selector"><rect class="sel-bg" y="-8" width="${SELECTOR_WIDTH + 4}" height="16" rx="3" /><text class="sel-text" y="3.5" text-anchor="middle">${propOf(c, key)}</text></g>`
+      : '';
+    return `
+      <g class="meter-display">
+        ${tab}
+        <rect class="meter-screen" y="-8" height="16" rx="3" />
+        <text class="meter-text" y="4" text-anchor="middle">–</text>
+      </g>`;
+  }
+
+  // Size the screen to the reading, and keep screen and tab centred together.
+  function layoutDisplay(display: Element) {
+    const text = display.querySelector<SVGTextElement>('.meter-text')!;
+    const tab = display.querySelector('.selector');
+    const w = Math.max(32, text.getComputedTextLength() + 10);
+    const t = tab ? SELECTOR_WIDTH : 0;
+    const left = -(w + t) / 2;
+    const screen = display.querySelector('.meter-screen')!;
+    screen.setAttribute('x', String(left + t));
+    screen.setAttribute('width', String(w));
+    text.setAttribute('x', String(left + t + w / 2));
+    tab?.querySelector('.sel-bg')!.setAttribute('x', String(left));
+    tab?.querySelector('.sel-text')!.setAttribute('x', String(left + t / 2));
+  }
 
   function paintDisplay(g: SVGElement, reading: string) {
     const text = g.querySelector<SVGTextElement>('.meter-text');
     if (!text || text.textContent === reading) return;
     text.textContent = reading;
-    const w = Math.max(32, text.getComputedTextLength() + 10);
-    const screen = g.querySelector('.meter-screen')!;
-    screen.setAttribute('x', String(-w / 2));
-    screen.setAttribute('width', String(w));
+    layoutDisplay(g.querySelector('.meter-display')!);
   }
 
   // A small battery icon whose fill shows how full an energy store is.
@@ -252,11 +285,15 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     return `<g class="actuator${on ? ' on' : ''}">${body}<rect class="act-hit" x="-13" y="-10" width="26" height="20" /></g>`;
   }
 
+  // The names of each part's pins as last drawn (see refreshPart).
+  const drawnPins = new Map<string, string[]>();
+
   // (Re)draw a part's symbol, value text and hit areas from its current props.
   function renderPart(c: Part) {
     const part = PARTS[c.type];
     const tag = part.tag?.(c.props);
-    const pinHits = part.pins.map(
+    drawnPins.set(c.id, pinNamesOf(c.type, c.props));
+    const pinHits = pinsOf(c.type, c.props).map(
       (p, i) => `<circle class="pin-hit" data-pin="${i}" cx="${p.x}" cy="${p.y}" r="7" />`,
     );
     const g = nodes.get(c.id)!;
@@ -267,22 +304,33 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       glow = `<circle class="glow" r="${part.glow.radius}" fill="url(#glow-${key})" />`;
       g.style.setProperty('--glow-color', LIGHT_COLORS[key]);
     }
+    const hit = hitOf(c.type, c.props);
     g.innerHTML =
+      thermoBox(hit) +
       glow +
       symbolMarkup(c.type, c.props, c.broken) +
       (part.noLabel ? '' : `<text class="value"><tspan class="ref">-${c.ref}</tspan>${tag ? ` ${tag}` : ''}</text>`) +
-      hitBox(part.hit?.w, part.hit?.h) +
+      hitBox(hit) +
       pinHits.join('') +
       (part.actuator ? actuatorMarkup(c) : '') +
       (part.gauge ? GAUGE : '') +
-      (part.display ? DISPLAY : '');
+      (part.display ? displayMarkup(c) : '');
     place(c);
+    const display = g.querySelector('.meter-display');
+    if (display) layoutDisplay(display);
   }
 
   function setProp(c: Part, key: string, value: PropValue) {
     (c.props as Record<string, PropValue>)[key] = value;
     refreshPart(c.id);
     onPropChange(c.id);
+  }
+
+  // Turn a part's selector to its next option (a meter: DC ↔ AC).
+  function turnSelector(c: Part) {
+    const key = PARTS[c.type].selector!;
+    const { options } = PARTS[c.type].props[key] as ChoiceSpec;
+    setProp(c, key, options[(options.indexOf(propOf(c, key) as string) + 1) % options.length]);
   }
 
   // Operate a part's actuator: flip a switch, or hold a push button closed
@@ -308,11 +356,13 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   const glows = new Map<string, { target: number; shown: number }>(); // light levels 0..1
 
   function showLive(live: Live, smooth = false) {
-    for (const [id, { glow, heat, level: charge, reading }] of live) {
+    for (const [id, { glow, heat, level: charge, reading, active, segments, temp }] of live) {
       const g = nodes.get(id);
       if (!g) continue;
       if (charge !== undefined) paintGauge(g, charge);
       if (reading !== undefined) paintDisplay(g, reading);
+      if (active !== undefined) g.classList.toggle('active', active);
+      if (segments) paintSegments(g, segments);
       const level = Math.min(1, Math.max(0, glow));
       const s = glows.get(id) ?? { target: level, shown: level };
       s.target = level;
@@ -320,13 +370,31 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       glows.set(id, s);
       paintGlow(g, s.shown);
       g.style.setProperty('--heat', heat.toFixed(3));
+      if (temp === undefined) g.style.removeProperty('--thermo');
+      else g.style.setProperty('--thermo', thermalColor(temp));
     }
     for (const id of glows.keys()) if (!nodes.has(id)) glows.delete(id);
+  }
+
+  // Thermal view colours: blue when cold, through green and yellow (around
+  // the rating, which most parts reach at 1/1.5 of their limit) to red at
+  // the point of failure.
+  function thermalColor(t: number): string {
+    const x = Math.min(1, Math.max(0, t));
+    return `hsl(${Math.round(220 * (1 - x) ** 1.3)} 90% 55%)`;
   }
 
   // The eye sees brightness roughly as a square root, so dim parts still show.
   function paintGlow(g: SVGElement, level: number) {
     g.style.setProperty('--glow', Math.sqrt(level).toFixed(3));
+  }
+
+  // Each lit segment of a display (drawn with class "seg-lit" and data-seg).
+  function paintSegments(g: SVGElement, levels: number[]) {
+    for (const seg of g.querySelectorAll<SVGElement>('.seg-lit')) {
+      const level = Math.min(1, Math.max(0, levels[Number(seg.dataset.seg)] ?? 0));
+      seg.style.opacity = Math.sqrt(level).toFixed(3);
+    }
   }
 
   // Redraw a part that just failed, with a puff of smoke rising from it.
@@ -344,10 +412,27 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     setTimeout(() => smoke.remove(), 1600);
   }
 
-  // After a part's props were edited.
+  // After a part's props were edited. Its pins may have changed (a relay
+  // given fewer contacts, or make contacts instead of changeovers): wires
+  // follow their pin by name, and go if it's gone.
   function refreshPart(id: string) {
-    renderPart(circuit.part(id)!);
-    refreshNets();
+    const c = circuit.part(id)!;
+    const before = drawnPins.get(id) ?? pinNamesOf(c.type, c.props);
+    renderPart(c);
+    const after = drawnPins.get(id)!;
+    const gone = new Set<string>();
+    for (const w of circuit.wiresOf(id)) {
+      for (const end of [w.from, w.to]) {
+        if (end.part !== id) continue;
+        const pin = after.indexOf(before[end.pin]);
+        if (pin < 0) gone.add(w.id);
+        else end.pin = pin;
+      }
+    }
+    for (const wid of gone) removeNode(wid);
+    circuit.wiresOf(id).forEach(drawWire);
+    if (gone.size) tidyJoints();
+    else refreshNets();
   }
 
   // Each segment gets its own wide invisible hit line, so the cursor can show
@@ -381,6 +466,37 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // Selected parts and joints: the things that have a position of their own.
   const selectedNodes = (): Placed[] =>
     [...selected].map((id) => circuit.get(id)).filter((x): x is Placed => !!x && !isWire(x));
+
+  // Pins that touch are connected (nets join them by position), but only
+  // until one of the parts moves. So before parts move, each of their pins
+  // touching a pin or joint that stays put gets a real wire to it (of no
+  // length yet): pulling them apart then stretches a wire instead of
+  // breaking the connection.
+  function bindTouchingPins(list: Placed[]) {
+    const moving = new Set(list.map((n) => n.id));
+    const stayPins = circuit.components
+      .filter((c) => !moving.has(c.id))
+      .flatMap((c) => pinsOf(c.type, c.props).map((_, pin): [End, Point] => [{ part: c.id, pin }, pinPos(c, pin)]));
+    const stayJoints = circuit.joints.filter((j) => !moving.has(j.id)).map((j): [End, Point] => [{ joint: j.id }, j]);
+    let added = false;
+    for (const n of list) {
+      if (!isPart(n)) continue;
+      pinsOf(n.type, n.props).forEach((_, pin) => {
+        const end: End = { part: n.id, pin };
+        const at = pinPos(n, pin);
+        for (const [other, p] of [...stayPins, ...stayJoints]) {
+          if (!samePoint(p, at)) continue;
+          const linked = circuit.wiresOf(n.id).some(
+            (w) => (sameEnd(w.from, end) && sameEnd(w.to, other)) || (sameEnd(w.to, end) && sameEnd(w.from, other)),
+          );
+          if (linked) continue;
+          addWire(circuit.connect(end, other));
+          added = true;
+        }
+      });
+    }
+    if (added) refreshNets();
+  }
 
   // Wires attached to the given parts/joints: `touching` need redrawing when
   // they move, `inside` (both ends among them) carry their bend points along.
@@ -447,6 +563,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   function removeNode(id: string) {
     nodes.get(id)!.remove();
     nodes.delete(id);
+    drawnPins.delete(id);
     circuit.remove(id);
   }
 
@@ -548,8 +665,9 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // stretch long enough for both pins, turned to lie along it, within a grid
   // step of `p`. Pins may not land on the wire's own ends.
   function findSpot(type: PartType, p: Point, rotation: number): Spot | null {
-    if (PARTS[type].pins.length !== 2) return null; // only two-pin parts sit in a wire
-    const half = Math.abs(PARTS[type].pins[0].x);
+    const pins = pinsOf(type, defaults(type));
+    if (pins.length !== 2) return null; // only two-pin parts sit in a wire
+    const half = Math.abs(pins[0].x);
     let best: Spot | null = null;
     let bestD = GRID;
     for (const w of circuit.wires) {
@@ -623,6 +741,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   function rotateSelected() {
     const list = selectedNodes();
     if (!list.length) return;
+    if (!drag) bindTouchingPins(list);
     const cx = snap(list.reduce((s, n) => s + n.x, 0) / list.length);
     const cy = snap(list.reduce((s, n) => s + n.y, 0) / list.length);
     const spin = (p: Point): Point => ({ x: cx - (p.y - cy), y: cy + (p.x - cx) });
@@ -818,7 +937,13 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // empty-board handlers below from starting a marquee.
   world.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || board.spaceHeld) return;
-    // A part's actuator operates it without selecting or moving it.
+    // A part's actuator or selector operates it without selecting or moving it.
+    const sel = closestIn(e.target, '.selector');
+    if (sel) {
+      e.stopPropagation();
+      turnSelector(circuit.part(sel.closest<SVGElement>('.part')!.dataset.id!)!);
+      return;
+    }
     const act = closestIn(e.target, '.actuator');
     if (act) {
       e.stopPropagation();
@@ -843,6 +968,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     }
 
     const list = selectedNodes();
+    bindTouchingPins(list);
     const { touching, inside } = wiresAround(list);
     const first = list[0];
     drag = {
