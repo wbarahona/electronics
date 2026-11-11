@@ -2,6 +2,7 @@ import type { MdMenu } from '@material/web/menu/menu.js';
 import type { Board } from './board.ts';
 import { CATEGORIES, PARTS, defaults, keepUpright, symbolMarkup, type CategoryId } from './components.ts';
 import type { Editor } from './editor.ts';
+import { fromControl } from './keys.ts';
 import type { PartType } from './types.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -173,6 +174,12 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     buttons.push(button);
   }
   tray.inert = true;
+
+  // Esc closes the tray too, unless something else used it (a gesture on
+  // the board cancelled, a field or menu).
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !e.defaultPrevented && !fromControl(e)) closeTray();
+  });
 
   more.type = 'button';
   more.id = 'more-categories';

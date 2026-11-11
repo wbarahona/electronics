@@ -85,6 +85,7 @@ const panel = createPanel(byId('props'), circuit, editor);
 const palette = createPalette(byId('palette'), byId('palette-tray'), board, editor);
 createSearch(byId('search'), palette);
 const controls = createControls(byId('sim-controls'));
+board.onSpaceTap(controls.toggle);
 
 // A short message at the bottom of the screen (an M3 snackbar).
 const toast = byId('toast');
@@ -123,15 +124,33 @@ if (restored) loadCircuit(restored);
 // moves on: no heating, no AC, no current-flow animation. The flow dots move at
 // a real-time pace whatever the speed, showing the current at that instant, so
 // in slow motion AC can be watched swinging back and forth.
+// The logo shows the state too: a shining wave while running, burnt brown
+// while any part is burnt out. The wave takes 1.6 s at 1×, twice as fast for
+// each 10× faster (0.2 s at 1000×) and twice as slow for each 10× slower.
+const logo = byId('logo');
+let waveSpeed = 0;
 let last = performance.now();
 requestAnimationFrame(function frame(now) {
+  logo.classList.toggle('running', controls.running);
+  logo.classList.toggle('burnt', circuit.components.some((c) => c.broken));
+  if (controls.speed !== waveSpeed) {
+    waveSpeed = controls.speed;
+    logo.style.setProperty('--wave-duration', `${1.6 * 2 ** -Math.log10(waveSpeed)}s`);
+  }
   const dt = Math.min(now - last, 100) / 1000;
   if (controls.running) {
     const failed = engine.advance(dt * controls.speed);
     // Mark every casualty before redrawing, since redrawing re-solves.
     for (const id of failed) circuit.part(id)!.broken = true;
     for (const id of failed) editor.burn(id);
-    if (failed.length) panel.refresh();
+    if (failed.length) {
+      panel.refresh();
+      // Stop at the failure, so it can be looked at before anything else goes.
+      controls.pause();
+      const parts = failed.map((id) => circuit.part(id)!);
+      const what = parts.length === 1 ? (MODELS[parts[0].type].failure?.label ?? 'failed') : 'failed';
+      showToast(`${parts.map((p) => `-${p.ref}`).join(', ')} ${what}. Simulation paused.`);
+    }
     if (engine.dynamic || engine.heating || engine.draining || failed.length) showResults();
     editor.animate(dt);
     controls.showTime(engine.time);

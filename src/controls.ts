@@ -1,5 +1,6 @@
 import type { MdFilledButton } from '@material/web/button/filled-button.js';
 import type { MdIconButton } from '@material/web/iconbutton/icon-button.js';
+import { fromControl } from './keys.ts';
 import { formatSI } from './units.ts';
 
 // Simulated seconds per real second, slowest first.
@@ -26,7 +27,7 @@ function formatTime(t: number): string {
 // Run/pause, simulation speed and the simulated clock in the top bar (M3
 // buttons declared in index.html).
 // Returns live state: running, speed (simulated seconds per real second) and
-// showTime(t).
+// showTime(t), plus toggle() to run or pause and pause().
 export function createControls(root: HTMLElement) {
   const run = root.querySelector<MdFilledButton>('#run')!;
   const slower = root.querySelector<MdIconButton>('#slower')!;
@@ -39,7 +40,7 @@ export function createControls(root: HTMLElement) {
     running: false,
     speed: SPEEDS[level].value,
     showTime(t: number) {
-      clock.textContent = `t = ${formatTime(t)}`;
+      clock.textContent = formatTime(t);
     },
   };
 
@@ -58,14 +59,29 @@ export function createControls(root: HTMLElement) {
     render();
   }
 
-  run.addEventListener('click', () => {
+  function toggle() {
     state.running = !state.running;
     render();
-  });
+  }
+
+  function pause() {
+    state.running = false;
+    render();
+  }
+
+  run.addEventListener('click', toggle);
   slower.addEventListener('click', () => setLevel(level - 1));
   faster.addEventListener('click', () => setLevel(level + 1));
 
+  // ← and → step the speed too, unless they're moving a cursor or a slider.
+  window.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || fromControl(e)) return;
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    setLevel(level + (e.key === 'ArrowRight' ? 1 : -1));
+  });
+
   render();
   state.showTime(0);
-  return state;
+  return Object.assign(state, { toggle, pause });
 }

@@ -43,11 +43,13 @@ npm run preview  # serve the build
 | Key | Action |
 | --- | --- |
 | ⌘K | Search parts |
+| Space | Run / pause the simulation |
+| ← / → | Slow down / speed up the simulation (10× steps) |
 | R | Rotate (also while dragging) |
 | Delete / Backspace | Delete selection |
-| Esc | Cancel a drag or wire, or clear the selection |
+| Esc | Cancel a drag or wire; otherwise close the properties panel, parts tray and search results |
 | Backspace while wiring | Undo the last bend |
-| Space + drag | Pan the board |
+| Space + drag | Pan the board (doesn't run or pause) |
 | Double-click a wire | Branch a new wire from it |
 | ⌘C / ⌘X / ⌘V / ⌘D | Copy / cut / paste / duplicate |
 | ⌘S / ⌘O | Save / open |

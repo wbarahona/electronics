@@ -6,9 +6,16 @@ import type { Part, PropValue } from './types.ts';
 import { formatNumber, parseSI } from './units.ts';
 
 // Side sheet for editing the selected part's values, built from M3 fields.
-// Shown while exactly one part is selected.
-export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Editor, 'refreshPart'>) {
+// Shown while exactly one part is selected; its close button, or Esc from
+// inside it, deselects the part (an open dropdown takes the Esc first).
+export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Editor, 'refreshPart' | 'deselect'>) {
   let current: string | null = null;
+
+  el.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.composedPath().some((n) => n instanceof Element && n.matches('md-menu'))) return;
+    e.preventDefault();
+    editor.deselect();
+  });
 
   // The panel edits values by name, whatever the part type.
   const value = (c: Part, key: string) => (c.props as Record<string, PropValue>)[key];
@@ -128,8 +135,16 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     ref.className = 'ref';
     ref.textContent = `-${c.ref}`;
     heading.append(ref, ` ${PARTS[c.type].name}`);
+    const close = document.createElement('md-icon-button');
+    close.title = 'Close (Esc)';
+    close.ariaLabel = 'Close';
+    close.innerHTML = '<md-icon>close</md-icon>';
+    close.addEventListener('click', () => editor.deselect());
+    const head = document.createElement('div');
+    head.className = 'props-head';
+    head.append(heading, close);
     el.replaceChildren(
-      heading,
+      head,
       ...(c.broken ? [brokenNotice(c)] : []),
       ...(PARTS[c.type].gauge ? [chargeRow(c)] : []),
       ...Object.entries(PARTS[c.type].props)

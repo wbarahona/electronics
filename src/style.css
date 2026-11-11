@@ -89,9 +89,39 @@ button {
   font-weight: 400;
 }
 
+/* The logo is drawn as a mask over a coloured layer, so its colour can
+   change: brand green; a yellow wave sweeping through while the simulation
+   runs; burnt brown while any part is burnt out. */
 .title .logo {
+  flex: none;
   width: 32px;
   height: 32px;
+  background: #66cc33;
+  -webkit-mask: url(/ampage.svg) center / contain no-repeat;
+  mask: url(/ampage.svg) center / contain no-repeat;
+}
+
+.title .logo.running {
+  background: linear-gradient(115deg, #66cc33 35%, #ffd60a 50%, #66cc33 65%) 100% 0 / 300% 100%;
+  animation: logo-wave var(--wave-duration, 1.6s) linear infinite;
+}
+
+.title .logo.burnt {
+  background: var(--burnt);
+  animation: none;
+}
+
+@keyframes logo-wave {
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title .logo.running {
+    animation: none;
+    background-position: 50% 0;
+  }
 }
 
 .file-actions {
@@ -474,21 +504,40 @@ body.dragging .search-results {
   gap: 4px;
 }
 
+.clock,
+.speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  --md-icon-size: 18px;
+}
+
+.clock md-icon,
+.speed md-icon {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
 .clock {
-  min-width: 5.5em;
   margin-right: 4px;
   font-size: 12px;
-  text-align: right;
   color: var(--md-sys-color-on-surface-variant);
-  font-variant-numeric: tabular-nums;
+}
+
+/* Fixed widths so the bar doesn't shift as the numbers change. */
+#clock {
+  min-width: 4em;
+  text-align: right;
 }
 
 .speed {
-  min-width: 4.5em;
   margin-left: 4px;
   font-size: 14px;
   font-weight: 500;
-  font-variant-numeric: tabular-nums;
+}
+
+#speed {
+  min-width: 3.5em;
 }
 
 /* In the brand green (the tertiary accent). */
@@ -740,6 +789,14 @@ body.dragging * {
     border-radius: 28px 28px 0 0;
     box-shadow: 0 -2px 6px 2px rgb(0 0 0 / 0.15);
   }
+}
+
+.props-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -4px -8px -4px 0; /* the close button's target sits in the corner */
 }
 
 .props h2 {

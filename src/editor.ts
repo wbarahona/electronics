@@ -962,8 +962,11 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       }
       return;
     }
+    // An Esc that cancels a gesture is marked as used (defaultPrevented), so
+    // it doesn't also close the tray; clearing the selection leaves it free.
     if (wiring) {
       if (e.key === 'Escape' || e.key === 'Delete') {
+        e.preventDefault();
         stopWire();
       } else if (e.key === 'Backspace') {
         e.preventDefault();
@@ -978,6 +981,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       e.preventDefault();
       deleteSelected();
     } else if (e.key === 'Escape') {
+      if (drag || segDrag || marquee) e.preventDefault();
       if (drag) {
         cancelDrag();
       } else if (segDrag) {
@@ -1175,6 +1179,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     canCopy: () => !!snapshot(),
     canPaste: () => !!clipboard,
     hasSelection: () => selected.size > 0,
+    deselect: () => setSelected([]),
     reload,
   };
 }

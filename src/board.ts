@@ -66,7 +66,11 @@ export function createBoard(svg: SVGSVGElement) {
   }, { passive: false });
 
   // Hold space and drag, or middle-drag, to pan. Plain left-drag is left to the editor.
+  // A tap of space (released without pressing on the board) is reported to
+  // onSpaceTap listeners instead: it runs or pauses the simulation.
   let spaceHeld = false;
+  let spacePanned = false; // the board was pressed while space was held
+  const spaceTaps: (() => void)[] = [];
   let drag: { id: number; x: number; y: number } | null = null;
 
   const setSpace = (held: boolean) => {
@@ -77,19 +81,23 @@ export function createBoard(svg: SVGSVGElement) {
   window.addEventListener('keydown', (e) => {
     if (e.code !== 'Space' || fromControl(e)) return;
     e.preventDefault(); // no page scroll, no clicking a focused button
-    if (!spaceHeld) setSpace(true);
+    if (spaceHeld) return;
+    spacePanned = false;
+    setSpace(true);
   });
 
   window.addEventListener('keyup', (e) => {
-    if (e.code !== 'Space') return;
+    if (e.code !== 'Space' || !spaceHeld) return;
     e.preventDefault();
     setSpace(false);
+    if (!spacePanned) for (const tap of spaceTaps) tap();
   });
 
   window.addEventListener('blur', () => setSpace(false));
 
   svg.addEventListener('pointerdown', (e) => {
     if (e.button !== 1 && !(e.button === 0 && spaceHeld)) return;
+    if (spaceHeld) spacePanned = true;
     e.preventDefault();
     drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
     svg.setPointerCapture(e.pointerId);
@@ -142,6 +150,9 @@ export function createBoard(svg: SVGSVGElement) {
     screenToWorld,
     get spaceHeld() {
       return spaceHeld;
+    },
+    onSpaceTap(listener: () => void) {
+      spaceTaps.push(listener);
     },
   };
 }
