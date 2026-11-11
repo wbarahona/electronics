@@ -1,3 +1,46 @@
+import type { PartProps as BatteryProps } from './parts/sources/battery.ts';
+import type { PartProps as GroundProps } from './parts/sources/ground.ts';
+import type { PartProps as GeneratorProps } from './parts/sources/generator.ts';
+import type { PartProps as RailsProps } from './parts/sources/rails.ts';
+import type { PartProps as ResistorProps } from './parts/passive/resistor.ts';
+import type { PartProps as CapacitorsProps } from './parts/passive/capacitors.ts';
+import type { PartProps as InductorProps } from './parts/passive/inductor.ts';
+import type { PartProps as VariableProps } from './parts/passive/variable.ts';
+import type { PartProps as LdrProps } from './parts/passive/ldr.ts';
+import type { PartProps as NtcProps } from './parts/passive/ntc.ts';
+import type { PartProps as TransformerProps } from './parts/passive/transformer.ts';
+import type { PartProps as FuseProps } from './parts/passive/fuse.ts';
+import type { PartProps as LampProps } from './parts/signals/lamp.ts';
+import type { PartProps as LedProps } from './parts/signals/led.ts';
+import type { PartProps as StackLightProps } from './parts/signals/stack-light.ts';
+import type { PartProps as RgbLedProps } from './parts/signals/rgb-led.ts';
+import type { PartProps as BarGraphProps } from './parts/signals/bar-graph.ts';
+import type { PartProps as BicolorLedProps } from './parts/signals/bicolor-led.ts';
+import type { PartProps as SevenSegProps } from './parts/signals/seven-seg.ts';
+import type { PartProps as SwitchesProps } from './parts/switches/switches.ts';
+import type { PartProps as ChangeoverProps } from './parts/switches/changeover.ts';
+import type { PartProps as MotorProps } from './parts/loads/motor.ts';
+import type { PartProps as HeaterProps } from './parts/loads/heater.ts';
+import type { PartProps as SolenoidProps } from './parts/loads/solenoid.ts';
+import type { PartProps as FluorescentProps } from './parts/loads/fluorescent.ts';
+import type { PartProps as SoundersProps } from './parts/signals/sounders.ts';
+import type { PartProps as SpeakerProps } from './parts/signals/speaker.ts';
+import type { PartProps as RelaysProps } from './parts/switches/relays.ts';
+import type { PartProps as GatesProps } from './parts/digital/gates.ts';
+import type { PartProps as FlipFlopsProps } from './parts/digital/flip-flops.ts';
+import type { PartProps as IoProps } from './parts/digital/io.ts';
+import type { PartProps as Cd4511Props } from './parts/chips/cd4511.ts';
+import type { PartProps as Cd4017Props } from './parts/chips/cd4017.ts';
+import type { PartProps as Lm358Props } from './parts/chips/lm358.ts';
+import type { PartProps as Uln2003Props } from './parts/chips/uln2003.ts';
+import type { PartProps as Ne555Props } from './parts/chips/ne555.ts';
+import type { PartProps as RegulatorProps } from './parts/chips/regulator.ts';
+import type { PartProps as ScopeProbeProps } from './parts/meters/scope-probe.ts';
+import type { PartProps as PanelMeterProps } from './parts/meters/panel-meter.ts';
+import type { PartProps as MultimeterProps } from './parts/meters/multimeter.ts';
+import type { PartProps as DiodesProps } from './parts/semiconductors/diodes.ts';
+import type { PartProps as TransistorsProps } from './parts/semiconductors/transistors.ts';
+
 // Shared shapes of the circuit data: what the editor draws, what gets copied
 // and pasted, and what the simulator reads.
 
@@ -13,121 +56,52 @@ export type LampColor = 'warm' | LedColor; // warm: a plain filament's yellow
 // value, or the true RMS of the AC part only.
 export type MeterMode = 'DC' | 'AC';
 
-export type MotorSupply = 'DC' | 'AC 1~' | 'AC 3~';
-
 // The values each kind of part carries: what the properties panel edits and
-// the simulator reads. Adding a part type starts here.
-export interface PropsByType {
-  // `charge` is the state of charge, 1 full .. 0 flat; it drains as the battery is used.
-  battery: { voltage: number; internalResistance: number; maxCurrent: number; capacity: number; charge: number };
-  generator: { voltage: number; frequency: number; phase: number; internalResistance: number; maxCurrent: number };
-  // Supply rails: one terminal, held against the board's 0 V (Ground).
-  rail: { voltage: number; maxCurrent: number };
-  phase: { voltage: number; frequency: number; phase: number; maxCurrent: number }; // voltage is RMS
-  resistor: { resistance: number; powerRating: number };
-  capacitor: { capacitance: number; ratedVoltage: number };
-  electrolytic: { capacitance: number; ratedVoltage: number };
-  inductor: { inductance: number; resistance: number; maxCurrent: number };
-  fuse: { ratedCurrent: number };
-  // Positions and ambient light are percentages, 0..100.
-  potentiometer: { resistance: number; position: number; powerRating: number };
-  rheostat: { resistance: number; position: number; powerRating: number };
-  ldr: { darkResistance: number; lightResistance: number; ambient: number; powerRating: number };
-  ntc: { resistance: number; beta: number; ambient: number; powerRating: number }; // resistance at 25 °C, ambient in °C
-  lamp: { color: LampColor; ratedVoltage: number; ratedPower: number };
-  // A panel indicator (pilot) lamp: a lamp behind a coloured lens.
-  pilot: { color: LampColor; ratedVoltage: number; ratedPower: number };
-  // Red, amber and green lamps stacked on a common pin (pins R, A, G, common).
-  stackLight: { ratedVoltage: number; ratedPower: number };
-  led: { color: LedColor; forwardVoltage: number; maxCurrent: number };
-  // Eight LEDs (segments a–g and the dot) sharing one common pin. Forward
-  // voltage and max current are per segment.
-  sevenSeg: { color: LedColor; common: 'cathode' | 'anode'; forwardVoltage: number; maxCurrent: number };
-  // Ten LEDs in a row on a common pin; max current is per segment.
-  barGraph: { color: LedColor; common: 'cathode' | 'anode'; forwardVoltage: number; maxCurrent: number };
-  // Red and green LEDs back to back: red lights with pin 0 positive, green
-  // with pin 1 positive.
-  bicolorLed: { redVoltage: number; greenVoltage: number; maxCurrent: number };
-  // Red, green and blue LEDs in one package (pins R, G, B, then common);
-  // maxCurrent is per colour. Mixed, they make any colour.
-  rgbLed: { common: 'cathode' | 'anode'; redVoltage: number; greenVoltage: number; blueVoltage: number; maxCurrent: number };
-  switch: { closed: boolean; maxCurrent: number };
-  // Changeover (two-way, stairway) switch: common to throw 1, or to throw 2
-  // when `thrown`.
-  changeover: { thrown: boolean; maxCurrent: number };
-  button: { closed: boolean; maxCurrent: number };
-  buttonNC: { pressed: boolean; maxCurrent: number }; // conducts until pressed
-  // A coil (A1, A2) that, energized, moves `contacts` contacts: changeover
-  // (SPDT) or make only (SPST). maxCurrent is per contact. A contactor's coil
-  // is AC, its `poles` main contacts (3 for a motor) make when energized.
-  // `supply`: DC (pins +, −), single-phase AC (L, N) or three-phase AC (U, V,
-  // W, windings in delta). Rated voltage is the DC or RMS line voltage.
-  motor: { supply: MotorSupply; ratedVoltage: number; ratedPower: number };
-  // Sound when driven + to −: a magnetic buzzer's low buzz, a piezo's shrill
-  // tone. Rated voltage is the one it's meant to run on.
-  buzzer: { ratedVoltage: number; ratedCurrent: number };
-  piezo: { ratedVoltage: number; ratedCurrent: number; frequency: number };
-  // An electromechanical bell: rings on its rated (RMS) voltage, AC or DC.
-  bell: { ratedVoltage: number; ratedCurrent: number };
-  // Plays the AC part of the voltage across it, at that signal's frequency.
-  speaker: { impedance: number; ratedPower: number };
-  // A heating element: its rated voltage and power fix its resistance; it
-  // warms up over several seconds and glows when hot.
-  heater: { ratedVoltage: number; ratedPower: number };
-  // A coil whose plunger pulls in at its rated current (DC, or RMS on AC).
-  solenoid: { ratedVoltage: number; ratedCurrent: number; inductance: number };
-  // Fluorescent lighting: a tube (filament A on pins 0–1, B on pins 2–3, the
-  // arc between them), its ballast choke, and a glow starter.
-  tube: { ratedPower: number; arcVoltage: number; strikeVoltage: number };
-  ballast: { inductance: number; resistance: number; maxCurrent: number };
-  starter: { glowVoltage: number };
-  relay: { coilVoltage: number; coilResistance: number; contacts: number; contactType: 'SPDT' | 'SPST'; maxCurrent: number };
-  contactor: { coilVoltage: number; coilResistance: number; poles: number; maxCurrent: number };
-  // Forward voltage is at 10 mA.
-  diode: { forwardVoltage: number; maxCurrent: number; reverseVoltage: number };
-  schottky: { forwardVoltage: number; maxCurrent: number; reverseVoltage: number };
-  zener: { forwardVoltage: number; zenerVoltage: number; powerRating: number };
-  npn: { gain: number; maxCurrent: number; powerRating: number };
-  pnp: { gain: number; maxCurrent: number; powerRating: number };
-  // `ratio` is primary turns : secondary turns (2 steps down by half).
-  // Inductance and resistance are the primary's; the secondary's follow
-  // from the ratio. Max current is the secondary's.
-  transformer: { ratio: number; inductance: number; coupling: number; resistance: number; maxCurrent: number };
-  // Meters: pin 0 is + (red lead), pin 1 is COM.
-  voltmeter: { resistance: number; maxVoltage: number; mode: MeterMode };
-  // Moving-coil panel meter: a needle across a scale to `fullScale` volts.
-  panelMeter: { fullScale: number; resistance: number; mode: MeterMode };
-  // An oscilloscope probe: its point's voltage against the board's 0 V, shown
-  // as that channel's trace.
-  scopeProbe: { channel: 'CH1' | 'CH2' };
-  ammeter: { resistance: number; maxCurrent: number; mode: MeterMode };
-  // The board's common 0 V. Every Ground part is the same node.
-  ground: Record<string, never>;
-  // Logic parts run on a built-in supply (`supply`, 5 V) referenced to Ground.
-  and: LogicGate;
-  or: LogicGate;
-  not: LogicGate;
-  nand: LogicGate;
-  nor: LogicGate;
-  xor: LogicGate;
-  xnor: LogicGate;
-  dff: LogicGate;
-  jkff: LogicGate;
-  tff: LogicGate;
-  logicSwitch: { high: boolean; supply: number };
-  clock: { frequency: number; duty: number; supply: number }; // duty in %
-  probe: { supply: number };
-  // Chips, wired with their own supply pins like the real parts.
-  ne555: { maxCurrent: number; maxSupply: number };
-  regulator: { outputVoltage: number; dropout: number; maxCurrent: number; powerRating: number };
-  // CMOS logic chips with their own VDD/VSS pins; maxCurrent is per output.
-  cd4511: { maxCurrent: number }; // BCD to 7-segment latch/decoder/driver
-  cd4017: { maxCurrent: number }; // decade counter, ten decoded outputs
-  lm358: { maxCurrent: number }; // dual op-amp
-  uln2003: { maxCurrent: number }; // seven Darlington sink drivers
-  // On-resistance is at a gate–source voltage of 10 V.
-  nmos: { thresholdVoltage: number; onResistance: number; maxCurrent: number; powerRating: number };
-}
+// the simulator reads. Each part declares its own (PartProps in its file in
+// src/parts); adding a part type starts there.
+export interface PropsByType
+  extends BatteryProps,
+    GroundProps,
+    GeneratorProps,
+    RailsProps,
+    ResistorProps,
+    CapacitorsProps,
+    InductorProps,
+    VariableProps,
+    LdrProps,
+    NtcProps,
+    TransformerProps,
+    FuseProps,
+    LampProps,
+    LedProps,
+    StackLightProps,
+    RgbLedProps,
+    BarGraphProps,
+    BicolorLedProps,
+    SevenSegProps,
+    SwitchesProps,
+    ChangeoverProps,
+    MotorProps,
+    HeaterProps,
+    SolenoidProps,
+    FluorescentProps,
+    SoundersProps,
+    SpeakerProps,
+    RelaysProps,
+    GatesProps,
+    FlipFlopsProps,
+    IoProps,
+    Cd4511Props,
+    Cd4017Props,
+    Lm358Props,
+    Uln2003Props,
+    Ne555Props,
+    RegulatorProps,
+    ScopeProbeProps,
+    PanelMeterProps,
+    MultimeterProps,
+    DiodesProps,
+    TransistorsProps {}
 
 export interface LogicGate {
   supply: number;

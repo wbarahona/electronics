@@ -67,12 +67,16 @@ On Windows and Linux use Ctrl instead of ⌘.
 ```
 src/
   main.ts        app wiring and frame loop
-  components.ts  part definitions and DIN symbols
+  components.ts  the parts as the app sees them (PARTS, defaults, pins…)
+  parts/         one file per part or family: its symbol, settings and model
+    index.ts     the registry (tray order); defs.ts and symbols.ts are shared
   model.ts       circuit data (parts, wires, joints)
   editor.ts      board editing and rendering
   palette.ts     category bar and parts tray
   search.ts      part search
-  sim/           solver: engine, part models, linear algebra, current flow
+  scope.ts       oscilloscope · print.ts  printing · audio.ts  sounders
+  sim/           solver: engine, model types, linear algebra, current flow
+    shared/      model helpers by topic (junctions, sources, coils, logic, meters…)
 ```
 
 Planned parts and tools are listed in [INCOMING_PARTS.md](INCOMING_PARTS.md).
