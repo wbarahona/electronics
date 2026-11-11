@@ -1,6 +1,7 @@
 import { PARTS, applyPreset, canReset, isChoiceSpec, isModified, resetValues, isSwitchSpec, presetOf, type ChoiceSpec, type NumberSpec, type PropSpec, type SliderRange, type SwitchSpec } from './components.ts';
 import type { Editor, Live } from './editor.ts';
 import type { Circuit } from './model.ts';
+import { onLanguage, t } from './i18n/index.ts';
 import { MODELS } from './sim/models.ts';
 import type { Part, PropValue } from './types.ts';
 import './slider.ts';
@@ -76,8 +77,8 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
   function resetButton(c: Part) {
     const button = document.createElement('md-outlined-button');
     button.className = 'props-reset';
-    button.innerHTML = '<md-icon slot="icon">restart_alt</md-icon>Reset';
-    button.title = presetOf(c.type, c.props) ? 'Back to the datasheet values' : 'Back to the default values';
+    button.innerHTML = `<md-icon slot="icon">restart_alt</md-icon>${t('Reset')}`;
+    button.title = t(presetOf(c.type, c.props) ? 'Back to the datasheet values' : 'Back to the default values');
     button.addEventListener('click', () => {
       Object.assign(c.props, resetValues(c.type, c.props));
       editor.refreshPart(c.id);
@@ -107,8 +108,8 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
 
   function partNote(c: Part): string {
     const preset = presetOf(c.type, c.props);
-    if (!preset) return 'No particular part: the values are your own';
-    return isModified(c.type, c.props) ? `Modified: differs from the ${preset.code} datasheet` : preset.note;
+    if (!preset) return t('No particular part: the values are your own');
+    return isModified(c.type, c.props) ? t('Modified: differs from the {code} datasheet', { code: preset.code }) : t(preset.note);
   }
 
   // Outlined text field with the unit as suffix. Commits on Enter or leaving
@@ -116,7 +117,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
   // current value.
   function numberInput(c: Part, key: string, spec: NumberSpec) {
     const field = document.createElement('md-outlined-text-field');
-    field.label = spec.label;
+    field.label = t(spec.label);
     field.suffixText = spec.unit;
     field.inputMode = 'decimal';
     field.value = formatNumber(value(c, key) as number);
@@ -127,7 +128,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
       const v = parseSI(field.value);
       if (Number.isNaN(v) || v < (spec.min ?? -Infinity) || v > (spec.max ?? Infinity)) {
         field.error = true;
-        field.errorText = 'Not a valid value';
+        field.errorText = t('Not a valid value');
         return;
       }
       set(c, key, v);
@@ -150,7 +151,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const head = document.createElement('div');
     head.className = 'slider-head';
     const name = document.createElement('span');
-    name.textContent = spec.label;
+    name.textContent = t(spec.label);
     const shown = document.createElement('span');
     shown.className = 'slider-value';
     head.append(name, shown);
@@ -160,7 +161,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     slider.max = range.max;
     slider.step = step;
     slider.ticks = (range.max - range.min) / step <= 20;
-    slider.label = spec.label;
+    slider.label = t(spec.label);
     const show = (v: number) => {
       slider.valueLabel = formatNumber(v);
       shown.textContent = `${formatNumber(v)} ${spec.unit}`.trim();
@@ -178,14 +179,14 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
 
   function choiceInput(c: Part, key: string, spec: ChoiceSpec) {
     const select = document.createElement('md-outlined-select');
-    select.label = spec.label;
+    select.label = t(spec.label);
     for (const name of spec.options) {
       const option = document.createElement('md-select-option');
       option.value = name;
       option.selected = name === value(c, key);
       const headline = document.createElement('div');
       headline.slot = 'headline';
-      headline.textContent = name;
+      headline.textContent = t(name);
       option.append(headline);
       select.append(option);
     }
@@ -209,7 +210,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const label = document.createElement('label');
     label.className = 'field check';
     const name = document.createElement('span');
-    name.textContent = spec.label;
+    name.textContent = t(spec.label);
     const toggle = document.createElement('md-switch');
     toggle.selected = value(c, key) as boolean;
     toggle.addEventListener('change', () => set(c, key, toggle.selected));
@@ -244,10 +245,10 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const ref = document.createElement('span');
     ref.className = 'ref';
     ref.textContent = `-${c.ref}`;
-    heading.append(ref, ` ${PARTS[c.type].name}`);
+    heading.append(ref, ` ${t(PARTS[c.type].name)}`);
     const close = document.createElement('md-icon-button');
-    close.title = 'Close (Esc)';
-    close.ariaLabel = 'Close';
+    close.title = t('Close (Esc)');
+    close.ariaLabel = t('Close');
     close.innerHTML = '<md-icon>close</md-icon>';
     close.addEventListener('click', () => editor.deselect());
     const head = document.createElement('div');
@@ -289,7 +290,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const head = document.createElement('div');
     head.className = 'charge-head';
     const name = document.createElement('span');
-    name.textContent = 'Charge';
+    name.textContent = t('Charge');
     const text = document.createElement('span');
     text.className = 'charge-value';
     head.append(name, text);
@@ -297,7 +298,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     row.append(head, bar);
     if ('charge' in c.props) {
       const recharge = document.createElement('md-outlined-button');
-      recharge.innerHTML = '<md-icon slot="icon">battery_charging_full</md-icon>Recharge';
+      recharge.innerHTML = `<md-icon slot="icon">battery_charging_full</md-icon>${t('Recharge')}`;
       recharge.addEventListener('click', () => set(c, 'charge', 1));
       row.append(recharge);
     }
@@ -318,10 +319,10 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const notice = document.createElement('div');
     notice.className = 'broken-notice';
     const text = document.createElement('span');
-    const label = MODELS[c.type].failure?.label ?? 'broken';
+    const label = t(MODELS[c.type].failure?.label ?? 'broken');
     text.textContent = `${label[0].toUpperCase()}${label.slice(1)}`;
     const replace = document.createElement('md-outlined-button');
-    replace.innerHTML = '<md-icon slot="icon">autorenew</md-icon>Replace';
+    replace.innerHTML = `<md-icon slot="icon">autorenew</md-icon>${t('Replace')}`;
     replace.addEventListener('click', () => {
       c.broken = false;
       editor.refreshPart(c.id);
@@ -337,6 +338,8 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     current = null;
     show(id);
   }
+
+  onLanguage(refresh);
 
   return { show, refresh, showLive };
 }

@@ -1,5 +1,6 @@
 import type { MdDialog } from '@material/web/dialog/dialog.js';
 import { PARTS, tagOf } from './components.ts';
+import { language, t } from './i18n/index.ts';
 import { lightTokens } from './theme.ts';
 import type { Circuit } from './model.ts';
 
@@ -48,7 +49,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
 
   function options(): PrintOptions {
     return {
-      title: field('title').value.trim() || 'Untitled circuit',
+      title: field('title').value.trim() || t('Untitled circuit'),
       paper: field('paper').value as Paper,
       landscape: field('orientation').value === 'landscape',
       grid: field('grid').checked,
@@ -102,9 +103,9 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
       .filter((c) => !PARTS[c.type].noLabel)
       .sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
     table.innerHTML = `
-      <thead><tr><th>Ref.</th><th>Part</th><th>Value</th></tr></thead>
+      <thead><tr><th>${t('Ref.')}</th><th>${t('Part')}</th><th>${t('Value')}</th></tr></thead>
       <tbody>${parts
-        .map((c) => `<tr><td>-${c.ref}</td><td>${PARTS[c.type].name}</td><td>${tagOf(c.type, c.props) ?? ''}</td></tr>`)
+        .map((c) => `<tr><td>-${c.ref}</td><td>${t(PARTS[c.type].name)}</td><td>${tagOf(c.type, c.props) ?? ''}</td></tr>`)
         .join('')}</tbody>`;
     return table;
   }
@@ -117,7 +118,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     for (const [name, value] of Object.entries(lightTokens())) root.style.setProperty(name, value);
     const page = document.createElement('section');
     page.className = 'print-page';
-    const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    const date = new Date().toLocaleDateString(language(), { year: 'numeric', month: 'long', day: 'numeric' });
     page.innerHTML = `
       <header class="print-head">
         <div class="print-title"></div>
@@ -136,7 +137,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
       const img = new Image();
       img.src = src.scopeSnapshot(SCOPE_PRINT[0], SCOPE_PRINT[1]);
       const caption = document.createElement('figcaption');
-      caption.textContent = ['Oscilloscope', ...[...src.scope.querySelectorAll('[data-channel]')].map((e) => e.textContent), src.scope.querySelector('.scope-time')!.textContent]
+      caption.textContent = [t('Oscilloscope'), ...[...src.scope.querySelectorAll('[data-channel]')].map((e) => e.textContent), src.scope.querySelector('.scope-time')!.textContent]
         .filter(Boolean)
         .join(' · ');
       figure.append(img, caption);
@@ -145,7 +146,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     if (o.thermal) {
       const legend = document.createElement('div');
       legend.className = 'print-legend';
-      legend.innerHTML = '<div>Thermal view</div><div class="thermal-legend-bar"></div><div class="print-legend-labels"><span>Cool</span><span>Rated</span><span>Failing</span></div>';
+      legend.innerHTML = `<div>${t('Thermal view')}</div><div class="thermal-legend-bar"></div><div class="print-legend-labels"><span>${t('Cool')}</span><span>${t('Rated')}</span><span>${t('Failing')}</span></div>`;
       extras.push(legend);
     }
     if (extras.length) {
@@ -159,7 +160,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     if (o.parts) {
       const list = document.createElement('section');
       list.className = 'print-page print-list';
-      list.innerHTML = '<header class="print-head"><div class="print-title"></div><div class="print-meta">Parts list</div></header>';
+      list.innerHTML = `<header class="print-head"><div class="print-title"></div><div class="print-meta">${t('Parts list')}</div></header>`;
       list.querySelector('.print-title')!.textContent = o.title;
       list.append(partsList());
       root.append(list);

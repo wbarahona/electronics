@@ -17,6 +17,7 @@ import { createScope } from './scope.ts';
 import { createSearch } from './search.ts';
 import { createSettings } from './settings.ts';
 import { createZoom } from './zoom.ts';
+import { onLanguage, t } from './i18n/index.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
 import { MODELS, type Sound } from './sim/models.ts';
@@ -31,7 +32,8 @@ function byId<T extends Element = HTMLElement>(id: string): T {
   return el as unknown as T;
 }
 
-// Settings first: the theme colours everything else.
+// Settings first: the theme colours everything else, and the language
+// translates index.html before anything is added to it.
 const settings = createSettings(byId('settings-dialog'));
 
 const board = createBoard(byId<SVGSVGElement>('board'));
@@ -117,12 +119,12 @@ const editor = createEditor(board, circuit, {
   onPropChange: () => panel.refresh(),
   onContextMenu: (x, y, at) =>
     menu.open(x, y, [
-      { label: 'Cut', icon: 'content_cut', shortcut: `${MOD}X`, enabled: editor.canCopy(), action: editor.cut },
-      { label: 'Copy', icon: 'content_copy', shortcut: `${MOD}C`, enabled: editor.canCopy(), action: editor.copy },
-      { label: 'Paste', icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste(), action: () => editor.paste(at) },
-      { label: 'Duplicate', icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy(), action: editor.duplicate },
+      { label: t('Cut'), icon: 'content_cut', shortcut: `${MOD}X`, enabled: editor.canCopy(), action: editor.cut },
+      { label: t('Copy'), icon: 'content_copy', shortcut: `${MOD}C`, enabled: editor.canCopy(), action: editor.copy },
+      { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste(), action: () => editor.paste(at) },
+      { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy(), action: editor.duplicate },
       'separator',
-      { label: 'Delete', icon: 'delete', shortcut: 'Del', enabled: editor.hasSelection(), danger: true, action: editor.deleteSelected },
+      { label: t('Delete'), icon: 'delete', shortcut: t('Del'), enabled: editor.hasSelection(), danger: true, action: editor.deleteSelected },
     ]),
 });
 const menu = createMenu(byId('menu'), byId('menu-anchor'));
@@ -178,13 +180,14 @@ else history.reset();
 // While burnt it's a button that replaces every burnt-out part; the
 // simulation stays paused until run again.
 const logo = byId<HTMLButtonElement>('logo');
-logo.title = 'Replace burnt-out parts';
+logo.title = t('Replace burnt-out parts');
+onLanguage(() => (logo.title = t('Replace burnt-out parts')));
 logo.addEventListener('click', () => {
   const burnt = circuit.components.filter((c) => c.broken);
   for (const c of burnt) c.broken = false;
   for (const c of burnt) editor.refreshPart(c.id);
   panel.refresh();
-  if (burnt.length) showToast(`Replaced ${burnt.map((c) => `-${c.ref}`).join(', ')}.`);
+  if (burnt.length) showToast(t('Replaced {parts}.', { parts: burnt.map((c) => `-${c.ref}`).join(', ') }));
 });
 let waveSpeed = 0;
 let last = performance.now();
@@ -216,8 +219,8 @@ requestAnimationFrame(function frame(now) {
       // Stop at the failure, so it can be looked at before anything else goes.
       controls.pause();
       const parts = failed.map((id) => circuit.part(id)!);
-      const what = parts.length === 1 ? (MODELS[parts[0].type].failure?.label ?? 'failed') : 'failed';
-      showToast(`${parts.map((p) => `-${p.ref}`).join(', ')} ${what}. Simulation paused.`);
+      const what = t(parts.length === 1 ? (MODELS[parts[0].type].failure?.label ?? 'failed') : 'failed');
+      showToast(t('{parts} {what}. Simulation paused.', { parts: parts.map((p) => `-${p.ref}`).join(', '), what }));
     }
     if (engine.dynamic || engine.heating || engine.draining || failed.length) showResults();
     editor.animate(dt);
@@ -271,7 +274,7 @@ function setRail(expanded: boolean) {
   rail.classList.toggle('expanded', expanded);
   railToggle.setAttribute('aria-expanded', String(expanded));
   railToggle.querySelector('md-icon')!.textContent = expanded ? 'menu_open' : 'menu';
-  railToggle.title = railToggle.ariaLabel = expanded ? 'Collapse navigation' : 'Expand navigation';
+  railToggle.title = railToggle.ariaLabel = t(expanded ? 'Collapse navigation' : 'Expand navigation');
   try {
     localStorage.setItem(RAIL_KEY, String(expanded));
   } catch {
@@ -295,6 +298,7 @@ try {
   // no storage: start collapsed
 }
 setRail(railExpanded);
+onLanguage(() => setRail(rail.classList.contains('expanded')));
 
 // Printing (⌘P, or the Print button): our own dialog with a preview.
 const printer = createPrint(byId('print-dialog'), {

@@ -1,4 +1,5 @@
 import { PARTS } from './components.ts';
+import { t } from './i18n/index.ts';
 import type { Circuit } from './model.ts';
 import type { Engine } from './sim/engine.ts';
 import { MODELS, type Lines } from './sim/models.ts';
@@ -51,8 +52,9 @@ export function createReadout(
         const row = document.createElement('div');
         const name = document.createElement('span');
         const text = document.createElement('b');
-        name.textContent = label;
-        text.textContent = value;
+        // Labels and worded values (On, Closed…) translate; numbers don't.
+        name.textContent = t(label);
+        text.textContent = t(value);
         row.append(name, text);
         return row;
       }),

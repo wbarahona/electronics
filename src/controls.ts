@@ -1,5 +1,6 @@
 import type { MdFilledButton } from '@material/web/button/filled-button.js';
 import type { MdFilledTonalButton } from '@material/web/button/filled-tonal-button.js';
+import { onLanguage, t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { formatSI } from './units.ts';
 
@@ -46,7 +47,7 @@ export function createControls(root: HTMLElement) {
 
   function render() {
     run.querySelector('md-icon')!.textContent = state.running ? 'pause' : 'play_arrow';
-    run.querySelector('span')!.textContent = state.running ? 'Pause' : 'Run';
+    run.querySelector('span')!.textContent = t(state.running ? 'Pause' : 'Run');
     run.setAttribute('aria-pressed', String(state.running));
     speedText.textContent = SPEEDS[level].label;
     slower.disabled = level === 0;
@@ -82,6 +83,7 @@ export function createControls(root: HTMLElement) {
   });
 
   render();
+  onLanguage(render);
   state.showTime(0);
   return Object.assign(state, { toggle, pause });
 }

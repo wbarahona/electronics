@@ -1,4 +1,5 @@
 import { CATEGORIES, PARTS, defaults, symbolMarkup } from './components.ts';
+import { t } from './i18n/index.ts';
 import { icon, type Palette } from './palette.ts';
 import type { PartType } from './types.ts';
 
@@ -56,16 +57,18 @@ export function createSearch(root: HTMLElement, palette: Palette) {
     const groups = CATEGORIES.flatMap((category) => {
       // A part's part numbers that match, e.g. "1N4148" for the diode.
       const codes = (type: PartType) => (PARTS[type].presets ?? []).map((p) => p.code).filter((c) => c.toLowerCase().includes(query));
+      // Names and subcategories match in the current language or in English.
+      const has = (text = '') => [text, t(text)].some((s) => s.toLowerCase().includes(query));
       const matches = (Object.keys(PARTS) as PartType[]).filter((type) => {
-        const { category: id, name, group = '' } = PARTS[type];
-        return id === category.id && (name.toLowerCase().includes(query) || group.toLowerCase().includes(query) || codes(type).length > 0);
+        const { category: id, name, group } = PARTS[type];
+        return id === category.id && (has(name) || has(group) || codes(type).length > 0);
       });
       if (!matches.length) return [];
       const group = document.createElement('div');
       group.className = 'search-category';
       group.setAttribute('role', 'group');
-      group.setAttribute('aria-label', category.label);
-      group.innerHTML = `<div class="search-category-label" aria-hidden="true"><md-icon>${category.icon}</md-icon>${category.label}</div>`;
+      group.setAttribute('aria-label', t(category.label));
+      group.innerHTML = `<div class="search-category-label" aria-hidden="true"><md-icon>${category.icon}</md-icon>${t(category.label)}</div>`;
       for (const type of matches) {
         const part = PARTS[type];
         const { box, width, height } = icon(type);
@@ -73,12 +76,14 @@ export function createSearch(root: HTMLElement, palette: Palette) {
         el.className = 'search-option';
         el.id = `search-option-${type}`;
         el.setAttribute('role', 'option');
-        el.title = `Drag ${part.name} onto the board`;
+        const name = t(part.name);
+        const subgroup = part.group && t(part.group);
+        el.title = t('Drag {part} onto the board', { part: name });
         el.innerHTML = `
           <span class="search-option-icon"><svg class="part" viewBox="${box}" style="width: ${width}px; height: ${height}px" aria-hidden="true">${symbolMarkup(type, defaults(type))}</svg></span>
           <span class="search-option-text">
-            <span class="search-option-name">${highlight(part.name, query)}</span>
-            ${part.group || codes(type).length ? `<span class="search-option-group">${[part.group ? highlight(part.group, query) : '', ...codes(type).slice(0, 3).map((c) => highlight(c, query))].filter(Boolean).join(' · ')}</span>` : ''}
+            <span class="search-option-name">${highlight(name, query)}</span>
+            ${subgroup || codes(type).length ? `<span class="search-option-group">${[subgroup ? highlight(subgroup, query) : '', ...codes(type).slice(0, 3).map((c) => highlight(c, query))].filter(Boolean).join(' · ')}</span>` : ''}
           </span>`;
         el.addEventListener('pointerdown', (e) => palette.startDrag(e, type, el));
         // After a click or a drop: done here, back to the board.
@@ -93,7 +98,7 @@ export function createSearch(root: HTMLElement, palette: Palette) {
     } else {
       const none = document.createElement('div');
       none.className = 'search-empty';
-      none.textContent = `No parts match “${input.value.trim()}”`;
+      none.textContent = t('No parts match “{query}”', { query: input.value.trim() });
       results.replaceChildren(none);
     }
     results.scrollTop = 0;

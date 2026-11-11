@@ -46,7 +46,7 @@ export const models: ModelDefs<'ldr'> = {
       (p, el) => ldrResistance(p, el.state.light ?? p.ambient / 100),
       (r, p) => [
         ...basicReadout(r),
-        ['Light', pct(Math.min(1, r.state.light ?? 0))],
+        ['Light level', pct(Math.min(1, r.state.light ?? 0))],
         ['Resistance', fmt(ldrResistance(p, r.state.light ?? 0), 'Ω')],
       ],
     ),

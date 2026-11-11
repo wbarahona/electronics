@@ -224,9 +224,12 @@
     </section>
     </div>
     <md-dialog id="settings-dialog" class="settings-dialog">
-      <md-icon slot="icon">settings</md-icon>
       <div slot="headline" class="padded-title">Settings</div>
       <form slot="content" id="settings-form" method="dialog" class="settings-body">
+        <section class="settings-section">
+          <h3 class="settings-heading">Language</h3>
+          <div class="settings-languages" role="radiogroup" aria-label="Language"></div>
+        </section>
         <section class="settings-section">
           <h3 class="settings-heading">Theme colour</h3>
           <div class="theme-swatches" role="radiogroup" aria-label="Theme colour"></div>

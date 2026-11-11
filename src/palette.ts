@@ -2,6 +2,7 @@ import type { MdMenu } from '@material/web/menu/menu.js';
 import type { Board } from './board.ts';
 import { CATEGORIES, PARTS, defaults, keepUpright, symbolMarkup, type CategoryId } from './components.ts';
 import type { Editor } from './editor.ts';
+import { onLanguage, t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import type { PartType } from './types.ts';
 
@@ -93,12 +94,12 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'palette-item';
-    btn.title = `Drag ${part.name} onto the board`;
+    btn.title = t('Drag {part} onto the board', { part: t(part.name) });
     btn.innerHTML = `
       <md-focus-ring></md-focus-ring>
       <md-ripple></md-ripple>
       <svg class="part" viewBox="${icon(type).box}" style="width: ${icon(type).width}px; height: ${icon(type).height}px" aria-hidden="true">${symbolMarkup(type, defaults(type))}</svg>
-      <span>${part.name}</span>`;
+      <span>${t(part.name)}</span>`;
     btn.addEventListener('pointerdown', (e) => startDrag(e, type, btn));
     return btn;
   }
@@ -122,7 +123,7 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
       if (all.length > 1) {
         const caption = document.createElement('div');
         caption.className = 'tray-group-label';
-        caption.textContent = name;
+        caption.textContent = t(name);
         group.append(caption);
       }
       const row = document.createElement('div');
@@ -157,14 +158,13 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'palette-category';
-    button.title = category.label;
     button.setAttribute('aria-controls', tray.id);
     button.setAttribute('aria-expanded', 'false');
     button.innerHTML = `
       <md-focus-ring></md-focus-ring>
       <md-ripple></md-ripple>
       <md-icon>${category.icon}</md-icon>
-      <span>${category.label}</span>
+      <span></span>
       <md-icon class="arrow">arrow_drop_down</md-icon>`;
     button.addEventListener('click', () => {
       if (openCategory === button) closeTray();
@@ -184,12 +184,11 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
   more.type = 'button';
   more.id = 'more-categories';
   more.className = 'palette-category palette-more';
-  more.title = 'More categories';
   more.innerHTML = `
     <md-focus-ring></md-focus-ring>
     <md-ripple></md-ripple>
     <md-icon>more_horiz</md-icon>
-    <span>More</span>
+    <span></span>
     <md-icon class="arrow">arrow_drop_down</md-icon>`;
   container.append(more);
   moreMenu.anchor = more.id;
@@ -199,7 +198,7 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     moreMenu.replaceChildren(
       ...overflow.map((category) => {
         const item = document.createElement('md-menu-item');
-        item.innerHTML = `<md-icon slot="start">${category.icon}</md-icon><div slot="headline">${category.label}</div>`;
+        item.innerHTML = `<md-icon slot="start">${category.icon}</md-icon><div slot="headline">${t(category.label)}</div>`;
         const button = buttons[CATEGORIES.indexOf(category)];
         item.addEventListener('click', () => {
           if (openCategory !== button) openTray(button, category);
@@ -234,6 +233,24 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     syncMore();
   }
   new ResizeObserver(layout).observe(container);
+
+  // The categories' names, in the current language; on a change the open
+  // tray is rebuilt too, and the bar laid out again (the names' widths differ).
+  function labelCategories() {
+    CATEGORIES.forEach((category, k) => {
+      buttons[k].title = t(category.label);
+      buttons[k].querySelector('span')!.textContent = t(category.label);
+    });
+    more.title = t('More categories');
+    more.querySelector('span')!.textContent = t('More');
+  }
+  labelCategories();
+  onLanguage(() => {
+    labelCategories();
+    const open = openCategory;
+    if (open) openTray(open, CATEGORIES[buttons.indexOf(open)]);
+    layout();
+  });
 
   function addToView(type: PartType, rotation = 0) {
     const r = svg.getBoundingClientRect();

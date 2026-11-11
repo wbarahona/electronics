@@ -1,3 +1,4 @@
+import { t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
 import type { Circuit } from './model.ts';
@@ -32,7 +33,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   let name = 'circuit.json';
 
   const empty = () => !circuit.components.length && !circuit.wires.length && !circuit.joints.length;
-  const replaceOk = () => empty() || confirm('Replace the circuit on the board? Anything not saved to a file will be lost.');
+  const replaceOk = () => empty() || confirm(t('Replace the circuit on the board? Anything not saved to a file will be lost.'));
   const text = () => JSON.stringify(serialize(circuit, getView()), null, 2);
 
   function newCircuit() {
@@ -47,7 +48,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     try {
       data = parse(text);
     } catch (e) {
-      report(`Couldn’t open ${fileName}: ${(e as Error).message}`);
+      report(t('Couldn’t open {file}: {error}', { file: fileName, error: (e as Error).message }));
       return false;
     }
     load(data);
@@ -63,7 +64,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
         const file = await h.getFile();
         if (open(await file.text(), file.name)) handle = h;
       } catch (e) {
-        if (!cancelled(e)) report(`Couldn’t open the file: ${(e as Error).message}`);
+        if (!cancelled(e)) report(t('Couldn’t open the file: {error}', { error: (e as Error).message }));
       }
       return;
     }
@@ -86,7 +87,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
         await writable.close();
         name = handle.name;
       } catch (e) {
-        if (!cancelled(e)) report(`Couldn’t save: ${(e as Error).message}`);
+        if (!cancelled(e)) report(t('Couldn’t save: {error}', { error: (e as Error).message }));
       }
       return;
     }

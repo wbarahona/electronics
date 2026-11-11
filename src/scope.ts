@@ -1,3 +1,4 @@
+import { t as tr } from './i18n/index.ts';
 import { formatSI } from './units.ts';
 
 const CHANNELS = ['CH1', 'CH2'] as const;
@@ -237,7 +238,7 @@ export function createScope(root: HTMLElement) {
     ctx.textBaseline = 'top';
     for (let k = 0; k <= DIVS_X; k++) {
       const t = -((DIVS_X - k) * span) / DIVS_X;
-      ctx.fillText(k === DIVS_X ? 'now' : formatSI(t, 's'), sx + (k * sw) / DIVS_X, sy + sh + gap / 2);
+      ctx.fillText(k === DIVS_X ? tr('now') : formatSI(t, 's'), sx + (k * sw) / DIVS_X, sy + sh + gap / 2);
     }
   }
 
