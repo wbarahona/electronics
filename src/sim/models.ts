@@ -23,8 +23,16 @@
 //                   more than two pins (otherwise [i, −i])
 //   power(el, s)    power it takes in, when that isn't simply v·i
 //   respond(el, env, r, dt)  react to the surroundings after a solved step
-//                   (light reaching an LDR, a thermistor warming up); dt is
-//                   null when settling instantly after an edit
+//                   (light reaching an LDR, a thermistor warming up, a gate
+//                   reading its inputs); dt is null when settling instantly
+//                   after an edit. Returns whether anything changed.
+//   grounded        draws its supply from the hidden logic supply, which
+//                   returns through 0 V (logic parts)
+//   groundTie       holds its net at 0 V itself (Ground)
+//   groups          pins that are electrically connected inside the part,
+//                   when not all are (a transformer's isolated windings)
+//   extras(r)       further values to keep RMS averages of (r.extraRms)
+//   reading(r)      what a meter's display shows
 //   level(r, props) how full an energy store is, 0..1 (the board's gauge)
 //   drain(el, r, dt)  use up stored energy over dt seconds of simulated time;
 //                   returns whether it is still draining
@@ -60,6 +68,7 @@ export interface Result {
   ac: boolean;
   pins: number[];
   pinV: number[];
+  extraRms: number[]; // RMS of the model's extras(), in the same order
   state: PartState; // what the part is sensing (light, temperature)
 }
 
@@ -71,12 +80,20 @@ export interface PartState {
   i?: number; // inductor current at the end of the last step
   light?: number; // light an LDR is getting, 0..1
   rise?: number; // a thermistor's temperature above ambient, K
+  ins?: boolean[]; // a logic part's input levels and output
+  out?: boolean;
+  edges?: number; // rising clock edges a flip-flop has seen
+  edgeAt?: number; // a 555's last rising edge (s) and the period it measured
+  period?: number;
+  mode?: 'regulating' | 'dropout'; // a regulator's region at the last iteration
   vbe?: number; // transistor junction voltages at the last iteration
   vbc?: number;
   vgs?: number;
   vds?: number;
   broken?: boolean;
-  avg?: { v2: number; i2: number; p: number };
+  avg?: { v2: number; i2: number; p: number; x2: number[] };
+  i1?: number; // transformer winding currents at the end of the last step
+  i2?: number;
 }
 
 // A part as the engine sees it.
@@ -109,6 +126,7 @@ export type Lines = [string, string][];
 
 // What a part can sense around it.
 export interface Env {
+  readonly time: number; // simulated time, s
   light(el: Element): number; // light reaching it from glowing parts, 0..1+
 }
 
@@ -131,12 +149,17 @@ interface ModelDef<P> {
   brightness?(r: Result, p: P): number;
   maxStep?(p: P): number;
   thermal?: Thermal<P>;
-  failure?: { label: string; open: boolean };
+  failure?: { label: string; open: boolean; display?: string }; // display: what a broken meter shows
   level?(r: Result, p: P): number;
   drain?(el: Element<P>, r: Result, dt: number): boolean;
   pinCurrents?(el: Element<P>, s: Stamper): number[];
+  groups?: number[][];
+  extras?(r: Result): number[];
+  reading?(r: Result, p: P): string;
   power?(el: Element<P>, s: Stamper): number;
-  respond?(el: Element<P>, env: Env, r: Result, dt: number | null): void;
+  respond?(el: Element<P>, env: Env, r: Result, dt: number | null): boolean | void;
+  grounded?: boolean;
+  groundTie?: boolean;
 }
 
 // A model seen by code that handles any part type.
@@ -144,6 +167,7 @@ export type Model = ModelDef<Props>;
 
 export const THERMAL_VOLTAGE = 0.025852; // kT/q at 27 °C
 const R_SWITCH_ON = 1e-3;
+const G_GROUND = 1e6; // S; Ground holds its net at 0 V this firmly
 const R_FUSE = 0.01;
 const R_MIN = 1e-3; // a wiper or setting at its very end still has a little resistance
 const LDR_TAU = 0.05; // s; LDRs follow light with a short lag
@@ -210,6 +234,11 @@ const powerThermal = <P extends { powerRating: number }>(tau: number, limit: num
   tau,
   limit,
 });
+
+const meterReading = (r: Result, unit: 'V' | 'A') => {
+  if (r.ac) return `${fmt(unit === 'V' ? r.vrms : r.irms, unit)} ~`;
+  return fmt(unit === 'V' ? r.v : r.i, unit);
+};
 
 // A filament is too slow to follow AC, so it shines by average power.
 const lampLight = (r: Result, p: PropsByType['lamp']) => Math.abs(r.ac ? r.pavg : r.p) / p.ratedPower;
@@ -430,6 +459,373 @@ function mosfet(): ModelDef<PropsByType['nmos']> {
     thermal: {
       load: (r, p) => Math.max(Math.abs(r.p) / p.powerRating, Math.abs(r.pins[1]) / p.maxCurrent),
       tau: 0.5,
+      limit: 1.5,
+    },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
+// Transformer: two coupled inductors. With winding currents i = [i1, i2] and
+// voltages v = [v1, v2] (v1 = V(pin 1) − V(pin 2), v2 = V(pin 3) − V(pin 4)):
+//   v = R·i + L·di/dt,  L = [[L1, M], [M, L2]],  M = k·√(L1·L2)
+// Over a backward-Euler step: v = Z·i − (L/dt)·i_prev with Z = R + L/dt, so
+//   i = Y·v + Y·(L/dt)·i_prev,  Y = Z⁻¹.
+// L2 = L1 / n² and R2 = R1 / n² for turns ratio n. Only changing current is
+// coupled across, so DC on the primary just heats it.
+function transformer(): ModelDef<PropsByType['transformer']> {
+  type P = PropsByType['transformer'];
+  function step(p: P, dt: number, i1: number, i2: number) {
+    const l1 = p.inductance;
+    const l2 = p.inductance / (p.ratio * p.ratio);
+    const m = p.coupling * Math.sqrt(l1 * l2);
+    const r1 = p.resistance;
+    const r2 = p.resistance / (p.ratio * p.ratio);
+    const [z11, z12, z22] = [r1 + l1 / dt, m / dt, r2 + l2 / dt];
+    const det = z11 * z22 - z12 * z12;
+    const y = { 11: z22 / det, 12: -z12 / det, 22: z11 / det };
+    // Y·(L/dt)·i_prev
+    const h1 = (l1 * i1 + m * i2) / dt;
+    const h2 = (m * i1 + l2 * i2) / dt;
+    return { y, c1: y[11] * h1 + y[12] * h2, c2: y[12] * h1 + y[22] * h2 };
+  }
+  const currents = (el: Element<P>, s: Stamper) => {
+    const [a, b, c, d] = el.nodes;
+    const t = step(el.props, s.dt, el.state.i1 ?? 0, el.state.i2 ?? 0);
+    const v1 = s.v(a) - s.v(b);
+    const v2 = s.v(c) - s.v(d);
+    return [t.y[11] * v1 + t.y[12] * v2 + t.c1, t.y[12] * v1 + t.y[22] * v2 + t.c2];
+  };
+  return {
+    dynamic: true,
+    groups: [[0, 1], [2, 3]],
+    stamp(el, s) {
+      const [a, b, c, d] = el.nodes;
+      const { y, c1, c2 } = step(el.props, s.dt, el.state.i1 ?? 0, el.state.i2 ?? 0);
+      // Each winding draws its current in at its first pin and returns it at the second.
+      const terms = (g1: number, g2: number): [number, number][] => [[a, g1], [b, -g1], [c, g2], [d, -g2]];
+      const neg = (t: [number, number][]) => t.map(([n, g]): [number, number] => [n, -g]);
+      const w1 = terms(y[11], y[12]);
+      const w2 = terms(y[12], y[22]);
+      s.draw(a, w1, c1);
+      s.draw(b, neg(w1), -c1);
+      s.draw(c, w2, c2);
+      s.draw(d, neg(w2), -c2);
+    },
+    current: (el, s) => currents(el, s)[0],
+    pinCurrents(el, s) {
+      const [i1, i2] = currents(el, s);
+      return [i1, -i1, i2, -i2];
+    },
+    accept(el, s) {
+      [el.state.i1, el.state.i2] = currents(el, s);
+    },
+    // Secondary voltage and current, for their RMS.
+    extras: (r) => [r.pinV[2] - r.pinV[3], r.pins[2]],
+    readout: (r, p) => {
+      const v2 = r.pinV[2] - r.pinV[3];
+      return r.ac
+        ? [
+            ['Primary', `${fmt(r.vrms, 'V')} rms, ${fmt(r.irms, 'A')}`],
+            ['Secondary', `${fmt(r.extraRms[0], 'V')} rms, ${fmt(r.extraRms[1], 'A')}`],
+            ['Ratio', p.ratio >= 1 ? `${+p.ratio.toPrecision(3)} : 1` : `1 : ${+(1 / p.ratio).toPrecision(3)}`],
+          ]
+        : [
+            ['Primary', `${fmt(r.v, 'V')}, ${fmt(r.i, 'A')}`],
+            ['Secondary', `${fmt(v2, 'V')}, ${fmt(r.pins[2], 'A')}`],
+          ];
+    },
+    // The heavier-loaded winding, against its rating (the primary's is the
+    // secondary's divided by the ratio).
+    thermal: {
+      load: (r, p) => Math.max(Math.abs(r.pins[2]), Math.abs(r.pins[0]) * p.ratio) / p.maxCurrent,
+      tau: 2,
+      limit: 1.5,
+    },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
+// --- Logic --------------------------------------------------------------------
+// Logic parts run on a built-in supply referenced to 0 V. Inputs barely load
+// the signal (a weak pull-down: an unconnected input reads 0) and read 1 above
+// HIGH_LEVEL of the supply, 0 below LOW_LEVEL, keeping their last level in
+// between (hysteresis, so slow or noisy edges don't chatter). Outputs are a
+// source of 0 V or the supply behind a small resistance, so they drive real
+// loads. A gate reads its inputs after each step and switches for the next,
+// a one-step delay that lets latches and ring oscillators behave.
+const G_LOGIC_IN = 1e-6; // S (1 MΩ pull-down)
+const G_LOGIC_OUT = 1 / 25; // S (25 Ω output)
+const LOGIC_SOURCE_MAX = 0.05; // A a logic switch or clock output can give
+const HIGH_LEVEL = 0.55;
+const LOW_LEVEL = 0.45;
+
+type LogicProps = { supply: number };
+
+// The output pin draws G·(V − target) from its net.
+function driveOutput(s: Stamper, node: number, target: number) {
+  s.draw(node, [[node, G_LOGIC_OUT]], -G_LOGIC_OUT * target);
+}
+
+// A one-pin source of a logic level, `high(props, t)`.
+function logicSource<P extends LogicProps>(
+  high: (p: P, t: number) => boolean,
+): Pick<ModelDef<P>, 'grounded' | 'stamp' | 'current' | 'pinCurrents' | 'thermal' | 'failure'> {
+  const out = (el: Element<P>, s: Stamper) => G_LOGIC_OUT * (s.v(el.nodes[0]) - (high(el.props, s.t) ? el.props.supply : 0));
+  return {
+    grounded: true,
+    stamp(el, s) {
+      driveOutput(s, el.nodes[0], high(el.props, s.t) ? el.props.supply : 0);
+    },
+    current: out,
+    pinCurrents: (el, s) => [out(el, s)],
+    thermal: { load: (r) => Math.abs(r.pins[0]) / LOGIC_SOURCE_MAX, tau: 0.2, limit: 1.5 },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
+function gate(fn: (a: boolean, b: boolean) => boolean, inputs: 1 | 2 = 2): ModelDef<PropsByType['and']> {
+  const outPin = inputs;
+  const target = (el: Element<PropsByType['and']>) => (el.state.out ? el.props.supply : 0);
+  const outCurrent = (el: Element<PropsByType['and']>, s: Stamper) => G_LOGIC_OUT * (s.v(el.nodes[outPin]) - target(el));
+  const level = (v: number, supply: number, was: boolean) => (v > supply * HIGH_LEVEL ? true : v < supply * LOW_LEVEL ? false : was);
+  return {
+    dynamic: true,
+    grounded: true,
+    stamp(el, s) {
+      for (let k = 0; k < inputs; k++) s.draw(el.nodes[k], [[el.nodes[k], G_LOGIC_IN]], 0);
+      driveOutput(s, el.nodes[outPin], target(el));
+    },
+    current: (el, s) => G_LOGIC_IN * s.v(el.nodes[0]),
+    pinCurrents: (el, s) => [...el.nodes.slice(0, inputs).map((n) => G_LOGIC_IN * s.v(n)), outCurrent(el, s)],
+    respond(el, _env, r) {
+      const ins = r.pinV.slice(0, inputs).map((v, k) => level(v, el.props.supply, el.state.ins?.[k] ?? false));
+      el.state.ins = ins;
+      const out = fn(ins[0], ins[1] ?? false);
+      const changed = out !== (el.state.out ?? false);
+      el.state.out = out;
+      return changed;
+    },
+    readout: (r, p) => {
+      const ins = r.state.ins ?? [];
+      const names = inputs === 2 ? ['A', 'B'] : ['A'];
+      return [
+        ['Inputs', names.map((n, k) => `${n} ${ins[k] ? 1 : 0}`).join(', ')],
+        ['Output', `${r.state.out ? 1 : 0} (${fmt(r.pinV[outPin], 'V')})`],
+        ['Output current', fmt(Math.abs(r.pins[outPin]), 'A')],
+        ['Supply', fmt(p.supply, 'V')],
+      ];
+    },
+    thermal: { load: (r, p) => Math.abs(r.pins[outPin]) / p.maxCurrent, tau: 0.2, limit: 1.5 },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
+// --- Chips -------------------------------------------------------------------
+
+// NE555, following the datasheet's block diagram. Pins (index = pin − 1):
+// GND, TRIG, OUT, RESET, CTRL, THR, DIS, VCC. A 5k/10k divider holds CTRL at
+// ⅔ VCC; the trigger comparator sets the flip-flop when TRIG falls below half
+// of CTRL (⅓ VCC), the threshold comparator resets it when THR rises above
+// CTRL, and RESET low forces it off. The output sits about 1.7 V below VCC
+// when high and near GND when low; the discharge transistor shorts DIS to
+// GND while the output is low. Like the gates, it updates one step after its
+// inputs.
+const T555_ROUT = 10; // Ω
+const T555_RDIS = 10; // Ω, discharge transistor on
+const T555_HIGH_DROP = 1.7; // V below VCC
+const T555_LOW = 0.1; // V above GND
+const T555_IQ_R = 3000; // Ω; ~3 mA quiescent at 9 V
+const T555_LEAK = 1e-9; // S on the high-impedance inputs
+
+function timer555(): ModelDef<PropsByType['ne555']> {
+  const [GND, TRIG, OUT, RESET, CTRL, THR, DIS, VCC] = [0, 1, 2, 3, 4, 5, 6, 7];
+  const g = 1 / T555_ROUT;
+  // Current into each pin, consistent with stamp().
+  function currents(el: Element<PropsByType['ne555']>, v: (pin: number) => number): number[] {
+    const i = new Array<number>(8).fill(0);
+    const flow = (a: number, b: number, amps: number) => {
+      i[a] += amps;
+      i[b] -= amps;
+    };
+    flow(VCC, CTRL, (v(VCC) - v(CTRL)) / 5000);
+    flow(CTRL, GND, (v(CTRL) - v(GND)) / 10000);
+    flow(VCC, GND, (v(VCC) - v(GND)) / T555_IQ_R);
+    for (const k of [TRIG, THR, RESET]) flow(k, GND, T555_LEAK * (v(k) - v(GND)));
+    flow(DIS, GND, (el.state.out ? T555_LEAK : 1 / T555_RDIS) * (v(DIS) - v(GND)));
+    if (el.state.out) flow(VCC, OUT, g * (v(VCC) - T555_HIGH_DROP - v(OUT)));
+    else flow(OUT, GND, g * (v(OUT) - v(GND) - T555_LOW));
+    return i;
+  }
+  return {
+    dynamic: true,
+    stamp(el, s) {
+      const n = el.nodes;
+      s.conductance(n[VCC], n[CTRL], 1 / 5000);
+      s.conductance(n[CTRL], n[GND], 1 / 10000);
+      s.conductance(n[VCC], n[GND], 1 / T555_IQ_R);
+      for (const k of [TRIG, THR, RESET]) s.conductance(n[k], n[GND], T555_LEAK);
+      s.conductance(n[DIS], n[GND], el.state.out ? T555_LEAK : 1 / T555_RDIS);
+      if (el.state.out) {
+        // OUT pulled toward VCC − drop, fed from VCC.
+        s.draw(n[OUT], [[n[OUT], g], [n[VCC], -g]], g * T555_HIGH_DROP);
+        s.draw(n[VCC], [[n[OUT], -g], [n[VCC], g]], -g * T555_HIGH_DROP);
+      } else {
+        // OUT pulled toward GND + a little, sinking into GND.
+        s.draw(n[OUT], [[n[OUT], g], [n[GND], -g]], -g * T555_LOW);
+        s.draw(n[GND], [[n[OUT], -g], [n[GND], g]], g * T555_LOW);
+      }
+    },
+    current: (el, s) => currents(el, (k) => s.v(el.nodes[k]))[GND],
+    pinCurrents: (el, s) => currents(el, (k) => s.v(el.nodes[k])),
+    respond(el, env, r) {
+      const v = (k: number) => r.pinV[k] - r.pinV[GND];
+      let q = el.state.out ?? false;
+      if (v(RESET) < 0.7) q = false;
+      else if (v(TRIG) < v(CTRL) / 2) q = true;
+      else if (v(THR) > v(CTRL)) q = false;
+      const changed = q !== (el.state.out ?? false);
+      if (changed && q) {
+        if (el.state.edgeAt !== undefined) el.state.period = env.time - el.state.edgeAt;
+        el.state.edgeAt = env.time;
+      }
+      el.state.out = q;
+      return changed;
+    },
+    readout: (r) => {
+      const v = (k: number) => r.pinV[k] - r.pinV[GND];
+      const lines: Lines = [
+        ['Output', `${r.state.out ? 'high' : 'low'} (${fmt(v(OUT), 'V')})`],
+        ['Supply', fmt(v(VCC), 'V')],
+        ['Thresholds', `${fmt(v(CTRL) / 2, 'V')} / ${fmt(v(CTRL), 'V')}`],
+        ['Output current', fmt(Math.abs(r.pins[OUT]), 'A')],
+      ];
+      if (r.state.period) lines.push(['Frequency', fmt(1 / r.state.period, 'Hz')]);
+      return lines;
+    },
+    // Output current against its rating, or a supply beyond its maximum
+    // (catastrophic: stress climbs steeply past it).
+    thermal: {
+      load: (r, p) => Math.max(Math.abs(r.pins[OUT]) / p.maxCurrent, ((r.pinV[VCC] - r.pinV[GND]) / p.maxSupply) ** 4),
+      tau: 0.3,
+      limit: 1.5,
+    },
+    failure: { label: 'destroyed', open: true },
+  };
+}
+
+// 78xx linear regulator. Pins: IN, GND, OUT. OUT is held at the set voltage
+// above GND while IN is at least `dropout` higher; below that it follows IN
+// minus the dropout. Which of the two it is in is decided from the previous
+// Newton iteration (a piecewise-linear part). The current it delivers comes
+// in at IN, so it dissipates (V_IN − V_OUT) × I.
+const REG_G = 100; // S; output stiffness (0.01 Ω)
+
+function regulator(): ModelDef<PropsByType['regulator']> {
+  const [IN, GND, OUT] = [0, 1, 2];
+  type P = PropsByType['regulator'];
+  const mode = (p: P, vin: number, vgnd: number) => (vin - vgnd - p.dropout >= p.outputVoltage ? 'regulating' : 'dropout');
+  // Current delivered out of OUT, given the pin voltages and the mode.
+  const delivered = (p: P, m: string, vin: number, vgnd: number, vout: number) =>
+    REG_G * ((m === 'regulating' ? vgnd + p.outputVoltage : vin - p.dropout) - vout);
+  const currents = (el: Element<P>, v: (k: number) => number) => {
+    const m = el.state.mode ?? mode(el.props, v(IN), v(GND));
+    const i = delivered(el.props, m, v(IN), v(GND), v(OUT));
+    return [i, 0, -i];
+  };
+  return {
+    nonlinear: true,
+    stamp(el, s) {
+      const [nIn, nGnd, nOut] = el.nodes;
+      const m = mode(el.props, s.v(nIn), s.v(nGnd));
+      if (el.state.mode !== undefined && m !== el.state.mode) s.converged = false;
+      el.state.mode = m;
+      const g = REG_G;
+      if (m === 'regulating') {
+        // I = g·(Vgnd + Vset − Vout): drawn out of OUT, drawn into IN.
+        s.draw(nOut, [[nOut, g], [nGnd, -g]], -g * el.props.outputVoltage);
+        s.draw(nIn, [[nGnd, g], [nOut, -g]], g * el.props.outputVoltage);
+      } else {
+        // I = g·(Vin − drop − Vout)
+        s.draw(nOut, [[nOut, g], [nIn, -g]], g * el.props.dropout);
+        s.draw(nIn, [[nIn, g], [nOut, -g]], -g * el.props.dropout);
+      }
+      s.conductance(nIn, nGnd, 1e-9);
+      s.conductance(nOut, nGnd, 1e-9);
+    },
+    current: (el, s) => currents(el, (k) => s.v(el.nodes[k]))[IN],
+    pinCurrents: (el, s) => currents(el, (k) => s.v(el.nodes[k])),
+    readout: (r) => [
+      ['Input', fmt(r.pinV[IN] - r.pinV[GND], 'V')],
+      ['Output', fmt(r.pinV[OUT] - r.pinV[GND], 'V')],
+      ['State', r.state.mode === 'dropout' ? 'dropout (input too low)' : 'regulating'],
+      ['Current', fmt(Math.abs(r.pins[OUT]), 'A')],
+      ['Power', fmt(Math.abs(r.p), 'W')],
+    ],
+    thermal: { load: (r, p) => Math.max(Math.abs(r.pins[OUT]) / p.maxCurrent, Math.abs(r.p) / p.powerRating), tau: 3, limit: 1.5 },
+    failure: { label: 'burnt out', open: true },
+  };
+}
+
+// Edge-triggered flip-flop. Pins: the named inputs (one of them the clock C),
+// then S, R, Q, Q̄. On each rising edge of C, Q becomes next(Q, inputs);
+// S and R act at once, whatever the clock (R wins if both are high). Inputs
+// and outputs are logic pins like a gate's, and it also updates one step after
+// its inputs, so chained flip-flops (counters, dividers) ripple correctly.
+function flipFlop(
+  inputs: string[],
+  next: (q: boolean, ins: Record<string, boolean>) => boolean,
+): ModelDef<PropsByType['dff']> {
+  const n = inputs.length;
+  const [S, R, Q, QN] = [n, n + 1, n + 2, n + 3];
+  const clock = inputs.indexOf('C');
+  const levelOf = (v: number, supply: number, was: boolean) => (v > supply * HIGH_LEVEL ? true : v < supply * LOW_LEVEL ? false : was);
+  const q = (el: Element<PropsByType['dff']>) => el.state.out ?? false;
+  const outCurrent = (el: Element<PropsByType['dff']>, s: Stamper, pin: number, high: boolean) =>
+    G_LOGIC_OUT * (s.v(el.nodes[pin]) - (high ? el.props.supply : 0));
+  return {
+    dynamic: true,
+    grounded: true,
+    stamp(el, s) {
+      for (let k = 0; k <= R; k++) s.draw(el.nodes[k], [[el.nodes[k], G_LOGIC_IN]], 0);
+      driveOutput(s, el.nodes[Q], q(el) ? el.props.supply : 0);
+      driveOutput(s, el.nodes[QN], q(el) ? 0 : el.props.supply);
+    },
+    current: (el, s) => G_LOGIC_IN * s.v(el.nodes[0]),
+    pinCurrents: (el, s) => [
+      ...el.nodes.slice(0, R + 1).map((node) => G_LOGIC_IN * s.v(node)),
+      outCurrent(el, s, Q, q(el)),
+      outCurrent(el, s, QN, !q(el)),
+    ],
+    respond(el, _env, r) {
+      // The first look only records the input levels: a clock that is already
+      // high at power-up is not an edge.
+      const first = el.state.ins === undefined;
+      const was = el.state.ins ?? [];
+      const ins = r.pinV.slice(0, R + 1).map((v, k) => levelOf(v, el.props.supply, was[k] ?? false));
+      el.state.ins = ins;
+      let out = q(el);
+      if (ins[R]) out = false;
+      else if (ins[S]) out = true;
+      else if (!first && ins[clock] && !(was[clock] ?? false)) {
+        el.state.edges = (el.state.edges ?? 0) + 1;
+        out = next(out, Object.fromEntries(inputs.map((name, k) => [name, ins[k]])));
+      }
+      const changed = out !== q(el);
+      el.state.out = out;
+      return changed;
+    },
+    readout: (r) => {
+      const ins = r.state.ins ?? [];
+      return [
+        ['Q', `${r.state.out ? 1 : 0} (Q̄ ${r.state.out ? 0 : 1})`],
+        ['Inputs', inputs.map((name, k) => `${name} ${ins[k] ? 1 : 0}`).join(', ')],
+        ['S / R', `${ins[S] ? 1 : 0} / ${ins[R] ? 1 : 0}`],
+        ['Clock edges', String(r.state.edges ?? 0)],
+      ];
+    },
+    thermal: {
+      load: (r, p) => Math.max(Math.abs(r.pins[Q]), Math.abs(r.pins[QN])) / p.maxCurrent,
+      tau: 0.2,
       limit: 1.5,
     },
     failure: { label: 'burnt out', open: true },
@@ -670,6 +1066,7 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
       const target = el.props.ambient / 100 + env.light(el);
       const now = el.state.light ?? target;
       el.state.light = dt === null ? target : target + (now - target) * Math.exp(-dt / LDR_TAU);
+      return Math.abs(el.state.light - now) > 1e-4;
     },
     thermal: powerThermal(1, 2),
     failure: { label: 'burnt out', open: true },
@@ -694,6 +1091,82 @@ const DEFINITIONS: { [T in PartType]: ModelDef<PropsByType[T]> } = {
     },
     thermal: powerThermal(2, 2),
     failure: { label: 'burnt out', open: true },
+  },
+
+  transformer: transformer(),
+
+  // Holds its net at 0 V; all grounds are one node through 0 V.
+  ground: {
+    groundTie: true,
+    stamp(el, s) {
+      s.draw(el.nodes[0], [[el.nodes[0], G_GROUND]], 0);
+    },
+    current: (el, s) => G_GROUND * s.v(el.nodes[0]),
+    pinCurrents: (el, s) => [G_GROUND * s.v(el.nodes[0])],
+    readout: (r) => [['Current to ground', fmt(Math.abs(r.pins[0]), 'A')]],
+  },
+
+  and: gate((a, b) => a && b),
+  or: gate((a, b) => a || b),
+  not: gate((a) => !a, 1),
+  nand: gate((a, b) => !(a && b)),
+  nor: gate((a, b) => !(a || b)),
+  xor: gate((a, b) => a !== b),
+  xnor: gate((a, b) => a === b),
+
+  // On a rising clock edge: D copies D; JK sets, resets, toggles or holds;
+  // T toggles when T is 1.
+  dff: flipFlop(['D', 'C'], (_q, i) => i.D),
+  jkff: flipFlop(['J', 'C', 'K'], (q, i) => (i.J && i.K ? !q : i.J ? true : i.K ? false : q)),
+  tff: flipFlop(['T', 'C'], (q, i) => (i.T ? !q : q)),
+
+  logicSwitch: {
+    ...logicSource((p) => p.high),
+    readout: (r, p) => [['Output', `${p.high ? 1 : 0} (${fmt(r.pinV[0], 'V')})`], ['Current', fmt(Math.abs(r.pins[0]), 'A')]],
+  },
+
+  // High for the first `duty` % of each period.
+  clock: {
+    ...logicSource((p, t) => (t * p.frequency) % 1 < p.duty / 100),
+    dynamic: true,
+    maxStep: (p) => 1 / (20 * p.frequency),
+    readout: (r, p) => [['Output', `${r.pinV[0] > p.supply / 2 ? 1 : 0} (${fmt(r.pinV[0], 'V')})`], ['Frequency', fmt(p.frequency, 'Hz')]],
+  },
+
+  // A logic input only: barely loads the signal.
+  ne555: timer555(),
+  regulator: regulator(),
+
+  probe: {
+    grounded: true,
+    stamp(el, s) {
+      s.draw(el.nodes[0], [[el.nodes[0], G_LOGIC_IN]], 0);
+    },
+    current: (el, s) => G_LOGIC_IN * s.v(el.nodes[0]),
+    pinCurrents: (el, s) => [G_LOGIC_IN * s.v(el.nodes[0])],
+    brightness: (r, p) => (r.pinV[0] > p.supply * HIGH_LEVEL ? 1 : 0),
+    reading: (r, p) => (r.pinV[0] > p.supply / 2 ? '1' : '0'),
+    readout: (r, p) => [
+      ['Level', r.pinV[0] > p.supply * HIGH_LEVEL ? '1' : r.pinV[0] < p.supply * LOW_LEVEL ? '0' : 'undefined'],
+      ['Voltage', fmt(r.pinV[0], 'V')],
+    ],
+  },
+
+  // Meters show DC signed (negative with the leads reversed), or the RMS
+  // value marked ~ when an AC source drives the circuit.
+  voltmeter: {
+    ...ohmic((p) => p.resistance, (r) => [['Reading', meterReading(r, 'V')]]),
+    reading: (r) => meterReading(r, 'V'),
+    // Past its rating the input is destroyed almost at once.
+    thermal: { load: (r, p) => Math.abs(r.v) / p.maxVoltage, tau: 0.05, limit: 1.2 },
+    failure: { label: 'destroyed', open: true, display: 'ERR' },
+  },
+  ammeter: {
+    ...ohmic((p) => p.resistance, (r) => [['Reading', meterReading(r, 'A')]]),
+    reading: (r) => meterReading(r, 'A'),
+    // Its internal fuse.
+    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.05, limit: 1.5 },
+    failure: { label: 'fuse blown', open: true, display: 'FUSE' },
   },
 
   // Nearly a wire until it carries well over its rating, then it blows fast.

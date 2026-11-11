@@ -44,9 +44,10 @@ function showResults() {
   const smooth = controls.running;
   const live: Live = new Map();
   for (const c of circuit.components) {
-    const { brightness, thermal } = MODELS[c.type];
+    const { brightness, thermal, reading, failure } = MODELS[c.type];
     const r = engine.results.get(c.id);
     live.set(c.id, {
+      reading: reading && (c.broken ? (failure?.display ?? '–') : r ? reading(r, c.props) : '–'),
       glow: r && brightness ? brightness(r, c.props) : 0,
       heat: r && thermal && !c.broken ? Math.min(1, Math.max(0, (r.heat - 1) / (thermal.limit - 1))) : 0,
       level: r?.level,

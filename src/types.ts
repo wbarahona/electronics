@@ -35,8 +35,39 @@ export interface PropsByType {
   zener: { forwardVoltage: number; zenerVoltage: number; powerRating: number };
   npn: { gain: number; maxCurrent: number; powerRating: number };
   pnp: { gain: number; maxCurrent: number; powerRating: number };
+  // `ratio` is primary turns : secondary turns (2 steps down by half).
+  // Inductance and resistance are the primary's; the secondary's follow
+  // from the ratio. Max current is the secondary's.
+  transformer: { ratio: number; inductance: number; coupling: number; resistance: number; maxCurrent: number };
+  // Meters: pin 0 is + (red lead), pin 1 is COM.
+  voltmeter: { resistance: number; maxVoltage: number };
+  ammeter: { resistance: number; maxCurrent: number };
+  // The board's common 0 V. Every Ground part is the same node.
+  ground: Record<string, never>;
+  // Logic parts run on a built-in supply (`supply`, 5 V) referenced to Ground.
+  and: LogicGate;
+  or: LogicGate;
+  not: LogicGate;
+  nand: LogicGate;
+  nor: LogicGate;
+  xor: LogicGate;
+  xnor: LogicGate;
+  dff: LogicGate;
+  jkff: LogicGate;
+  tff: LogicGate;
+  logicSwitch: { high: boolean; supply: number };
+  clock: { frequency: number; duty: number; supply: number }; // duty in %
+  probe: { supply: number };
+  // Chips, wired with their own supply pins like the real parts.
+  ne555: { maxCurrent: number; maxSupply: number };
+  regulator: { outputVoltage: number; dropout: number; maxCurrent: number; powerRating: number };
   // On-resistance is at a gate–source voltage of 10 V.
   nmos: { thresholdVoltage: number; onResistance: number; maxCurrent: number; powerRating: number };
+}
+
+export interface LogicGate {
+  supply: number;
+  maxCurrent: number; // output
 }
 
 export type PartType = keyof PropsByType;

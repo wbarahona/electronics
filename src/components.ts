@@ -1,5 +1,5 @@
 import type { Point, Props, PropsByType, PartType, PropValue } from './types.ts';
-import { formatSI } from './units.ts';
+import { formatNumber, formatSI } from './units.ts';
 
 // Schematic symbols follow DIN EN 60617 and are drawn in local coordinates around (0, 0), spanning x -40..40.
 // Pins sit on multiples of GRID so they land on grid points at any 90° rotation.
@@ -15,8 +15,12 @@ import { formatSI } from './units.ts';
 // with class "bulb" fill with that colour as they light up. Parts you operate
 // by hand have an `actuator`: a small control on the board that flips the
 // boolean prop `prop`, or holds it true only while pressed if `momentary`.
+// `group` is the subcategory the part is listed under in its category's tray.
 // Parts that store energy have a `gauge`: a small battery icon on the board
-// showing how full they are (the model's `level`). `labelBelow` moves the
+// showing how full they are (the model's `level`). Meters have a `display`:
+// a small readout on the board showing the model's `reading`. `noLabel`
+// parts show no reference on the board (Ground). `hit` sizes the invisible
+// grab box when the symbol is bigger than the usual 80×40. `labelBelow` moves the
 // label under the symbol when something else (like a third pin) is above it;
 // `labelAt` places it exactly, as [x, y, text-anchor] in screen space for the
 // part lying horizontally or vertically.
@@ -32,16 +36,25 @@ export const LIGHT_COLORS = {
 
 export type LightColor = keyof typeof LIGHT_COLORS;
 
-export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'lights' | 'switches';
+export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'lights' | 'switches' | 'meters';
 
 // Groups shown as the clickable entries of the parts bar, in order. `icon` is
-// a Material Symbols name (it must also be listed in index.html's icon_names).
+// a Material Symbols name (it must also be listed in index.html's icon_names),
+// or inline SVG on a 24×24 grid where no symbol fits.
+
+// A diode, for Semiconductors: Material Symbols has nothing that says
+// "diode or transistor".
+const DIODE_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 11h5v2H2zM17 11h5v2h-5zM7 5v14l10-7zM17 5h2v14h-2z" /></svg>';
 export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
   { id: 'sources', label: 'Sources', icon: 'bolt' },
   { id: 'passive', label: 'Passive', icon: 'electrical_services' },
-  { id: 'semiconductors', label: 'Semiconductors', icon: 'memory' },
+  { id: 'semiconductors', label: 'Semiconductors', icon: DIODE_ICON },
+  { id: 'digital', label: 'Digital', icon: 'developer_board' },
+  { id: 'chips', label: 'Chips', icon: 'memory' },
   { id: 'lights', label: 'Lights', icon: 'lightbulb' },
   { id: 'switches', label: 'Switches', icon: 'toggle_on' },
+  { id: 'meters', label: 'Meters', icon: 'speed' },
 ];
 
 // How the panel edits one value.
@@ -77,12 +90,16 @@ interface PartDef<P> {
   name: string;
   letter: string;
   category: CategoryId;
+  group?: string;
   pins: Point[];
   props: { [K in keyof P]: SpecFor<P[K]> };
   tag?: (p: P) => string;
   glow?: { color: (p: P) => LightColor; radius: number };
   actuator?: { prop: BooleanKeys<P>; momentary: boolean };
   gauge?: boolean;
+  display?: boolean;
+  noLabel?: boolean;
+  hit?: { w: number; h: number };
   labelBelow?: boolean;
   labelAt?: (vertical: boolean) => LabelSpot;
   draw: (p: P, broken: boolean) => string;
@@ -95,16 +112,116 @@ export interface AnyPartDef {
   name: string;
   letter: string;
   category: CategoryId;
+  group?: string;
   pins: Point[];
   props: Record<string, PropSpec>;
   tag?: (p: Props) => string;
   glow?: { color: (p: Props) => LightColor; radius: number };
   actuator?: { prop: string; momentary: boolean };
   gauge?: boolean;
+  display?: boolean;
+  noLabel?: boolean;
+  hit?: { w: number; h: number };
   labelBelow?: boolean;
   labelAt?: (vertical: boolean) => LabelSpot;
   draw: (p: Props, broken: boolean) => string;
 }
+
+// Logic gates, DIN EN 60617-12 rectangular form: a box with the function's
+// qualifier (&, ≥1, =1, 1) and a circle on the output for inversion. Inputs
+// enter on the left, the output leaves on the right.
+const gateProps = {
+  supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15 },
+  maxCurrent: { label: 'Max output current', unit: 'A', value: 0.025, min: 0.001 },
+};
+const gateLabel = (vertical: boolean): LabelSpot => (vertical ? [36, 4, 'start'] : [0, -36, 'middle']);
+function gate(name: string, qualifier: string, inverted: boolean, inputs: 1 | 2) {
+  const half = inputs === 2 ? 28 : 18;
+  return {
+    name,
+    letter: 'K',
+    category: 'digital' as const,
+    group: 'Gates',
+    pins: inputs === 2 ? [{ x: -40, y: -20 }, { x: -40, y: 20 }, { x: 40, y: 0 }] : [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: gateProps,
+    hit: { w: 80, h: half * 2 },
+    labelAt: gateLabel,
+    draw: () => `
+      <path d="${inputs === 2 ? 'M -40 -20 H -20 M -40 20 H -20' : 'M -40 0 H -20'} M ${inverted ? 28 : 20} 0 H 40" />
+      <rect x="-20" y="${-half}" width="40" height="${half * 2}" />
+      ${inverted ? '<circle cx="24" r="4" />' : ''}
+      <text class="gate-text upright" y="5" text-anchor="middle">${qualifier}</text>`,
+  };
+}
+
+// An IC drawn the DIN way: a box with each pin's name inside and its number
+// outside (no number for generic logic symbols). `pins` lists
+// [name, number, x, y] in the order the model uses; leads run from the pin to
+// the box edge (`box` is the half-width/height).
+type ChipPin = [string, number | null, number, number];
+
+function chip(box: { w: number; h: number }, title: string, pins: ChipPin[]): string {
+  const lead = ([, , x, y]: ChipPin) => {
+    const ex = x < -box.w ? -box.w : x > box.w ? box.w : x;
+    const ey = y < -box.h ? -box.h : y > box.h ? box.h : y;
+    return `M ${x} ${y} L ${ex} ${ey}`;
+  };
+  // Name just inside the box, number just outside, both kept level.
+  const text = ([name, num, x, y]: ChipPin) => {
+    const side = x < -box.w ? 'l' : x > box.w ? 'r' : y < 0 ? 't' : 'b';
+    const [nx, ny, anchor] =
+      side === 'l' ? [-box.w + 3, y + 3, 'start'] : side === 'r' ? [box.w - 3, y + 3, 'end'] : side === 't' ? [x, -box.h + 9, 'middle'] : [x, box.h - 3, 'middle'];
+    const [mx, my] = side === 'l' ? [x + 6, y - 3] : side === 'r' ? [x - 6, y - 3] : [x + 4, side === 't' ? y + 9 : y - 4];
+    const cx = anchor === 'start' ? nx + 8 : anchor === 'end' ? nx - 8 : nx;
+    const label = `<text class="chip-pin upright" x="${nx}" y="${ny}" text-anchor="${anchor}" data-x="${cx}" data-y="${ny - 3}">${name}</text>`;
+    if (num === null) return label;
+    return `${label}
+      <text class="chip-num upright" x="${mx}" y="${my}" text-anchor="middle" data-x="${mx}" data-y="${my - 3}">${num}</text>`;
+  };
+  return `
+    <path d="${pins.map(lead).join(' ')}" />
+    <rect x="${-box.w}" y="${-box.h}" width="${box.w * 2}" height="${box.h * 2}" />
+    <text class="chip-title upright" y="4" text-anchor="middle">${title}</text>
+    ${pins.map(text).join('')}`;
+}
+
+// Flip-flops (DIN EN 60617-12): data inputs labelled with the dependency
+// notation (1D, 1J, 1K, 1T) and the clock C1 with the ▷ dynamic-input marker
+// (rising edge); asynchronous S on top and R below; Q, and Q̄ with the
+// negation circle. Pins: the data/clock inputs, then S, R, Q, Q̄.
+const ffLabel = (): LabelSpot => [44, -38, 'start'];
+function flipFlop(name: string, title: string, inputs: [string, number][]) {
+  const clockY = inputs.find(([n]) => n === 'C1')![1];
+  // The clock's label starts after the ▷ marker.
+  const pins: ChipPin[] = [
+    ...inputs.map(([n, y]): ChipPin => [n === 'C1' ? '<tspan dx="5">C1</tspan>' : n, null, -40, y]),
+    ['S', null, 0, -40],
+    ['R', null, 0, 40],
+    ['Q', null, 40, -20],
+    ['<tspan text-decoration="overline">Q</tspan>', null, 40, 20],
+  ];
+  return {
+    name,
+    letter: 'K',
+    category: 'digital' as const,
+    group: 'Flip-flops',
+    pins: pins.map(([, , x, y]) => ({ x, y })),
+    props: gateProps,
+    hit: { w: 80, h: 80 },
+    labelAt: ffLabel,
+    draw: () => `
+      ${chip({ w: 30, h: 30 }, title, pins)}
+      <path d="M -30 ${clockY - 4} L -24 ${clockY} L -30 ${clockY + 4}" />
+      <circle class="dot-hollow" cx="33" cy="20" r="3" />`,
+  };
+}
+
+// Indicating instrument (DIN EN 60617): a circle with the quantity's letter,
+// + marking the red-lead pin.
+const meterSymbol = (letter: string) => `
+  <path d="M -40 0 H -14 M 14 0 H 40 M -30 -10 H -24 M -27 -13 V -7" />
+  <circle r="14" />
+  <text class="meter-letter upright" y="5" text-anchor="middle">${letter}</text>`;
 
 // Transistors: base/gate on the left, the other two leads leave up and down,
 // so the label goes beside the envelope (or below it when turned).
@@ -129,6 +246,18 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
       <path d="M -40 0 H -4 M -4 -14 V 14 M 4 0 H 40 M -16 -14 H -10 M -13 -17 V -11" />
       <path class="thick" d="M 4 -7 V 7" />`,
   },
+  // The common 0 V (DIN EN 60617 earth symbol). Carries no reference.
+  ground: {
+    name: 'Ground',
+    letter: 'X',
+    category: 'sources',
+    group: 'Reference',
+    pins: [{ x: 0, y: -20 }],
+    props: {},
+    noLabel: true,
+    draw: () => `
+      <path d="M 0 -20 V 0 M -12 0 H 12 M -7 5 H 7 M -2 10 H 2" />`,
+  },
   // Sine-wave source. Voltage is given as RMS (230 V~ style); pin 0 is the
   // terminal that goes positive first.
   generator: {
@@ -147,12 +276,13 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     draw: () => `
       <path d="M -40 0 H -16 M 16 0 H 40" />
       <circle r="16" />
-      <path d="M -10 0 C -7 -10 -3 -10 0 0 S 7 10 10 0" />`,
+      <path class="upright" d="M -10 0 C -7 -10 -3 -10 0 0 S 7 10 10 0" />`,
   },
   resistor: {
     name: 'Resistor',
     letter: 'R',
     category: 'passive',
+    group: 'Resistors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       resistance: { label: 'Resistance', unit: 'Ω', value: 1000, min: 0.001 },
@@ -167,6 +297,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Capacitor',
     letter: 'C',
     category: 'passive',
+    group: 'Capacitors & inductors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       capacitance: { label: 'Capacitance', unit: 'F', value: 10e-6, min: 1e-12 },
@@ -183,6 +314,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Electrolytic cap',
     letter: 'C',
     category: 'passive',
+    group: 'Capacitors & inductors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }], // +, −
     props: {
       capacitance: { label: 'Capacitance', unit: 'F', value: 470e-6, min: 1e-9 },
@@ -200,6 +332,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Inductor',
     letter: 'R',
     category: 'passive',
+    group: 'Capacitors & inductors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       inductance: { label: 'Inductance', unit: 'H', value: 10e-3, min: 1e-9 },
@@ -216,6 +349,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Potentiometer',
     letter: 'R',
     category: 'passive',
+    group: 'Resistors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }, { x: 0, y: -40 }],
     props: {
       resistance: { label: 'Resistance', unit: 'Ω', value: 10e3, min: 1 },
@@ -234,6 +368,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Variable resistor',
     letter: 'R',
     category: 'passive',
+    group: 'Resistors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       resistance: { label: 'Max resistance', unit: 'Ω', value: 1000, min: 1 },
@@ -251,6 +386,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'LDR',
     letter: 'R',
     category: 'passive',
+    group: 'Sensors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       darkResistance: { label: 'Dark resistance', unit: 'Ω', value: 1e6, min: 1 },
@@ -268,6 +404,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'NTC thermistor',
     letter: 'R',
     category: 'passive',
+    group: 'Sensors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       resistance: { label: 'Resistance at 25 °C', unit: 'Ω', value: 10e3, min: 1 },
@@ -279,12 +416,38 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     draw: () => `
       <path d="M -40 0 H -18 M 18 0 H 40 M -22 14 H -16 L 16 -14" />
       <rect x="-18" y="-6" width="36" height="12" />
-      <text class="sym-text" x="6" y="20">−ϑ</text>`,
+      <text class="sym-text upright" x="6" y="20" data-x="12" data-y="17">−ϑ</text>`,
+  },
+  // Two coupled windings on an iron core (DIN EN 60617 winding form). Pins:
+  // primary 1 (dotted) and 2 on the left, secondary 3 (dotted) and 4 on the
+  // right. The windings are isolated from each other.
+  transformer: {
+    name: 'Transformer',
+    letter: 'T',
+    category: 'passive',
+    group: 'Transformers',
+    pins: [{ x: -40, y: -20 }, { x: -40, y: 20 }, { x: 40, y: -20 }, { x: 40, y: 20 }],
+    props: {
+      ratio: { label: 'Turns ratio (primary : secondary)', unit: ': 1', value: 2, min: 0.01, max: 100 },
+      inductance: { label: 'Primary inductance', unit: 'H', value: 1, min: 1e-6 },
+      coupling: { label: 'Coupling', unit: '', value: 0.99, min: 0.1, max: 0.999 },
+      resistance: { label: 'Primary winding resistance', unit: 'Ω', value: 1, min: 0.001 },
+      maxCurrent: { label: 'Max secondary current', unit: 'A', value: 1, min: 0.001 },
+    },
+    tag: (p) => (p.ratio >= 1 ? `${formatNumber(p.ratio)}:1` : `1:${formatNumber(1 / p.ratio)}`),
+    draw: () => `
+      <path d="M -40 -20 H -12 M -40 20 H -12 M 40 -20 H 12 M 40 20 H 12" />
+      <path d="M -12 -20 A 5 5 0 0 1 -12 -10 A 5 5 0 0 1 -12 0 A 5 5 0 0 1 -12 10 A 5 5 0 0 1 -12 20" />
+      <path d="M 12 -20 A 5 5 0 0 0 12 -10 A 5 5 0 0 0 12 0 A 5 5 0 0 0 12 10 A 5 5 0 0 0 12 20" />
+      <path d="M -2 -22 V 22 M 2 -22 V 22" />
+      <circle class="dot" cx="-20" cy="-13" r="2" />
+      <circle class="dot" cx="20" cy="-13" r="2" />`,
   },
   fuse: {
     name: 'Fuse',
     letter: 'F',
     category: 'passive',
+    group: 'Protection',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       ratedCurrent: { label: 'Rated current', unit: 'A', value: 0.5, min: 0.001 },
@@ -329,6 +492,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Switch',
     letter: 'S',
     category: 'switches',
+    group: 'Toggle',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       closed: { label: 'Closed', value: false },
@@ -345,6 +509,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Push button (NO)',
     letter: 'S',
     category: 'switches',
+    group: 'Push buttons',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       closed: { label: 'Pressed', value: false, hidden: true },
@@ -368,6 +533,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Push button (NC)',
     letter: 'S',
     category: 'switches',
+    group: 'Push buttons',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       pressed: { label: 'Pressed', value: false, hidden: true },
@@ -385,11 +551,146 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
         ${broken ? '<circle class="weld" cx="14" cy="-9" r="3.5" />' : ''}`;
     },
   },
+  and: gate('AND', '&amp;', false, 2),
+  or: gate('OR', '≥1', false, 2),
+  not: gate('NOT', '1', true, 1),
+  nand: gate('NAND', '&amp;', true, 2),
+  nor: gate('NOR', '≥1', true, 2),
+  xor: gate('XOR', '=1', false, 2),
+  xnor: gate('XNOR', '=1', true, 2),
+  dff: flipFlop('D flip-flop', 'D', [['1D', -20], ['C1', 20]]),
+  jkff: flipFlop('JK flip-flop', 'JK', [['1J', -20], ['C1', 0], ['1K', 20]]),
+  tff: flipFlop('T flip-flop', 'T', [['1T', -20], ['C1', 20]]),
+  // A logic level set by hand: its toggle switches the output between 1 and 0.
+  logicSwitch: {
+    name: 'Logic switch',
+    letter: 'S',
+    category: 'digital',
+    group: 'Input/Output',
+    pins: [{ x: 40, y: 0 }],
+    props: {
+      high: { label: 'Output high', value: false },
+      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15 },
+    },
+    actuator: { prop: 'high', momentary: false },
+    draw: ({ high }) => `
+      <path d="M 14 0 H 40" />
+      <rect x="-14" y="-12" width="28" height="24" />
+      <text class="gate-text upright" y="5" text-anchor="middle">${high ? 1 : 0}</text>`,
+  },
+  // Square-wave clock (the box shows a pulse).
+  clock: {
+    name: 'Clock',
+    letter: 'G',
+    category: 'digital',
+    group: 'Input/Output',
+    pins: [{ x: 40, y: 0 }],
+    props: {
+      frequency: { label: 'Frequency', unit: 'Hz', value: 1, min: 0.01, max: 1000 },
+      duty: { label: 'Duty cycle', unit: '%', value: 50, min: 1, max: 99, slider: true },
+      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15 },
+    },
+    tag: (p) => formatSI(p.frequency, 'Hz'),
+    draw: () => `
+      <path d="M 20 0 H 40" />
+      <rect x="-20" y="-16" width="40" height="32" />
+      <path d="M -12 6 H -6 V -6 H 2 V 6 H 8 V -6 H 12" />`,
+  },
+  // Shows a logic level: lights red for 1; its display reads 1 or 0.
+  probe: {
+    name: 'Logic probe',
+    letter: 'P',
+    category: 'digital',
+    group: 'Input/Output',
+    pins: [{ x: -40, y: 0 }],
+    props: {
+      supply: { label: 'Logic supply', unit: 'V', value: 5, min: 1, max: 15 },
+    },
+    glow: { color: () => 'red', radius: 24 },
+    display: true,
+    draw: () => `
+      <path d="M -40 0 H -12" />
+      <circle class="bulb tinted" r="12" />`,
+  },
+  // NE555 timer, pins in datasheet order 1–8.
+  ne555: {
+    name: '555 timer',
+    letter: 'K',
+    category: 'chips',
+    group: 'Timers',
+    pins: [
+      { x: -20, y: 60 }, // 1 GND
+      { x: -60, y: 20 }, // 2 TRIG
+      { x: 60, y: 0 }, // 3 OUT
+      { x: -20, y: -60 }, // 4 RESET
+      { x: 20, y: 60 }, // 5 CTRL
+      { x: -60, y: 0 }, // 6 THR
+      { x: -60, y: -20 }, // 7 DIS
+      { x: 20, y: -60 }, // 8 VCC
+    ],
+    props: {
+      maxCurrent: { label: 'Max output current', unit: 'A', value: 0.2, min: 0.001 },
+      maxSupply: { label: 'Max supply voltage', unit: 'V', value: 16, min: 1 },
+    },
+    tag: () => 'NE555',
+    hit: { w: 80, h: 80 },
+    labelAt: () => [44, -48, 'start'],
+    draw: () =>
+      chip({ w: 40, h: 40 }, '555', [
+        ['GND', 1, -20, 60], ['TR', 2, -60, 20], ['Q', 3, 60, 0], ['R', 4, -20, -60],
+        ['CV', 5, 20, 60], ['THR', 6, -60, 0], ['DIS', 7, -60, -20], ['VCC', 8, 20, -60],
+      ]),
+  },
+  // Fixed linear voltage regulator, 78xx family (7805 by default).
+  regulator: {
+    name: 'Voltage regulator',
+    letter: 'T',
+    category: 'chips',
+    group: 'Regulators',
+    pins: [{ x: -40, y: 0 }, { x: 0, y: 40 }, { x: 40, y: 0 }], // 1 IN, 2 GND, 3 OUT
+    props: {
+      outputVoltage: { label: 'Output voltage', unit: 'V', value: 5, min: 1.25, max: 24 },
+      dropout: { label: 'Dropout voltage', unit: 'V', value: 2, min: 0.1 },
+      maxCurrent: { label: 'Max output current', unit: 'A', value: 1.5, min: 0.001 },
+      powerRating: { label: 'Power rating', unit: 'W', value: 2, min: 0.01 },
+    },
+    tag: (p) => `78${String(Math.round(p.outputVoltage)).padStart(2, '0')}`,
+    draw: (p) =>
+      chip({ w: 32, h: 18 }, `${formatNumber(p.outputVoltage)} V`, [['IN', 1, -40, 0], ['GND', 2, 0, 40], ['OUT', 3, 40, 0]]),
+  },
+  // Reads the voltage from + to COM: almost no current drawn.
+  voltmeter: {
+    name: 'Voltmeter',
+    letter: 'P',
+    category: 'meters',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      resistance: { label: 'Input resistance', unit: 'Ω', value: 10e6, min: 1000 },
+      maxVoltage: { label: 'Max voltage', unit: 'V', value: 1000, min: 1 },
+    },
+    display: true,
+    draw: () => meterSymbol('V'),
+  },
+  // Reads the current flowing in at + and out at COM: almost no voltage
+  // dropped. An internal fuse protects it.
+  ammeter: {
+    name: 'Ammeter',
+    letter: 'P',
+    category: 'meters',
+    pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
+    props: {
+      resistance: { label: 'Internal resistance', unit: 'Ω', value: 0.05, min: 0.0001 },
+      maxCurrent: { label: 'Fuse rating', unit: 'A', value: 10, min: 0.001 },
+    },
+    display: true,
+    draw: () => meterSymbol('A'),
+  },
   // Pin 0 is the anode, pin 1 the cathode (the bar), as for the LED.
   diode: {
     name: 'Diode',
     letter: 'R',
     category: 'semiconductors',
+    group: 'Diodes',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       forwardVoltage: { label: 'Forward voltage (10 mA)', unit: 'V', value: 0.7, min: 0.1 },
@@ -403,6 +704,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Schottky diode',
     letter: 'R',
     category: 'semiconductors',
+    group: 'Diodes',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       forwardVoltage: { label: 'Forward voltage (10 mA)', unit: 'V', value: 0.3, min: 0.05 },
@@ -418,6 +720,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'Zener diode',
     letter: 'R',
     category: 'semiconductors',
+    group: 'Diodes',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {
       forwardVoltage: { label: 'Forward voltage (10 mA)', unit: 'V', value: 0.7, min: 0.1 },
@@ -433,6 +736,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'NPN transistor',
     letter: 'K',
     category: 'semiconductors',
+    group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: -40 }, { x: 20, y: 40 }],
     props: {
       gain: { label: 'Current gain (hFE)', unit: '', value: 100, min: 1 },
@@ -451,6 +755,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'PNP transistor',
     letter: 'K',
     category: 'semiconductors',
+    group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: 40 }, { x: 20, y: -40 }],
     props: {
       gain: { label: 'Current gain (hFE)', unit: '', value: 100, min: 1 },
@@ -469,6 +774,7 @@ const DEFINITIONS: { [T in PartType]: PartDef<PropsByType[T]> } = {
     name: 'N-MOSFET',
     letter: 'K',
     category: 'semiconductors',
+    group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: -40 }, { x: 20, y: 40 }],
     props: {
       thresholdVoltage: { label: 'Threshold voltage', unit: 'V', value: 2, min: 0.1 },
@@ -494,6 +800,15 @@ export const PARTS = DEFINITIONS as unknown as Record<PartType, AnyPartDef>;
 export function defaults<T extends PartType>(type: T): PropsByType[T] {
   const entries = Object.entries(PARTS[type].props).map(([key, spec]): [string, PropValue] => [key, spec.value]);
   return Object.fromEntries(entries) as PropsByType[T];
+}
+
+// Glyphs marked `upright` (letters, the generator's sine) stay level when the
+// part is turned: each is turned back about its centre (data-x, data-y, else
+// the part's origin).
+export function keepUpright(root: Element, rotation: number) {
+  for (const el of root.querySelectorAll<SVGElement>('.upright')) {
+    el.setAttribute('transform', `rotate(${-rotation} ${el.dataset.x ?? 0} ${el.dataset.y ?? 0})`);
+  }
 }
 
 export function symbolMarkup(type: PartType, props: Props, broken = false): string {

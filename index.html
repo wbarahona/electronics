@@ -10,7 +10,7 @@
     <!-- Only the icons we use; icon_names must stay in alphabetical order. -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_drop_down,autorenew,battery_charging_full,bolt,close,content_copy,content_cut,content_paste,delete,electrical_services,fast_forward,fast_rewind,folder_open,library_add,lightbulb,memory,note_add,pause,play_arrow,save,toggle_on&display=block"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_drop_down,autorenew,battery_charging_full,bolt,close,content_copy,content_cut,content_paste,delete,developer_board,electrical_services,fast_forward,fast_rewind,folder_open,library_add,lightbulb,memory,more_horiz,note_add,pause,play_arrow,save,speed,toggle_on&display=block"
     />
     <link rel="stylesheet" href="/reset.css" />
     <link rel="stylesheet" href="/src/theme.css" />
@@ -18,33 +18,35 @@
   </head>
   <body>
     <header id="toolbar">
-      <h1 class="title">Electronics</h1>
-      <div id="file-actions" class="file-actions">
-        <md-icon-button id="file-new" title="New circuit" aria-label="New circuit">
-          <md-icon>note_add</md-icon>
-        </md-icon-button>
-        <md-icon-button id="file-open" title="Open… (⌘O)" aria-label="Open">
-          <md-icon>folder_open</md-icon>
-        </md-icon-button>
-        <md-icon-button id="file-save" title="Save (⌘S)" aria-label="Save">
-          <md-icon>save</md-icon>
-        </md-icon-button>
+      <div class="toolbar-row">
+        <h1 class="title">Electronics</h1>
+        <div id="file-actions" class="file-actions">
+          <md-icon-button id="file-new" title="New circuit" aria-label="New circuit">
+            <md-icon>note_add</md-icon>
+          </md-icon-button>
+          <md-icon-button id="file-open" title="Open… (⌘O)" aria-label="Open">
+            <md-icon>folder_open</md-icon>
+          </md-icon-button>
+          <md-icon-button id="file-save" title="Save (⌘S)" aria-label="Save">
+            <md-icon>save</md-icon>
+          </md-icon-button>
+        </div>
+        <div id="sim-controls" class="sim-controls">
+          <span id="clock" class="clock"></span>
+          <md-icon-button id="slower" title="Slower (10×)" aria-label="Slower">
+            <md-icon>fast_rewind</md-icon>
+          </md-icon-button>
+          <md-filled-button id="run" title="Run or pause the simulation">
+            <md-icon slot="icon">play_arrow</md-icon>
+            <span>Run</span>
+          </md-filled-button>
+          <md-icon-button id="faster" title="Faster (10×)" aria-label="Faster">
+            <md-icon>fast_forward</md-icon>
+          </md-icon-button>
+          <span id="speed" class="speed" title="Simulation speed"></span>
+        </div>
       </div>
-      <div id="palette" class="palette"></div>
-      <div id="sim-controls" class="sim-controls">
-        <span id="clock" class="clock"></span>
-        <md-icon-button id="slower" title="Slower (10×)" aria-label="Slower">
-          <md-icon>fast_rewind</md-icon>
-        </md-icon-button>
-        <md-filled-button id="run" title="Run or pause the simulation">
-          <md-icon slot="icon">play_arrow</md-icon>
-          <span>Run</span>
-        </md-filled-button>
-        <md-icon-button id="faster" title="Faster (10×)" aria-label="Faster">
-          <md-icon>fast_forward</md-icon>
-        </md-icon-button>
-        <span id="speed" class="speed" title="Simulation speed"></span>
-      </div>
+      <nav id="palette" class="palette" aria-label="Part categories"></nav>
     </header>
     <section id="palette-tray" class="tray" aria-label="Parts">
       <div class="tray-inner">

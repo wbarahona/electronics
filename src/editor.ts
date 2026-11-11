@@ -1,5 +1,5 @@
 import { GRID, snap, type Board } from './board.ts';
-import { LIGHT_COLORS, PARTS, symbolMarkup } from './components.ts';
+import { LIGHT_COLORS, PARTS, keepUpright, symbolMarkup } from './components.ts';
 import { fromControl } from './keys.ts';
 import type { Circuit } from './model.ts';
 import { buildNets, keyOf, pinKey, type Nets } from './nets.ts';
@@ -20,7 +20,7 @@ const FLOW_SPEED = 40; // world units/s per decade of current above FLOW_REF
 // a 50 Hz flicker blurs into a steady glow, in slow motion it shows.
 const PERSISTENCE = 0.04; // s
 // Invisible box over each symbol so thin strokes are easy to grab.
-const HIT = `<rect class="hit" x="${-PART_W / 2}" y="${-PART_H / 2}" width="${PART_W}" height="${PART_H}" />`;
+const hitBox = (w = PART_W, h = PART_H) => `<rect class="hit" x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" />`;
 
 // Things with a position of their own (wires take theirs from their ends).
 type Placed = Part | Joint;
@@ -50,8 +50,8 @@ interface Box {
 
 // Live simulation state per part id: `glow` is brightness (1 = at its rating),
 // `heat` is 0..1 from its rating up to the point where it fails, `level` how
-// full an energy store is (for its gauge).
-export type Live = Map<string, { glow: number; heat: number; level?: number }>;
+// full an energy store is (for its gauge), `reading` what a meter shows.
+export type Live = Map<string, { glow: number; heat: number; level?: number; reading?: string }>;
 
 const GAUGE_WIDTH = 15; // inner width of the gauge's fill bar
 
@@ -182,6 +182,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const g = nodes.get(n.id)!;
     const rotation = isPart(n) ? n.rotation : 0;
     g.setAttribute('transform', `translate(${n.x} ${n.y}) rotate(${rotation})`);
+    keepUpright(g, rotation);
     if (!isPart(n)) return;
     // Keep a part's label and actuator upright. The label sits above the part
     // (right of it when vertical), or on the opposite side when the actuator
@@ -197,9 +198,29 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     }
     g.querySelector('.actuator')
       ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '34 0' : '0 -34'})`);
-    // The charge gauge sits opposite the label: below, or left when vertical.
+    // The charge gauge and a meter's display sit opposite the label: below,
+    // or to the left when vertical.
     g.querySelector('.gauge')
       ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '-34 0' : '0 30'})`);
+    g.querySelector('.meter-display')
+      ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '-46 0' : '0 32'})`);
+  }
+
+  // A meter's small digital readout.
+  const DISPLAY = `
+    <g class="meter-display">
+      <rect class="meter-screen" x="-20" y="-8" width="40" height="16" rx="3" />
+      <text class="meter-text" y="4" text-anchor="middle">–</text>
+    </g>`;
+
+  function paintDisplay(g: SVGElement, reading: string) {
+    const text = g.querySelector<SVGTextElement>('.meter-text');
+    if (!text || text.textContent === reading) return;
+    text.textContent = reading;
+    const w = Math.max(32, text.getComputedTextLength() + 10);
+    const screen = g.querySelector('.meter-screen')!;
+    screen.setAttribute('x', String(-w / 2));
+    screen.setAttribute('width', String(w));
   }
 
   // A small battery icon whose fill shows how full an energy store is.
@@ -249,11 +270,12 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     g.innerHTML =
       glow +
       symbolMarkup(c.type, c.props, c.broken) +
-      `<text class="value"><tspan class="ref">-${c.ref}</tspan>${tag ? ` ${tag}` : ''}</text>` +
-      HIT +
+      (part.noLabel ? '' : `<text class="value"><tspan class="ref">-${c.ref}</tspan>${tag ? ` ${tag}` : ''}</text>`) +
+      hitBox(part.hit?.w, part.hit?.h) +
       pinHits.join('') +
       (part.actuator ? actuatorMarkup(c) : '') +
-      (part.gauge ? GAUGE : '');
+      (part.gauge ? GAUGE : '') +
+      (part.display ? DISPLAY : '');
     place(c);
   }
 
@@ -286,10 +308,11 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   const glows = new Map<string, { target: number; shown: number }>(); // light levels 0..1
 
   function showLive(live: Live, smooth = false) {
-    for (const [id, { glow, heat, level: charge }] of live) {
+    for (const [id, { glow, heat, level: charge, reading }] of live) {
       const g = nodes.get(id);
       if (!g) continue;
       if (charge !== undefined) paintGauge(g, charge);
+      if (reading !== undefined) paintDisplay(g, reading);
       const level = Math.min(1, Math.max(0, glow));
       const s = glows.get(id) ?? { target: level, shown: level };
       s.target = level;

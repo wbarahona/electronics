@@ -12,10 +12,14 @@ import { MODELS, type Element, type Env, type PartState, type Result, type Stamp
 // again until the answer settles (Newton-Raphson). A DC circuit simply gives
 // the same answer every step; time-dependent parts make it change.
 //
-// There is no ground part yet, so each separate circuit on the board gets one
-// net tied to the common reference: a battery's − terminal if it has one. A
-// single tie carries no current, so it only fixes absolute voltages and never
-// changes what flows. Every net also leaks to the reference through a tiny
+// The common reference is 0 V. Ground parts tie their net firmly to it (all
+// grounds are one node). A separate circuit without a Ground gets one net tied
+// to it instead, a battery's − terminal if it has one: a single tie carries no
+// current, so it only fixes absolute voltages. Logic parts are tied to 0 V
+// through their own built-in supply, so a circuit of logic alone needs no
+// other tie (and must not get one: the net picked could be a signal); one
+// that also has a battery ties its − terminal as firmly as a Ground, so the
+// battery and the logic share the same 0 V. Every net also leaks to the reference through a tiny
 // conductance (GMIN), as in SPICE, so nets left floating (open switches, loose
 // parts) still have a solution.
 //
@@ -58,15 +62,24 @@ const AVERAGE_TAU = 0.1; // s
 // Light from a glowing part falls off with distance (world units, a grid
 // square is 20): at LIGHT_REACH it's half as strong as right next to it.
 const LIGHT_REACH = 60;
+const G_GROUND = 1e6; // S; how firmly Ground holds its net at 0 V
+const G_TIE = 1; // S; the tie for a circuit that has no Ground
+const MAX_SETTLE = 20; // rounds of logic settling after an edit
 
+// Newton is done when every unknown has stopped moving: within an absolute
+// floor plus a relative tolerance. SPICE's default relative tolerance is
+// 1e-3; this is ten times tighter, yet loose enough not to chase rounding
+// noise (asking for 1e-6 left a bridge rectifier cycling forever 3e-5 V apart).
+const ABS_TOL = 1e-6;
+const REL_TOL = 1e-4;
 const settled = (prev: Float64Array, next: Float64Array) =>
-  next.every((v, i) => Math.abs(v - prev[i]) <= 1e-6 + 1e-6 * Math.abs(v));
+  next.every((v, i) => Math.abs(v - prev[i]) <= ABS_TOL + REL_TOL * Math.abs(v));
 
 export type Engine = ReturnType<typeof createEngine>;
 
 export function createEngine(circuit: Circuit) {
   let elements: Element[] = [];
-  let refs: number[] = []; // one reference net per separate circuit
+  let refs: [number, number][] = []; // [net, conductance] tying circuits to 0 V
   let nodeCount = 0;
   let size = 0;
   let x = new Float64Array(0);
@@ -175,14 +188,23 @@ export function createEngine(circuit: Circuit) {
     x = new Float64Array(size);
     step(HOLD_STEP, false);
     // Let sensing parts settle on what they now see, then solve with that.
+    // Let sensing and logic parts settle on what they now see, solving again
+    // after each round, until nothing changes (a logic loop that never
+    // settles, like an oscillator, stops after MAX_SETTLE rounds).
     if (elements.some((el) => el.model.respond)) {
-      respond(null);
-      step(HOLD_STEP, false);
+      for (let round = 0; round < MAX_SETTLE; round++) {
+        const changed = respond(null);
+        step(HOLD_STEP, false);
+        if (!changed) break;
+      }
     }
   }
 
   // Light reaching a part from every glowing part, fading with distance.
   const env: Env = {
+    get time() {
+      return t;
+    },
     light(el) {
       const at = circuit.part(el.id);
       if (!at) return 0;
@@ -199,11 +221,13 @@ export function createEngine(circuit: Circuit) {
   };
 
   // Let parts react to their surroundings: over dt seconds, or at once (null).
-  function respond(dt: number | null) {
+  function respond(dt: number | null): boolean {
+    let changed = false;
     for (const el of elements) {
       const r = engine.results.get(el.id);
-      if (el.model.respond && !el.open && r) el.model.respond(el, env, r, dt);
+      if (el.model.respond && !el.open && r && el.model.respond(el, env, r, dt)) changed = true;
     }
+    return changed;
   }
 
   // Group nets joined through parts into separate circuits and pick one net in
@@ -212,16 +236,29 @@ export function createEngine(circuit: Circuit) {
     const parent = Array.from({ length: nodeCount }, (_, n) => n);
     const find = (n: number): number => (parent[n] === n ? n : (parent[n] = find(parent[n])));
     for (const el of elements) {
-      for (const n of el.nodes.slice(1)) parent[find(n)] = find(el.nodes[0]);
+      // Pins of a part are connected inside it, unless it says otherwise.
+      for (const group of el.model.groups ?? [el.nodes.map((_, k) => k)]) {
+        for (const k of group.slice(1)) parent[find(el.nodes[k])] = find(el.nodes[group[0]]);
+      }
+    }
+    const grounded = new Set<number>(); // circuits with a Ground: tied already
+    const logic = new Set<number>(); // circuits whose parts return current via 0 V
+    for (const el of elements) {
+      if (el.model.groundTie) grounded.add(find(el.nodes[0]));
+      if (el.model.grounded) logic.add(find(el.nodes[0]));
     }
     const chosen = new Map<number, number>(); // circuit root -> reference net
+    const battery = new Set<number>(); // circuits whose reference is a battery's −
     for (const el of elements) {
       if (circuit.part(el.id)?.type === 'battery' && !chosen.has(find(el.nodes[1]))) {
         chosen.set(find(el.nodes[1]), el.nodes[1]);
+        battery.add(find(el.nodes[1]));
       }
     }
     for (let n = 0; n < nodeCount; n++) if (!chosen.has(find(n))) chosen.set(find(n), n);
-    return [...chosen.values()];
+    return [...chosen]
+      .filter(([root]) => !grounded.has(root) && (!logic.has(root) || battery.has(root)))
+      .map(([root, n]): [number, number] => [n, logic.has(root) ? G_GROUND : G_TIE]);
   }
 
   // Solve the circuit at time t, the end of a step of length dt. With `commit`
@@ -233,7 +270,7 @@ export function createEngine(circuit: Circuit) {
       const b = new Float64Array(size);
       const s = stamper(A, b, x, dt);
       for (let n = 0; n < nodeCount; n++) A[n][n] += GMIN;
-      for (const n of refs) A[n][n] += 1;
+      for (const [n, g] of refs) A[n][n] += g;
       for (const el of elements) {
         if (!el.open) el.model.stamp(el, s);
         else if (el.branch >= 0) s.idle(el.branch);
@@ -251,7 +288,7 @@ export function createEngine(circuit: Circuit) {
     const s = stamper(null, null, x, dt);
     engine.results.clear();
     for (const el of elements) {
-      const v = s.v(el.nodes[0]) - s.v(el.nodes[1]);
+      const v = el.nodes.length > 1 ? s.v(el.nodes[0]) - s.v(el.nodes[1]) : s.v(el.nodes[0]);
       // Current first: accept() moves an energy store on to this step's value.
       const i = el.open ? 0 : el.model.current(el, s);
       const pins = el.open ? el.nodes.map(() => 0) : (el.model.pinCurrents?.(el, s) ?? [i, -i]);
@@ -261,7 +298,7 @@ export function createEngine(circuit: Circuit) {
       if (commit && !el.open) el.model.accept?.(el, s);
       const r: Result = {
         v, i, p, vrms: 0, irms: 0, pavg: 0, heat: el.state.heat ?? 0, load: 0, ac: engine.ac,
-        pins, pinV, state: el.state,
+        pins, pinV, state: el.state, extraRms: [],
       };
       r.load = el.model.thermal && !el.broken ? el.model.thermal.load(r, el.props) : 0;
       r.level = el.model.level?.(r, el.props);
@@ -277,13 +314,16 @@ export function createEngine(circuit: Circuit) {
   // changes over time, so the averages are simply the present values.
   function average(el: Element, r: Result, dt: number) {
     const k = engine.dynamic ? 1 - Math.exp(-dt / AVERAGE_TAU) : 1;
-    const m = (el.state.avg ??= { v2: r.v * r.v, i2: r.i * r.i, p: r.p });
+    const extras = el.model.extras?.(r) ?? [];
+    const m = (el.state.avg ??= { v2: r.v * r.v, i2: r.i * r.i, p: r.p, x2: extras.map((x) => x * x) });
     m.v2 += k * (r.v * r.v - m.v2);
     m.i2 += k * (r.i * r.i - m.i2);
     m.p += k * (r.p - m.p);
+    extras.forEach((x, j) => (m.x2[j] = (m.x2[j] ?? x * x) + k * (x * x - (m.x2[j] ?? x * x))));
     r.vrms = Math.sqrt(m.v2);
     r.irms = Math.sqrt(m.i2);
     r.pavg = m.p;
+    r.extraRms = m.x2.map(Math.sqrt);
   }
 
   // Let every part's heat follow its load for `dt` seconds. Returns the ids of
