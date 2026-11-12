@@ -12,7 +12,8 @@
     "icons": "node scripts/icons.mjs",
     "tauri": "tauri",
     "app": "tauri dev",
-    "app:build": "tauri build"
+    "app:build": "tauri build",
+    "symbols": "node scripts/symbols.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.4",
