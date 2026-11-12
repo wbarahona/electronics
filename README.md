@@ -13,6 +13,20 @@ EN 81346 reference designations (-R1, -S1, -P1…).
 
 ![Ampage window](public/ampage-app.png)
 
+## Download
+
+**[Download the latest release](https://github.com/wbarahona/electronics/releases/latest)**:
+Ampage as a desktop app for macOS (Apple Silicon and Intel, `.dmg`) and
+Windows 10 / 11 (`-setup.exe`).
+
+The builds aren't code-signed yet, so your system warns you once:
+
+- **macOS**: open the `.dmg` and drag Ampage into Applications. On first
+  launch, click **Done**, then go to **System Settings › Privacy & Security**
+  and click **Open Anyway** next to Ampage.
+- **Windows**: if SmartScreen says "Windows protected your PC", click
+  **More info › Run anyway**. It installs for your user only.
+
 ## Features
 
 - **Live simulation**: DC and AC transient analysis (nodal analysis with
@@ -45,6 +59,17 @@ npm run dev      # start the dev server
 npm run build    # typecheck and build to dist/
 npm run preview  # serve the build
 ```
+
+The desktop app (Tauri, in `src-tauri/`) also needs [Rust](https://rustup.rs):
+
+```sh
+npm run app        # run it in a window, reloading as you edit
+npm run app:build  # build the installer into src-tauri/target/release/bundle/
+```
+
+Releases: set `version` in `package.json`, commit, then push a matching tag
+(`git tag v0.2.0 && git push origin v0.2.0`). GitHub Actions builds macOS and
+Windows installers into a draft release to review and publish.
 
 ## Shortcuts
 
