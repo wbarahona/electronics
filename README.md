@@ -2,14 +2,16 @@
   <img src="public/ampage.svg" alt="Ampage logo" width="120" />
 </p>
 
-<h1 align="center">Ampage</h1>
+# Ampage
 
-<p align="center">Circuits that come alive in your browser.</p>
+Circuits that come alive in your browser.
 
-Ampage is a browser-based electronics simulator. Drag parts onto a grid,
+Ampage is a browser technology-based electronics simulator. Drag parts onto a grid,
 wire them up and press Run to watch lamps glow, current flow and
 overloaded parts burn out. Schematics follow DIN EN 60617 symbols and
 EN 81346 reference designations (-R1, -S1, -P1…).
+
+![Ampage window](public/ampage-app.png)
 
 ## Features
 
@@ -46,19 +48,19 @@ npm run preview  # serve the build
 
 ## Shortcuts
 
-| Key | Action |
-| --- | --- |
-| ⌘K | Search parts |
-| Space | Run / pause the simulation |
-| ← / → | Slow down / speed up the simulation (10× steps) |
-| R | Rotate (also while dragging) |
-| Delete / Backspace | Delete selection |
-| Esc | Cancel a drag or wire; otherwise close the properties panel, parts tray and search results |
-| Backspace while wiring | Undo the last bend |
-| Space + drag | Pan the board (doesn't run or pause) |
-| Double-click a wire | Branch a new wire from it |
-| ⌘C / ⌘X / ⌘V / ⌘D | Copy / cut / paste / duplicate |
-| ⌘S / ⌘O | Save / open |
+| Key                    | Action                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| ⌘K                     | Search parts                                                                               |
+| Space                  | Run / pause the simulation                                                                 |
+| ← / →                  | Slow down / speed up the simulation (10× steps)                                            |
+| R                      | Rotate (also while dragging)                                                               |
+| Delete / Backspace     | Delete selection                                                                           |
+| Esc                    | Cancel a drag or wire; otherwise close the properties panel, parts tray and search results |
+| Backspace while wiring | Undo the last bend                                                                         |
+| Space + drag           | Pan the board (doesn't run or pause)                                                       |
+| Double-click a wire    | Branch a new wire from it                                                                  |
+| ⌘C / ⌘X / ⌘V / ⌘D      | Copy / cut / paste / duplicate                                                             |
+| ⌘S / ⌘O                | Save / open                                                                                |
 
 On Windows and Linux use Ctrl instead of ⌘.
 
