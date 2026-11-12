@@ -1,5 +1,6 @@
 # Desktop builds of Ampage (Tauri, see src-tauri) for macOS and Windows,
-# attached to a draft GitHub Release. Runs when a version tag is pushed:
+# attached to a draft GitHub Release. Runs when a version tag is pushed (or
+# by hand from the Actions tab, for the version in package.json):
 #
 #   npm version 0.2.0 --no-git-tag-version   # or edit "version" in package.json
 #   git commit -am "release: v0.2.0" && git tag v0.2.0 && git push --follow-tags
@@ -60,8 +61,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Ampage ${{ github.ref_name }}
+          # The tag pushed, or for a manual run one made from package.json's
+          # version (tauri-action fills in __VERSION__).
+          tagName: v__VERSION__
+          releaseName: Ampage v__VERSION__
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
