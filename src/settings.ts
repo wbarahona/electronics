@@ -17,8 +17,9 @@ interface Settings {
   mode: ThemeMode;
   norm: Norm;
   openView: OpenView;
+  tolerances: boolean; // simulate parts within their tolerance rather than at their marked values
 }
-const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu', openView: 'fit' };
+const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu', openView: 'fit', tolerances: false };
 
 function load(): Settings {
   try {
@@ -28,6 +29,7 @@ function load(): Settings {
     if (!['system', 'light', 'dark'].includes(saved.mode)) saved.mode = DEFAULTS.mode;
     if (saved.norm !== 'eu') saved.norm = 'eu'; // only EU is available so far
     if (!['fit', 'saved'].includes(saved.openView)) saved.openView = DEFAULTS.openView;
+    if (typeof saved.tolerances !== 'boolean') saved.tolerances = DEFAULTS.tolerances;
     return saved;
   } catch {
     return { ...DEFAULTS };
@@ -44,7 +46,8 @@ function store(settings: Settings) {
 
 // Settings: an M3 dialog (from the rail) for the language (each named in
 // itself), the theme colour (a swatch per theme), light / dark / system mode,
-// the drawing standard and the view a circuit opens in. Changes apply at once and are remembered in this
+// the drawing standard, the view a circuit opens in and whether parts are
+// simulated within their tolerances. `onChange` hears of every change. Changes apply at once and are remembered in this
 // browser; the language and theme are applied as the app starts.
 export function createSettings(dialog: MdDialog) {
   const settings = load();
@@ -86,6 +89,14 @@ export function createSettings(dialog: MdDialog) {
     });
   }
 
+  for (const radio of radios('tolerances')) {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      settings.tolerances = radio.value === 'real';
+      update();
+    });
+  }
+
   for (const radio of radios('open-view')) {
     radio.addEventListener('change', () => {
       if (!radio.checked) return;
@@ -111,10 +122,13 @@ export function createSettings(dialog: MdDialog) {
     }
   });
 
+  const listeners: (() => void)[] = [];
+
   function update() {
     applyTheme(settings.theme, settings.mode);
     store(settings);
     show();
+    for (const listener of listeners) listener();
   }
 
   // The dialog's controls as the settings are.
@@ -126,6 +140,7 @@ export function createSettings(dialog: MdDialog) {
     for (const radio of radios('mode')) radio.checked = radio.value === settings.mode;
     for (const radio of radios('norm')) radio.checked = radio.value === settings.norm;
     for (const radio of radios('open-view')) radio.checked = radio.value === settings.openView;
+    for (const radio of radios('tolerances')) radio.checked = radio.value === (settings.tolerances ? 'real' : 'ideal');
   }
   show();
 
@@ -137,5 +152,9 @@ export function createSettings(dialog: MdDialog) {
     get openView() {
       return settings.openView;
     },
+    get tolerances() {
+      return settings.tolerances;
+    },
+    onChange: (listener: () => void) => listeners.push(listener),
   };
 }

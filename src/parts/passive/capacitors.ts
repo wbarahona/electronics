@@ -2,12 +2,13 @@ import { basicReadout, fmt, pct } from '../../sim/shared/readout.ts';
 import { formatSI } from '../../units.ts';
 import type { Element, ModelDef, ModelDefs, Result, Stamper } from '../../sim/models.ts';
 import type { PartDefs } from '../defs.ts';
+import { toleranceProps, type Tolerance } from '../tolerance.ts';
 
 // The values each of these parts carries: what the properties panel edits
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
-  capacitor: { capacitance: number; ratedVoltage: number };
-  electrolytic: { capacitance: number; ratedVoltage: number };
+  capacitor: { capacitance: number; ratedVoltage: number } & Tolerance;
+  electrolytic: { capacitance: number; ratedVoltage: number } & Tolerance;
 }
 
 // K
@@ -55,6 +56,7 @@ export const defs: PartDefs<'capacitor' | 'electrolytic'> = {
     props: {
       capacitance: { label: 'Capacitance', unit: 'F', value: 10e-6, min: 1e-12 },
       ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 25, min: 0.1 },
+      ...toleranceProps(10),
     },
     tag: (p) => formatSI(p.capacitance, 'F'),
     gauge: true,
@@ -72,6 +74,7 @@ export const defs: PartDefs<'capacitor' | 'electrolytic'> = {
     props: {
       capacitance: { label: 'Capacitance', unit: 'F', value: 470e-6, min: 1e-9 },
       ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 16, min: 0.1 },
+      ...toleranceProps(20),
     },
     tag: (p) => `${formatSI(p.capacitance, 'F')} ${formatSI(p.ratedVoltage, 'V')}`,
     gauge: true,
@@ -84,8 +87,8 @@ export const defs: PartDefs<'capacitor' | 'electrolytic'> = {
 
 export const models: ModelDefs<'capacitor' | 'electrolytic'> = {
   // Stressed by voltage beyond its rating, either way round.
-  capacitor: capacitor((v, p) => Math.abs(v) / p.ratedVoltage),
+  capacitor: { ...capacitor((v, p) => Math.abs(v) / p.ratedVoltage), tolerance: ['capacitance'] },
   // Also stressed by reverse voltage: past about a volt the wrong way it
   // heats up and blows.
-  electrolytic: capacitor((v, p) => (v >= 0 ? v / p.ratedVoltage : -v / REVERSE_TOLERANCE)),
+  electrolytic: { ...capacitor((v, p) => (v >= 0 ? v / p.ratedVoltage : -v / REVERSE_TOLERANCE)), tolerance: ['capacitance'] },
 };

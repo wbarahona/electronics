@@ -8,13 +8,13 @@ add. Parts and instruments still to come are in
 
 The most value for the effort, roughly in order (already built: the example
 gallery, net labels, share by link, fault injection, image export, and notes
-explaining every example on the board):
+explaining every example on the board, fit-on-open and component
+tolerances):
 
 1. **Title block and sheet frame**: proper DIN / ISO printouts.
 2. **Challenges and lessons**: builds on the gallery and fault injection
    (find the hidden fault, checked by the simulator).
 3. **Subcircuits / blocks**: reuse for larger schematics.
-4. **Component tolerances**: realistic spread, small effort.
 
 ## Learning and sharing
 
@@ -31,8 +31,6 @@ explaining every example on the board):
 
 ## Simulation depth
 
-- **Component tolerances**: ±5 % resistors and the like, so "identical"
-  circuits differ slightly, as in real life.
 - **Frequency response (Bode plot)**: sweep a frequency through a filter or
   amplifier and plot gain and phase.
 - **DC sweep / I–V curve tracer**: plot a diode's, LED's or transistor's

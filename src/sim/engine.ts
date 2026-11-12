@@ -2,6 +2,7 @@ import { pinsOf } from '../components.ts';
 import type { Circuit } from '../model.ts';
 import { pinKey, type Nets } from '../nets.ts';
 import { solve } from './linear.ts';
+import { actualProps } from './shared/tolerance.ts';
 import { MODELS, type Element, type Env, type PartState, type Result, type Stamper } from './models.ts';
 
 // Modified Nodal Analysis, stepped through time.
@@ -96,6 +97,7 @@ export function createEngine(circuit: Circuit) {
     error: null as string | null,
     dynamic: false,
     ac: false, // driven by an alternating source: readouts show RMS
+    tolerances: false, // simulate parts as built (within their tolerance), not as marked
     heating: false,
     draining: false,
     // Called after every time step (with the time reached), for instruments
@@ -171,7 +173,7 @@ export function createEngine(circuit: Circuit) {
       if (!state.has(c.id)) state.set(c.id, {});
       const el: Element = {
         id: c.id,
-        props: c.props,
+        props: engine.tolerances && model.tolerance ? actualProps(c.props, model.tolerance) : c.props,
         model,
         broken: !!c.broken || !!c.fault,
         // A failed part that now conducts nothing, or a fault put in on

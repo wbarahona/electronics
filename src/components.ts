@@ -48,7 +48,10 @@ export const hitOf = (type: PartType, props: Props): HitBox | undefined => {
 // The values a new part of this type starts with.
 // (A part with part numbers starts as its default one, with its values.)
 export function defaults<T extends PartType>(type: T): PropsByType[T] {
-  const entries = Object.entries(PARTS[type].props).map(([key, spec]): [string, PropValue] => [key, spec.value]);
+  const entries = Object.entries(PARTS[type].props).map(([key, spec]): [string, PropValue] => [
+    key,
+    'fresh' in spec && spec.fresh ? spec.fresh() : spec.value,
+  ]);
   const props = Object.fromEntries(entries) as PropsByType[T];
   Object.assign(props, presetOf(type, props)?.values);
   return props;

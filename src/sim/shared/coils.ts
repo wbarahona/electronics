@@ -1,5 +1,4 @@
 import type { Element, ModelDef, Stamper } from '../models.ts';
-import type { PropsByType } from '../../types.ts';
 import { basicReadout, fmt } from './readout.ts';
 
 // Coils: inductance with resistance, and the levels a relay-like coil pulls
@@ -35,7 +34,7 @@ export function coil<P>(r: (p: P) => number, l: (p: P) => number): Pick<ModelDef
   };
 }
 
-export const inductorModel: ModelDef<PropsByType['inductor']> = {
+export const inductorModel: ModelDef<{ inductance: number; resistance: number; maxCurrent: number }> = {
   ...coil((p) => p.resistance, (p) => p.inductance),
   readout: (r, p) => [...basicReadout(r), ['Energy', fmt(0.5 * p.inductance * r.i * r.i, 'J')]],
   thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 1, limit: 1.5 },

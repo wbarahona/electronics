@@ -3,6 +3,7 @@ import { t } from './i18n/index.ts';
 import type { Circuit } from './model.ts';
 import type { Engine } from './sim/engine.ts';
 import { MODELS, type Lines } from './sim/models.ts';
+import { actualFactor } from './sim/shared/tolerance.ts';
 import { isWire, type Part, type Wire } from './types.ts';
 import { formatSI } from './units.ts';
 
@@ -26,6 +27,16 @@ export function createReadout(
     // Load against the rating, unless brightness already says the same thing.
     if (r && model.thermal && !model.brightness && !c.broken) {
       lines.push(['Load', `${Math.round(r.load * 100)} %`]);
+    }
+    // Simulated as built: the values its tolerance moved, and by how much.
+    if (engine.tolerances && model.tolerance) {
+      const props = c.props as Record<string, number>;
+      const factor = actualFactor(props);
+      for (const key of model.tolerance) {
+        const spec = PARTS[c.type].props[key] as { label: string; unit: string };
+        const change = (factor - 1) * 100;
+        lines.push([`Actual ${spec.label.toLowerCase()}`, `${formatSI(props[key] * factor, spec.unit)} (${change >= 0 ? '+' : '−'}${Math.abs(change).toFixed(1)} %)`]);
+      }
     }
     if (c.broken && model.failure) lines.push(['Status', model.failure.label]);
     // A fault put in shows only if it's meant to be seen.

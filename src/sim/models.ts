@@ -143,6 +143,7 @@ export interface ModelDef<P> {
   groups?: number[][] | ((p: P) => number[][]);
   active?(r: Result): boolean;
   segments?(r: Result, p: P): number[];
+  tolerance?: readonly (keyof P & string)[]; // values its tolerance applies to (see src/parts/tolerance.ts)
   light?(r: Result, p: P): number[]; // mixed light, linear RGB per spot (see src/parts/light.ts)
   sound?(r: Result, p: P): Sound | null;
   needle?(r: Result, p: P): number;

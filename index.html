@@ -297,6 +297,19 @@
           </div>
         </section>
         <section class="settings-section">
+          <h3 class="settings-heading">Component values</h3>
+          <div role="radiogroup" aria-label="Component values">
+            <label class="settings-radio">
+              <md-radio name="tolerances" value="ideal" touch-target="wrapper"></md-radio>
+              <span><span class="settings-option">Ideal</span><span class="settings-note">Every part exactly its marked value</span></span>
+            </label>
+            <label class="settings-radio">
+              <md-radio name="tolerances" value="real" touch-target="wrapper"></md-radio>
+              <span><span class="settings-option">Real spread</span><span class="settings-note">Each resistor, capacitor and inductor somewhere within its tolerance, as built</span></span>
+            </label>
+          </div>
+        </section>
+        <section class="settings-section">
           <h3 class="settings-heading">Opening a circuit</h3>
           <div role="radiogroup" aria-label="Opening a circuit">
             <label class="settings-radio">

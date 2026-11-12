@@ -42,6 +42,15 @@ const board = createBoard(byId<SVGSVGElement>('board'));
 const circuit = createCircuit();
 const engine = createEngine(circuit);
 let nets: Nets | null = null;
+// Ideal values or the real spread (Settings): solve again when it changes.
+engine.tolerances = settings.tolerances;
+settings.onChange(() => {
+  if (engine.tolerances === settings.tolerances) return;
+  engine.tolerances = settings.tolerances;
+  if (!nets) return;
+  engine.rebuild(nets);
+  showResults();
+});
 let currents = new Map<string, number>(); // wire id -> amps
 let sounds = new Map<string, Sound>(); // part id -> the tone it's making
 const audio = createAudio();

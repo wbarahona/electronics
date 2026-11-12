@@ -3,14 +3,15 @@ import { ohmic, powerThermal } from '../../sim/shared/resistance.ts';
 import { formatSI } from '../../units.ts';
 import type { ModelDefs } from '../../sim/models.ts';
 import type { PartDefs } from '../defs.ts';
+import { toleranceProps, type Tolerance } from '../tolerance.ts';
 import type { PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
   // Positions and ambient light are percentages, 0..100.
-  potentiometer: { resistance: number; position: number; powerRating: number };
-  rheostat: { resistance: number; position: number; powerRating: number };
+  potentiometer: { resistance: number; position: number; powerRating: number } & Tolerance;
+  rheostat: { resistance: number; position: number; powerRating: number } & Tolerance;
 }
 
 // S; a 10 MΩ probe input
@@ -35,6 +36,7 @@ export const defs: PartDefs<'potentiometer' | 'rheostat'> = {
       resistance: { label: 'Resistance', unit: 'Ω', value: 10e3, min: 1 },
       position: { label: 'Wiper position', unit: '%', value: 50, min: 0, max: 100, slider: true },
       powerRating: { label: 'Power rating', unit: 'W', value: 0.5, min: 0.001 },
+      ...toleranceProps(20),
     },
     tag: (p) => `${formatSI(p.resistance, 'Ω')} ${Math.round(p.position)} %`,
     labelBelow: true,
@@ -54,6 +56,7 @@ export const defs: PartDefs<'potentiometer' | 'rheostat'> = {
       resistance: { label: 'Max resistance', unit: 'Ω', value: 1000, min: 1 },
       position: { label: 'Setting', unit: '%', value: 50, min: 0, max: 100, slider: true },
       powerRating: { label: 'Power rating', unit: 'W', value: 0.5, min: 0.001 },
+      ...toleranceProps(20),
     },
     tag: (p) => formatSI((p.resistance * p.position) / 100, 'Ω'),
     draw: () => `
@@ -66,6 +69,7 @@ export const defs: PartDefs<'potentiometer' | 'rheostat'> = {
 export const models: ModelDefs<'potentiometer' | 'rheostat'> = {
   // Two resistors sharing the wiper: track pin 0 → wiper → pin 1.
   potentiometer: {
+    tolerance: ['resistance'],
     stamp(el, s) {
       const [a, b, w] = el.nodes;
       const [r1, r2] = halves(el.props);
@@ -98,6 +102,7 @@ export const models: ModelDefs<'potentiometer' | 'rheostat'> = {
     failure: { label: 'burnt out', open: true },
   },
   rheostat: {
+    tolerance: ['resistance'],
     ...ohmic(
       (p) => Math.max(R_MIN, (p.resistance * p.position) / 100),
       (r, p) => [...basicReadout(r), ['Resistance', fmt(Math.max(R_MIN, (p.resistance * p.position) / 100), 'Ω')]],

@@ -69,6 +69,9 @@ export interface FieldSpec {
 
 export interface NumberSpec extends FieldSpec {
   value: number;
+  // A value each new part draws for itself instead of `value` (a hidden one,
+  // like a component's deviation within its tolerance).
+  fresh?: () => number;
   unit: string;
   min?: number;
   max?: number;
