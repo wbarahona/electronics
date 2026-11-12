@@ -5,13 +5,14 @@ import { writeFile } from 'node:fs/promises';
 
 // Alphabetical, as Google Fonts requires.
 const ICONS = [
-  'arrow_drop_down', 'autorenew', 'avg_pace', 'battery_charging_full', 'bolt', 'check', 'close', 'content_copy',
-  'content_cut', 'content_paste', 'delete', 'developer_board', 'doorbell', 'draw', 'electrical_services',
-  'fast_forward', 'fast_rewind', 'filter_center_focus', 'fit_screen', 'folder', 'folder_open', 'gradient', 'image',
-  'library_add', 'lightbulb', 'linear_scale', 'link', 'memory', 'menu', 'menu_open', 'mode_fan', 'monitoring',
-  'more_horiz', 'note_add', 'palette', 'pause', 'play_arrow', 'power', 'print', 'redo', 'restart_alt', 'save',
-  'schedule', 'school', 'search', 'settings', 'speed', 'stairs', 'sticky_note_2', 'thermostat', 'timer', 'toggle_on',
-  'undo', 'wallpaper', 'zoom_in', 'zoom_out',
+  'arrow_drop_down', 'arrow_selector_tool', 'autorenew', 'avg_pace', 'battery_charging_full', 'bolt',
+  'brightness_auto', 'check', 'close', 'content_copy', 'content_cut', 'content_paste', 'contrast', 'dark_mode',
+  'delete', 'developer_board', 'doorbell', 'draw', 'electrical_services', 'fast_forward', 'fast_rewind',
+  'filter_center_focus', 'fit_screen', 'folder', 'folder_open', 'format_color_fill', 'gradient', 'grid_on', 'image',
+  'library_add', 'light_mode', 'lightbulb', 'linear_scale', 'link', 'memory', 'menu', 'menu_open', 'mode_fan',
+  'monitoring', 'more_horiz', 'note_add', 'palette', 'pause', 'play_arrow', 'power', 'print', 'redo', 'restart_alt',
+  'save', 'schedule', 'schema', 'school', 'search', 'settings', 'speed', 'stairs', 'sticky_note_2', 'thermostat',
+  'timer', 'toggle_on', 'translate', 'tune', 'undo', 'wallpaper', 'zoom_in', 'zoom_out',
 ];
 const OUT = new URL('../src/fonts/material-symbols-outlined.woff2', import.meta.url);
 

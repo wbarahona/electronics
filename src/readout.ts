@@ -8,7 +8,8 @@ import { isWire, type Part, type Wire } from './types.ts';
 import { formatSI } from './units.ts';
 
 // Tooltip with the live simulation values of the part or wire under the
-// pointer. `wireCurrent(id)` gives a wire's current in amps.
+// pointer, unless turned off (`enabled`, from Settings or the I key).
+// `wireCurrent(id)` gives a wire's current in amps.
 export function createReadout(
   el: HTMLElement,
   svg: SVGSVGElement,
@@ -18,6 +19,7 @@ export function createReadout(
 ) {
   let hover: string | null = null; // part or wire id
   let pointer = { x: 0, y: 0 };
+  let enabled = true;
 
   function partLines(c: Part): Lines {
     const r = engine.results.get(c.id);
@@ -50,7 +52,7 @@ export function createReadout(
   }
 
   function refresh() {
-    const item = hover && circuit.get(hover);
+    const item = enabled && hover && circuit.get(hover);
     if (!item) {
       el.hidden = true;
       return;
@@ -89,5 +91,11 @@ export function createReadout(
     refresh();
   });
 
-  return { refresh };
+  return {
+    refresh,
+    set enabled(on: boolean) {
+      enabled = on;
+      refresh();
+    },
+  };
 }

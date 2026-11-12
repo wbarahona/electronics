@@ -255,66 +255,119 @@
       </div>
     </md-dialog>
     <md-dialog id="settings-dialog" class="settings-dialog">
-      <div slot="headline" class="padded-title">Settings</div>
+      <div slot="headline" class="settings-headline">
+        <div class="padded-title">Settings</div>
+        <md-tabs class="settings-tabs" aria-label="Settings">
+          <md-primary-tab inline-icon aria-controls="settings-appearance"><md-icon slot="icon">palette</md-icon>Appearance</md-primary-tab>
+          <md-primary-tab inline-icon aria-controls="settings-board"><md-icon slot="icon">grid_on</md-icon>Board</md-primary-tab>
+          <md-primary-tab inline-icon aria-controls="settings-simulation"><md-icon slot="icon">bolt</md-icon>Simulation</md-primary-tab>
+        </md-tabs>
+      </div>
       <form slot="content" id="settings-form" method="dialog" class="settings-body">
-        <section class="settings-section">
-          <h3 class="settings-heading">Language</h3>
-          <div class="settings-languages" role="radiogroup" aria-label="Language"></div>
-        </section>
-        <section class="settings-section">
-          <h3 class="settings-heading">Theme colour</h3>
-          <div class="theme-swatches" role="radiogroup" aria-label="Theme colour"></div>
-        </section>
-        <section class="settings-section">
-          <h3 class="settings-heading">Mode</h3>
-          <div role="radiogroup" aria-label="Mode">
-            <label class="settings-radio"><md-radio name="mode" value="system" touch-target="wrapper"></md-radio>System</label>
-            <label class="settings-radio"><md-radio name="mode" value="light" touch-target="wrapper"></md-radio>Light</label>
-            <label class="settings-radio"><md-radio name="mode" value="dark" touch-target="wrapper"></md-radio>Dark</label>
-          </div>
-        </section>
-        <section class="settings-section">
-          <h3 class="settings-heading">Drawing standard</h3>
-          <div role="radiogroup" aria-label="Drawing standard">
-            <label class="settings-radio">
-              <md-radio name="norm" value="eu" touch-target="wrapper"></md-radio>
-              <span><span class="settings-option">EU: IEC / DIN EN 60617</span><span class="settings-note">European symbols, EN 81346 references (-R1)</span></span>
-            </label>
-            <label class="settings-radio disabled">
-              <md-radio name="norm" value="us" touch-target="wrapper" disabled></md-radio>
-              <span><span class="settings-option">US: ANSI / IEEE 315</span><span class="settings-note">Coming soon</span></span>
-            </label>
-          </div>
-        </section>
-        <section class="settings-section">
-          <h3 class="settings-heading">Component values</h3>
-          <div role="radiogroup" aria-label="Component values">
-            <label class="settings-radio">
-              <md-radio name="tolerances" value="ideal" touch-target="wrapper"></md-radio>
-              <span><span class="settings-option">Ideal</span><span class="settings-note">Every part exactly its marked value</span></span>
-            </label>
-            <label class="settings-radio">
-              <md-radio name="tolerances" value="real" touch-target="wrapper"></md-radio>
-              <span><span class="settings-option">Real spread</span><span class="settings-note">Each resistor, capacitor and inductor somewhere within its tolerance, as built</span></span>
-            </label>
-          </div>
-        </section>
-        <section class="settings-section">
-          <h3 class="settings-heading">Opening a circuit</h3>
-          <div role="radiogroup" aria-label="Opening a circuit">
-            <label class="settings-radio">
-              <md-radio name="open-view" value="fit" touch-target="wrapper"></md-radio>
-              <span><span class="settings-option">Fit it in view</span><span class="settings-note">The whole circuit, whatever the window size</span></span>
-            </label>
-            <label class="settings-radio">
-              <md-radio name="open-view" value="saved" touch-target="wrapper"></md-radio>
-              <span><span class="settings-option">Restore its saved view</span><span class="settings-note">Where it was panned and zoomed when saved</span></span>
-            </label>
-          </div>
-        </section>
+        <div id="settings-appearance" class="settings-panel" role="tabpanel">
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>translate</md-icon>Language</h3>
+            <div class="settings-languages" role="radiogroup" aria-label="Language"></div>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>format_color_fill</md-icon>Theme colour</h3>
+            <div class="theme-swatches" role="radiogroup" aria-label="Theme colour"></div>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>contrast</md-icon>Mode</h3>
+            <md-outlined-segmented-button-set class="settings-mode" aria-label="Mode">
+              <md-outlined-segmented-button data-mode="system" label="System"><md-icon slot="icon">brightness_auto</md-icon></md-outlined-segmented-button>
+              <md-outlined-segmented-button data-mode="light" label="Light"><md-icon slot="icon">light_mode</md-icon></md-outlined-segmented-button>
+              <md-outlined-segmented-button data-mode="dark" label="Dark"><md-icon slot="icon">dark_mode</md-icon></md-outlined-segmented-button>
+            </md-outlined-segmented-button-set>
+          </section>
+        </div>
+        <div id="settings-board" class="settings-panel" role="tabpanel" hidden>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>schema</md-icon>Drawing standard</h3>
+            <div role="radiogroup" aria-label="Drawing standard">
+              <label class="settings-radio">
+                <md-radio name="norm" value="eu" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">EU: IEC / DIN EN 60617</span><span class="settings-note">European symbols, EN 81346 references (-R1)</span></span>
+              </label>
+              <label class="settings-radio disabled">
+                <md-radio name="norm" value="us" touch-target="wrapper" disabled></md-radio>
+                <span><span class="settings-option">US: ANSI / IEEE 315</span><span class="settings-note">Coming soon</span></span>
+              </label>
+            </div>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>fit_screen</md-icon>Opening a circuit</h3>
+            <div role="radiogroup" aria-label="Opening a circuit">
+              <label class="settings-radio">
+                <md-radio name="open-view" value="fit" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Fit it in view</span><span class="settings-note">The whole circuit, whatever the window size</span></span>
+              </label>
+              <label class="settings-radio">
+                <md-radio name="open-view" value="saved" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Restore its saved view</span><span class="settings-note">Where it was panned and zoomed when saved</span></span>
+              </label>
+            </div>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>lightbulb</md-icon>Tip of the day</h3>
+            <div role="radiogroup" aria-label="Tip of the day">
+              <label class="settings-radio">
+                <md-radio name="tips" value="show" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Show at startup</span><span class="settings-note">A short tip each time Ampage opens</span></span>
+              </label>
+              <label class="settings-radio">
+                <md-radio name="tips" value="hide" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Don’t show</span><span class="settings-note">Start straight on the board</span></span>
+              </label>
+            </div>
+            <md-text-button id="settings-show-tip" class="settings-action"><md-icon slot="icon">lightbulb</md-icon>Show a tip now</md-text-button>
+          </section>
+        </div>
+        <div id="settings-simulation" class="settings-panel" role="tabpanel" hidden>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>tune</md-icon>Component values</h3>
+            <div role="radiogroup" aria-label="Component values">
+              <label class="settings-radio">
+                <md-radio name="tolerances" value="ideal" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Ideal</span><span class="settings-note">Every part exactly its marked value</span></span>
+              </label>
+              <label class="settings-radio">
+                <md-radio name="tolerances" value="real" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Real spread</span><span class="settings-note">Each resistor, capacitor and inductor somewhere within its tolerance, as built</span></span>
+              </label>
+            </div>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>arrow_selector_tool</md-icon>Values on hover</h3>
+            <div role="radiogroup" aria-label="Values on hover">
+              <label class="settings-radio">
+                <md-radio name="readout" value="show" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Show</span><span class="settings-note">Live values of the part or wire under the pointer (press I to toggle)</span></span>
+              </label>
+              <label class="settings-radio">
+                <md-radio name="readout" value="hide" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Hide</span><span class="settings-note">Nothing pops up over the board</span></span>
+              </label>
+            </div>
+          </section>
+        </div>
       </form>
       <div slot="actions" class="dialog-actions">
         <md-filled-button form="settings-form" value="done">Done</md-filled-button>
+      </div>
+    </md-dialog>
+    <md-dialog id="tip-dialog" class="tip-dialog">
+      <md-icon slot="icon">lightbulb</md-icon>
+      <div slot="headline">Tip of the day</div>
+      <form slot="content" id="tip-form" method="dialog" class="tip-body">
+        <p class="tip-text"></p>
+        <p class="tip-count"></p>
+        <label class="tip-check"><md-checkbox touch-target="wrapper"></md-checkbox>Don’t show tips at startup</label>
+      </form>
+      <div slot="actions" class="dialog-actions">
+        <md-text-button class="tip-next" type="button">Next tip</md-text-button>
+        <md-filled-button form="tip-form" value="close" autofocus>Close</md-filled-button>
       </div>
     </md-dialog>
     <md-dialog id="print-dialog" class="print-dialog">

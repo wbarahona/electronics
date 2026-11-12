@@ -39,9 +39,12 @@ export type LightColor = keyof typeof LIGHT_COLORS;
 
 export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters' | 'notes';
 
-// Groups shown as the clickable entries of the parts bar, in order. `icon` is
-// a Material Symbols name (it must also be listed in scripts/icons.mjs),
-// or inline SVG on a 24×24 grid where no symbol fits.
+// Groups shown as the clickable entries of the parts bar, in order: the way a
+// circuit is built (power, control, components, what it lights or drives, then
+// measuring), logic and ICs after, notes last. Those that don't fit the bar
+// overflow into More from the end. `icon` is a Material Symbols name (it must
+// also be listed in scripts/icons.mjs), or inline SVG on a 24×24 grid where no
+// symbol fits.
 
 // A diode, for Semiconductors: Material Symbols has nothing that says
 // "diode or transistor".
@@ -50,14 +53,14 @@ export const DIODE_ICON =
 
 export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
   { id: 'sources', label: 'Sources', icon: 'bolt' },
+  { id: 'switches', label: 'Switches', icon: 'toggle_on' },
   { id: 'passive', label: 'Passive', icon: 'electrical_services' },
   { id: 'semiconductors', label: 'Semiconductors', icon: DIODE_ICON },
-  { id: 'digital', label: 'Digital', icon: 'developer_board' },
-  { id: 'chips', label: 'Chips', icon: 'memory' },
   { id: 'signals', label: 'Signals', icon: 'lightbulb' },
   { id: 'loads', label: 'Loads', icon: 'mode_fan' },
-  { id: 'switches', label: 'Switches', icon: 'toggle_on' },
   { id: 'meters', label: 'Meters', icon: 'speed' },
+  { id: 'digital', label: 'Digital', icon: 'developer_board' },
+  { id: 'chips', label: 'Chips', icon: 'memory' },
   { id: 'notes', label: 'Notes', icon: 'sticky_note_2' },
 ];
 

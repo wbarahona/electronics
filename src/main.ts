@@ -1,3 +1,4 @@
+import type { MdDialog } from '@material/web/dialog/dialog.js';
 import type { MdMenu } from '@material/web/menu/menu.js';
 import './material.ts';
 import { createBoard } from './board.ts';
@@ -18,7 +19,9 @@ import { createPrint } from './print.ts';
 import { createScope } from './scope.ts';
 import { createSearch } from './search.ts';
 import { createSettings } from './settings.ts';
+import { createTips } from './tips.ts';
 import { createZoom } from './zoom.ts';
+import { fromControl } from './keys.ts';
 import { onLanguage, t } from './i18n/index.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
@@ -74,6 +77,13 @@ const readout = createReadout(
   engine,
   (id) => currents.get(id),
 );
+// Values on hover (Settings), also toggled with I when the tooltip is in the way.
+readout.enabled = settings.readout;
+settings.onChange(() => (readout.enabled = settings.readout));
+window.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() !== 'i' || e.metaKey || e.ctrlKey || e.altKey || e.repeat || fromControl(e)) return;
+  settings.readout = !settings.readout;
+});
 
 // Push the latest simulation results to the screen: how brightly each part
 // shines, how close each is to failing (0 at its rating, 1 at its limit), and
@@ -185,7 +195,16 @@ const restored = files.restore();
 if (restored) loadCircuit(restored);
 else history.reset();
 // Opened from a shared link: its circuit (asking first if that replaces one).
+// Otherwise a tip of the day, unless turned off (here or in Settings).
+const fromLink = location.hash.length > 1;
 files.openLink();
+const tips = createTips(byId('tip-dialog'), settings);
+settings.onChange(tips.sync);
+if (settings.tips && !fromLink) tips.show();
+byId('settings-show-tip').addEventListener('click', async () => {
+  await byId<MdDialog>('settings-dialog').close(); // one dialog at a time, as M3 asks
+  tips.show();
+});
 
 // While running, simulated time advances at `speed` times real time. Edits are
 // solved immediately even when paused, so readouts stay right, but nothing

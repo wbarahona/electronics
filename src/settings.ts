@@ -18,8 +18,10 @@ interface Settings {
   norm: Norm;
   openView: OpenView;
   tolerances: boolean; // simulate parts within their tolerance rather than at their marked values
+  readout: boolean; // show live values in a tooltip over the part or wire under the pointer
+  tips: boolean; // show a tip of the day as the app starts
 }
-const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu', openView: 'fit', tolerances: false };
+const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu', openView: 'fit', tolerances: false, readout: true, tips: true };
 
 function load(): Settings {
   try {
@@ -30,6 +32,8 @@ function load(): Settings {
     if (saved.norm !== 'eu') saved.norm = 'eu'; // only EU is available so far
     if (!['fit', 'saved'].includes(saved.openView)) saved.openView = DEFAULTS.openView;
     if (typeof saved.tolerances !== 'boolean') saved.tolerances = DEFAULTS.tolerances;
+    if (typeof saved.readout !== 'boolean') saved.readout = DEFAULTS.readout;
+    if (typeof saved.tips !== 'boolean') saved.tips = DEFAULTS.tips;
     return saved;
   } catch {
     return { ...DEFAULTS };
@@ -44,11 +48,13 @@ function store(settings: Settings) {
   }
 }
 
-// Settings: an M3 dialog (from the rail) for the language (each named in
-// itself), the theme colour (a swatch per theme), light / dark / system mode,
-// the drawing standard, the view a circuit opens in and whether parts are
-// simulated within their tolerances. `onChange` hears of every change. Changes apply at once and are remembered in this
-// browser; the language and theme are applied as the app starts.
+// Settings: an M3 dialog (from the rail) with its options in three tabs.
+// Appearance: the language (each named in itself), the theme colour (a swatch
+// per theme), light / dark / system mode. Board: the drawing standard, the
+// view a circuit opens in and the tip of the day at startup. Simulation: whether parts are simulated within their
+// tolerances and whether hovering shows live values. `onChange` hears of every
+// change. Changes apply at once and are remembered in this browser; the
+// language and theme are applied as the app starts.
 export function createSettings(dialog: MdDialog) {
   const settings = load();
   applyTheme(settings.theme, settings.mode);
@@ -81,18 +87,43 @@ export function createSettings(dialog: MdDialog) {
   );
 
   const radios = (name: string) => [...dialog.querySelectorAll<HTMLElement & { value: string; checked: boolean }>(`md-radio[name="${name}"]`)];
-  for (const radio of radios('mode')) {
-    radio.addEventListener('change', () => {
-      if (!radio.checked) return;
-      settings.mode = radio.value as ThemeMode;
-      update();
-    });
-  }
+  // Mode: a segmented button (system / light / dark), each with its icon.
+  const modes = [...dialog.querySelectorAll<HTMLElement & { selected: boolean }>('.settings-mode [data-mode]')];
+  dialog.querySelector('.settings-mode')!.addEventListener('segmented-button-set-selection', (e) => {
+    const { button, selected } = (e as CustomEvent<{ button: HTMLElement; selected: boolean }>).detail;
+    if (!selected) return;
+    settings.mode = button.dataset.mode as ThemeMode;
+    update();
+  });
+
+  // Tabs: one group of settings (appearance, board, simulation) at a time.
+  const tabs = dialog.querySelector<HTMLElement & { activeTabIndex: number }>('.settings-tabs')!;
+  tabs.addEventListener('change', () => {
+    for (const [i, tab] of [...tabs.querySelectorAll('md-primary-tab')].entries()) {
+      dialog.querySelector<HTMLElement>(`#${tab.getAttribute('aria-controls')}`)!.hidden = i !== tabs.activeTabIndex;
+    }
+  });
 
   for (const radio of radios('tolerances')) {
     radio.addEventListener('change', () => {
       if (!radio.checked) return;
       settings.tolerances = radio.value === 'real';
+      update();
+    });
+  }
+
+  for (const radio of radios('readout')) {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      settings.readout = radio.value === 'show';
+      update();
+    });
+  }
+
+  for (const radio of radios('tips')) {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      settings.tips = radio.value === 'show';
       update();
     });
   }
@@ -137,10 +168,12 @@ export function createSettings(dialog: MdDialog) {
       swatch.setAttribute('aria-checked', String(swatch.dataset.theme === settings.theme));
     }
     for (const radio of radios('language')) radio.checked = radio.value === settings.language;
-    for (const radio of radios('mode')) radio.checked = radio.value === settings.mode;
+    for (const mode of modes) mode.selected = mode.dataset.mode === settings.mode;
     for (const radio of radios('norm')) radio.checked = radio.value === settings.norm;
     for (const radio of radios('open-view')) radio.checked = radio.value === settings.openView;
     for (const radio of radios('tolerances')) radio.checked = radio.value === (settings.tolerances ? 'real' : 'ideal');
+    for (const radio of radios('tips')) radio.checked = radio.value === (settings.tips ? 'show' : 'hide');
+    for (const radio of radios('readout')) radio.checked = radio.value === (settings.readout ? 'show' : 'hide');
   }
   show();
 
@@ -154,6 +187,20 @@ export function createSettings(dialog: MdDialog) {
     },
     get tolerances() {
       return settings.tolerances;
+    },
+    get readout() {
+      return settings.readout;
+    },
+    set readout(on: boolean) {
+      settings.readout = on;
+      update();
+    },
+    get tips() {
+      return settings.tips;
+    },
+    set tips(on: boolean) {
+      settings.tips = on;
+      update();
     },
     onChange: (listener: () => void) => listeners.push(listener),
   };
