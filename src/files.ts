@@ -21,8 +21,10 @@ const cancelled = (e: unknown) => e instanceof DOMException && e.name === 'Abort
 export interface FileActionsOptions {
   circuit: Circuit;
   getView: () => View;
-  // Replace the circuit on screen with a loaded one (or an empty one).
-  load: (data: SavedCircuit) => void;
+  // Replace the circuit on screen with a loaded one (or an empty one);
+  // `opened` when it comes from a file, an example or a link rather than
+  // this browser's autosave.
+  load: (data: SavedCircuit, opened?: boolean) => void;
   // Tell the user something (went wrong, or was done).
   report: (message: string) => void;
 }
@@ -52,7 +54,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
       report(t('Couldn’t open {file}: {error}', { file: fileName, error: (e as Error).message }));
       return false;
     }
-    load(data);
+    load(data, true);
     name = fileName;
     return true;
   }

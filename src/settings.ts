@@ -8,13 +8,17 @@ const KEY = 'ampage:settings';
 // is what the app draws; US (ANSI / IEEE 315) is still to come.
 export type Norm = 'eu' | 'us';
 
+// What to show when a circuit is opened: all of it, or the view saved with it.
+export type OpenView = 'fit' | 'saved';
+
 interface Settings {
   language: Language;
   theme: ThemeId;
   mode: ThemeMode;
   norm: Norm;
+  openView: OpenView;
 }
-const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu' };
+const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu', openView: 'fit' };
 
 function load(): Settings {
   try {
@@ -23,6 +27,7 @@ function load(): Settings {
     if (!THEMES.some((theme) => theme.id === saved.theme)) saved.theme = DEFAULTS.theme;
     if (!['system', 'light', 'dark'].includes(saved.mode)) saved.mode = DEFAULTS.mode;
     if (saved.norm !== 'eu') saved.norm = 'eu'; // only EU is available so far
+    if (!['fit', 'saved'].includes(saved.openView)) saved.openView = DEFAULTS.openView;
     return saved;
   } catch {
     return { ...DEFAULTS };
@@ -38,8 +43,8 @@ function store(settings: Settings) {
 }
 
 // Settings: an M3 dialog (from the rail) for the language (each named in
-// itself), the theme colour (a swatch per theme), light / dark / system mode
-// and the drawing standard. Changes apply at once and are remembered in this
+// itself), the theme colour (a swatch per theme), light / dark / system mode,
+// the drawing standard and the view a circuit opens in. Changes apply at once and are remembered in this
 // browser; the language and theme are applied as the app starts.
 export function createSettings(dialog: MdDialog) {
   const settings = load();
@@ -81,6 +86,14 @@ export function createSettings(dialog: MdDialog) {
     });
   }
 
+  for (const radio of radios('open-view')) {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      settings.openView = radio.value as OpenView;
+      update();
+    });
+  }
+
   for (const radio of radios('language')) {
     radio.addEventListener('change', () => {
       if (!radio.checked) return;
@@ -112,6 +125,7 @@ export function createSettings(dialog: MdDialog) {
     for (const radio of radios('language')) radio.checked = radio.value === settings.language;
     for (const radio of radios('mode')) radio.checked = radio.value === settings.mode;
     for (const radio of radios('norm')) radio.checked = radio.value === settings.norm;
+    for (const radio of radios('open-view')) radio.checked = radio.value === settings.openView;
   }
   show();
 
@@ -119,6 +133,9 @@ export function createSettings(dialog: MdDialog) {
     open: () => dialog.show(),
     get norm() {
       return settings.norm;
+    },
+    get openView() {
+      return settings.openView;
     },
   };
 }

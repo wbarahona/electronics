@@ -8,10 +8,7 @@ import { fromControl } from './keys.ts';
 // the level shown follows any zoom.
 export function createZoom(root: HTMLElement, board: Board) {
   const level = root.querySelector<HTMLElement>('#zoom-level')!;
-  const fit = () => {
-    const box = board.world.getBBox();
-    if (box.width || box.height) board.fit(box);
-  };
+  const fit = board.fitAll;
 
   root.querySelector('#zoom-in')!.addEventListener('click', () => board.zoomStep(1));
   root.querySelector('#zoom-out')!.addEventListener('click', () => board.zoomStep(-1));

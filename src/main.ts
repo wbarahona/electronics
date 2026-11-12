@@ -150,12 +150,16 @@ function showToast(message: string) {
 }
 
 // Put a loaded (or empty) circuit on the board, with fresh simulation state.
-function loadCircuit(data: SavedCircuit) {
+// An opened one (file, example, link) is fitted in view unless Settings ask
+// for the view saved with it; the autosave always comes back as it was left.
+function loadCircuit(data: SavedCircuit, opened = false) {
   circuit.load(data.parts, data.joints, data.wires);
   engine.reset();
   scope.clear();
-  if (data.view) board.setView(data.view);
+  const fit = opened && settings.openView === 'fit' && circuit.components.length > 0;
+  if (data.view && !fit) board.setView(data.view);
   editor.reload();
+  if (fit) board.fitAll();
   controls.showTime(engine.time);
   history.reset();
 }

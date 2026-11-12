@@ -296,6 +296,19 @@
             </label>
           </div>
         </section>
+        <section class="settings-section">
+          <h3 class="settings-heading">Opening a circuit</h3>
+          <div role="radiogroup" aria-label="Opening a circuit">
+            <label class="settings-radio">
+              <md-radio name="open-view" value="fit" touch-target="wrapper"></md-radio>
+              <span><span class="settings-option">Fit it in view</span><span class="settings-note">The whole circuit, whatever the window size</span></span>
+            </label>
+            <label class="settings-radio">
+              <md-radio name="open-view" value="saved" touch-target="wrapper"></md-radio>
+              <span><span class="settings-option">Restore its saved view</span><span class="settings-note">Where it was panned and zoomed when saved</span></span>
+            </label>
+          </div>
+        </section>
       </form>
       <div slot="actions" class="dialog-actions">
         <md-filled-button form="settings-form" value="done">Done</md-filled-button>

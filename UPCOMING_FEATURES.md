@@ -6,17 +6,15 @@ add. Parts and instruments still to come are in
 
 ## Top picks
 
-The most value for the effort, roughly in order (the first five, the example
-gallery, net labels, share by link, fault injection and image export, are
-built):
+The most value for the effort, roughly in order (already built: the example
+gallery, net labels, share by link, fault injection, image export, and notes
+explaining every example on the board):
 
 1. **Title block and sheet frame**: proper DIN / ISO printouts.
 2. **Challenges and lessons**: builds on the gallery and fault injection
    (find the hidden fault, checked by the simulator).
 3. **Subcircuits / blocks**: reuse for larger schematics.
 4. **Component tolerances**: realistic spread, small effort.
-5. **Notes in the examples**: the gallery's circuits explained on the board
-   with the new notes.
 
 ## Learning and sharing
 
@@ -66,5 +64,3 @@ built):
   US: ANSI / IEEE 315 symbols (zigzag resistors and so on), US reference
   designators (R1, Q1, CR1 for diodes), and US default part numbers (2N3904,
   2N3906, 1N4733A instead of BC547, BC557, BZX55C5V1).
-- **Fit to circuit on open**: optionally fit the view when a file is opened,
-  instead of restoring the view saved with it.

@@ -169,6 +169,12 @@ export function createBoard(svg: SVGSVGElement) {
     render();
   }
 
+  // Show everything on the board.
+  function fitAll() {
+    const box = world.getBBox();
+    if (box.width || box.height) fit(box);
+  }
+
   // Pan and zoom to a saved view.
   function setView(v: { x: number; y: number; scale: number }) {
     view.x = v.x;
@@ -182,6 +188,7 @@ export function createBoard(svg: SVGSVGElement) {
     world,
     view,
     setView,
+    fitAll,
     screenToWorld,
     zoomTo,
     zoomStep,
