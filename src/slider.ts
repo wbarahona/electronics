@@ -96,7 +96,7 @@ const STYLE = `
     border-radius: 22px;
     background: var(--md-sys-color-inverse-surface);
     color: var(--md-sys-color-inverse-on-surface);
-    font: 500 14px/20px Roboto, sans-serif;
+    font: 500 14px/20px var(--md-ref-typeface-plain, sans-serif);
     letter-spacing: 0.1px;
     text-align: center;
     white-space: nowrap;

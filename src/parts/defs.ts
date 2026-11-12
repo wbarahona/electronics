@@ -40,7 +40,7 @@ export type LightColor = keyof typeof LIGHT_COLORS;
 export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters' | 'notes';
 
 // Groups shown as the clickable entries of the parts bar, in order. `icon` is
-// a Material Symbols name (it must also be listed in index.html's icon_names),
+// a Material Symbols name (it must also be listed in scripts/icons.mjs),
 // or inline SVG on a 24×24 grid where no symbol fits.
 
 // A diode, for Semiconductors: Material Symbols has nothing that says

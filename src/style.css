@@ -1,8 +1,11 @@
 /* App tokens, mapped onto the Material Design 3 colour roles in theme.css.
    The simulation colours (net, heat, burn, smoke, flow) are our own. */
 :root {
-  --md-ref-typeface-brand: "Roboto", system-ui, sans-serif;
-  --md-ref-typeface-plain: "Roboto", system-ui, sans-serif;
+  --md-ref-typeface-brand: "Google Sans", system-ui, sans-serif;
+  --md-ref-typeface-plain: "Google Sans", system-ui, sans-serif;
+  /* Lettering on the drawing: Google Sans on screen, D-DIN on paper (see
+     .print-sheet and src/fonts.css). */
+  --font-drawing: "Google Sans", system-ui, sans-serif;
   --bg: var(--md-sys-color-surface);
   --text: var(--md-sys-color-on-surface);
   --bar-bg: var(--md-sys-color-surface-container);
@@ -694,8 +697,7 @@ body.dragging * {
   fill: var(--ink);
   stroke: none;
   font:
-    600 13px system-ui,
-    sans-serif;
+    600 13px var(--font-drawing);
 }
 
 /* Chips: the part name in the middle, pin names inside the box, pin numbers
@@ -704,24 +706,21 @@ body.dragging * {
   fill: var(--ink);
   stroke: none;
   font:
-    600 10px system-ui,
-    sans-serif;
+    600 10px var(--font-drawing);
 }
 
 .part .chip-pin {
   fill: var(--ink);
   stroke: none;
   font:
-    7px system-ui,
-    sans-serif;
+    7px var(--font-drawing);
 }
 
 .part .chip-num {
   fill: var(--muted);
   stroke: none;
   font:
-    6.5px system-ui,
-    sans-serif;
+    6.5px var(--font-drawing);
 }
 
 /* A meter's letter (V, A) inside its circle. */
@@ -729,8 +728,7 @@ body.dragging * {
   fill: var(--ink);
   stroke: none;
   font:
-    600 14px system-ui,
-    sans-serif;
+    600 14px var(--font-drawing);
 }
 
 /* A meter's on-board digital readout. */
@@ -788,8 +786,7 @@ body.dragging * {
   fill: var(--ink);
   stroke: none;
   font:
-    9px system-ui,
-    sans-serif;
+    9px var(--font-drawing);
 }
 
 /* Light from lamps and LEDs: --glow (0..1) is set from the simulation,
@@ -813,8 +810,7 @@ body.dragging * {
   fill: var(--ink);
   stroke: none;
   font:
-    11px system-ui,
-    sans-serif;
+    11px var(--font-drawing);
   pointer-events: none;
 }
 
@@ -1212,8 +1208,7 @@ body.dragging * {
   fill: var(--ink);
   stroke: none;
   font:
-    11px system-ui,
-    sans-serif;
+    11px var(--md-ref-typeface-plain);
 }
 
 #board .part.selected .note-card {
@@ -2075,8 +2070,9 @@ body.dragging * {
   --md-sys-color-scrim: #000000;
   --md-sys-color-surface-tint: #005bc0;
 
-  --md-ref-typeface-brand: "Roboto", system-ui, sans-serif;
-  --md-ref-typeface-plain: "Roboto", system-ui, sans-serif;
+  --md-ref-typeface-brand: "Google Sans", system-ui, sans-serif;
+  --md-ref-typeface-plain: "Google Sans", system-ui, sans-serif;
+  --font-drawing: "D-DIN", "Google Sans", sans-serif;
   --bg: var(--md-sys-color-surface);
   --text: var(--md-sys-color-on-surface);
   --bar-bg: var(--md-sys-color-surface-container);
@@ -2119,9 +2115,7 @@ body.dragging * {
   background: #ffffff;
   color: #191c22;
   font:
-    400 10pt/1.4 "Roboto",
-    system-ui,
-    sans-serif;
+    400 10pt/1.4 var(--font-drawing);
 }
 
 .print-head {
@@ -2175,9 +2169,7 @@ body.dragging * {
 .print-frame-labels {
   fill: #191c22;
   font:
-    3px "Roboto",
-    system-ui,
-    sans-serif;
+    3px var(--font-drawing);
 }
 
 .print-page.framed .print-drawing {

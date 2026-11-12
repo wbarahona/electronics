@@ -2,6 +2,10 @@ import type { MdDialog } from '@material/web/dialog/dialog.js';
 import { PARTS, tagOf } from './components.ts';
 import { language, t } from './i18n/index.ts';
 import { lightTokens } from './theme.ts';
+import dDin from './fonts/d-din/D-DIN.woff2?url';
+import dDinBold from './fonts/d-din/D-DIN-Bold.woff2?url';
+import sansLatin from '@fontsource/google-sans/files/google-sans-latin-400-normal.woff2?url';
+import sansGreek from '@fontsource/google-sans/files/google-sans-greek-400-normal.woff2?url';
 import type { Circuit } from './model.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -25,6 +29,16 @@ const ZONE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I or O
 const BLOCK_FIELDS = ['owner', 'createdBy', 'approvedBy', 'number', 'revision'] as const;
 type BlockFields = Record<(typeof BLOCK_FIELDS)[number], string>;
 const BLOCK_KEY = 'ampage:title-block';
+
+// Fonts written into an exported SVG (and so the PNG drawn from it), which
+// can't reach the app's own: the print lettering, D-DIN, and Google Sans for
+// the characters D-DIN lacks (Ω, −) and for notes. Ranges as in src/fonts.css.
+const EXPORT_FONTS = [
+  { family: 'D-DIN', weight: 400, url: dDin },
+  { family: 'D-DIN', weight: 700, url: dDinBold },
+  { family: 'Google Sans', weight: 400, url: sansLatin, range: 'U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD' },
+  { family: 'Google Sans', weight: 400, url: sansGreek, range: 'U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF' },
+];
 
 export interface PrintOptions {
   title: string;
@@ -396,13 +410,18 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     for (const [name, value] of Object.entries(lightTokens())) sheet.style.setProperty(name, value);
     sheet.append(svg);
     document.body.append(sheet);
-    for (const el of [...svg.querySelectorAll<SVGElement>('*')]) {
+    // Read every element's look before changing any: dropping a parent's
+    // class first would unmatch its children's rules (.part .value).
+    const looks = [...svg.querySelectorAll<SVGElement>('*')].map((el) => {
       const style = getComputedStyle(el);
-      if (style.display === 'none') {
+      return { el, hidden: style.display === 'none', css: STYLE_PROPS.map((name) => `${name}: ${style.getPropertyValue(name)}`).join('; ') };
+    });
+    for (const { el, hidden, css } of looks) {
+      if (hidden) {
         el.remove();
         continue;
       }
-      el.setAttribute('style', STYLE_PROPS.map((name) => `${name}: ${style.getPropertyValue(name)}`).join('; '));
+      el.setAttribute('style', css);
       el.removeAttribute('class');
     }
     sheet.remove();
@@ -420,15 +439,35 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
+  // The @font-face rules for EXPORT_FONTS, each font inlined (fetched once).
+  let fontFaces: Promise<string> | null = null;
+  function embeddedFonts(): Promise<string> {
+    fontFaces ??= Promise.all(
+      EXPORT_FONTS.map(async ({ family, weight, url, range }) => {
+        const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        return `@font-face { font-family: "${family}"; font-weight: ${weight}; src: url(data:font/woff2;base64,${btoa(binary)}) format("woff2");${range ? ` unicode-range: ${range};` : ''} }`;
+      }),
+    ).then((faces) => faces.join('\n'));
+    return fontFaces;
+  }
+
   // PNGs at twice the size, sharp on high-density screens and in documents.
   async function exportImage(kind: 'svg' | 'png') {
     const { svg, width, height } = standalone();
+    const style = document.createElementNS(SVG_NS, 'style');
+    style.textContent = await embeddedFonts();
+    svg.querySelector('defs')!.prepend(style);
     const text = new XMLSerializer().serializeToString(svg);
     const blob = new Blob([text], { type: 'image/svg+xml' });
     if (kind === 'svg') return download(blob, 'svg');
     const img = new Image();
     img.src = URL.createObjectURL(blob);
     await img.decode();
+    // The image loads its embedded fonts on its own after decoding; text in a
+    // font still loading would draw blank, so give it a moment.
+    await new Promise((resolve) => setTimeout(resolve, 250));
     const canvas = document.createElement('canvas');
     canvas.width = width * 2;
     canvas.height = height * 2;

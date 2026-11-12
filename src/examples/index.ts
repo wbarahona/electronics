@@ -3,7 +3,7 @@
 // keys for the translations (src/i18n).
 export interface Example {
   id: string;
-  icon: string; // Material Symbols name (also listed in index.html's icon_names)
+  icon: string; // Material Symbols name (also listed in scripts/icons.mjs)
   title: string;
   description: string;
   load: () => Promise<string>;
