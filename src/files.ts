@@ -40,13 +40,15 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   let name = 'circuit.json';
 
   const empty = () => !circuit.components.length && !circuit.wires.length && !circuit.joints.length;
-  const replaceOk = async () =>
+  // Whether the circuit on the board may go: asked, unless the board is empty,
+  // before loading another (`load`) or starting a new one.
+  const replaceOk = async (to: 'load' | 'new' = 'load') =>
     empty() ||
-    confirmDialog({
-      headline: t('Replace the circuit?'),
-      message: t('The circuit on the board will be closed. Anything not saved to a file will be lost.'),
-      action: t('Replace'),
-    });
+    confirmDialog(
+      to === 'load'
+        ? { headline: t('Load a circuit?'), message: t('Any unsaved work on the current circuit will be lost.'), action: t('Load circuit') }
+        : { headline: t('Start a new circuit?'), message: t('Any unsaved work on the current circuit will be lost.'), action: t('Start new') },
+    );
   // A circuit now on the board that no file stands behind yet.
   const detach = () => {
     handle = null;
@@ -55,7 +57,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   const text = () => JSON.stringify(serialize(circuit, getView()), null, 2);
 
   async function newCircuit() {
-    if (!(await replaceOk())) return;
+    if (!(await replaceOk('new'))) return;
     detach();
     name = 'circuit.json';
     load({ format: 'electronics-circuit', version: 1, parts: [], joints: [], wires: [] });

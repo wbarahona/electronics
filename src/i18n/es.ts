@@ -91,8 +91,11 @@ export default {
   'RGB LEDs and a switchable RGB dot matrix: how currents, lens and PWM set the colour you see.': 'LED RGB y una matriz RGB conmutable: cómo las corrientes, la lente y el PWM fijan el color que ves.',
 
   // --- Files ---------------------------------------------------------------------
-  'Replace the circuit?': '¿Sustituir el circuito?',
-  'The circuit on the board will be closed. Anything not saved to a file will be lost.': 'Se cerrará el circuito de la placa. Se perderá todo lo que no esté guardado en un archivo.',
+  'Load a circuit?': '¿Cargar un circuito?',
+  'Start a new circuit?': '¿Empezar un circuito nuevo?',
+  'Any unsaved work on the current circuit will be lost.': 'Se perderá todo el trabajo sin guardar del circuito actual.',
+  'Load circuit': 'Cargar circuito',
+  'Start new': 'Empezar de nuevo',
   'Couldn’t open {file}: {error}': 'No se pudo abrir {file}: {error}',
   'Couldn’t open the file: {error}': 'No se pudo abrir el archivo: {error}',
   'Couldn’t save: {error}': 'No se pudo guardar: {error}',
