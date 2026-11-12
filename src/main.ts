@@ -75,7 +75,7 @@ function showResults() {
   const live: Live = new Map();
   sounds = new Map();
   for (const c of circuit.components) {
-    const { brightness, thermal, reading, failure, active, segments, sound, needle } = MODELS[c.type];
+    const { brightness, thermal, reading, failure, active, segments, light, sound, needle } = MODELS[c.type];
     const r = engine.results.get(c.id);
     const tone = r && sound && !c.broken ? sound(r, c.props) : null;
     if (tone) sounds.set(c.id, tone);
@@ -88,6 +88,7 @@ function showResults() {
       level: r?.level,
       active: r && active ? !c.broken && active(r) : undefined,
       segments: r && segments ? (c.broken ? [] : segments(r, c.props)) : undefined,
+      light: r && light ? light(r, c.props).map((x) => (c.broken ? 0 : x)) : undefined,
     });
   }
   editor.showLive(live, smooth);

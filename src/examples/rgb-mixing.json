@@ -3,11 +3,409 @@
   "version": 1,
   "parts": [
     {
-      "id": "m",
+      "id": "rgbLed1",
       "ref": "P1",
-      "type": "dotMatrix",
+      "type": "rgbLed",
+      "x": 520,
+      "y": 140,
+      "rotation": 0,
+      "props": {
+        "common": "cathode",
+        "lens": "diffused",
+        "redVoltage": 2,
+        "greenVoltage": 3,
+        "blueVoltage": 3,
+        "maxCurrent": 0.02,
+        "redIntensity": 0.8,
+        "greenIntensity": 2,
+        "blueIntensity": 0.5
+      },
+      "broken": false
+    },
+    {
+      "id": "note2",
+      "ref": "N1",
+      "type": "note",
+      "x": 140,
+      "y": 140,
+      "rotation": 0,
+      "props": {
+        "text": "Equal currents (about 15 mA each): green and blue outshine red, so \"white\" comes out lavender.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor3",
+      "ref": "R1",
+      "type": "resistor",
+      "x": 400,
+      "y": 120,
+      "rotation": 0,
+      "props": {
+        "resistance": 200,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor4",
+      "ref": "R2",
+      "type": "resistor",
+      "x": 400,
+      "y": 140,
+      "rotation": 0,
+      "props": {
+        "resistance": 130,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor5",
+      "ref": "R3",
+      "type": "resistor",
+      "x": 400,
+      "y": 160,
+      "rotation": 0,
+      "props": {
+        "resistance": 130,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "ground6",
+      "ref": "X1",
+      "type": "ground",
       "x": 600,
+      "y": 180,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "rgbLed7",
+      "ref": "P2",
+      "type": "rgbLed",
+      "x": 520,
+      "y": 280,
+      "rotation": 0,
+      "props": {
+        "common": "cathode",
+        "lens": "diffused",
+        "redVoltage": 2,
+        "greenVoltage": 3,
+        "blueVoltage": 3,
+        "maxCurrent": 0.02,
+        "redIntensity": 0.8,
+        "greenIntensity": 2,
+        "blueIntensity": 0.5
+      },
+      "broken": false
+    },
+    {
+      "id": "note8",
+      "ref": "N2",
+      "type": "note",
+      "x": 140,
+      "y": 280,
+      "rotation": 0,
+      "props": {
+        "text": "Balanced white: red 180, green 100, blue 150 \u03a9: currents set by brightness, not equal.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor9",
+      "ref": "R4",
+      "type": "resistor",
+      "x": 400,
+      "y": 260,
+      "rotation": 0,
+      "props": {
+        "resistance": 180,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor10",
+      "ref": "R5",
+      "type": "resistor",
+      "x": 400,
+      "y": 280,
+      "rotation": 0,
+      "props": {
+        "resistance": 100,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor11",
+      "ref": "R6",
+      "type": "resistor",
+      "x": 400,
       "y": 300,
+      "rotation": 0,
+      "props": {
+        "resistance": 150,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "ground12",
+      "ref": "X2",
+      "type": "ground",
+      "x": 600,
+      "y": 320,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "rgbLed13",
+      "ref": "P3",
+      "type": "rgbLed",
+      "x": 520,
+      "y": 420,
+      "rotation": 0,
+      "props": {
+        "common": "cathode",
+        "lens": "diffused",
+        "redVoltage": 2,
+        "greenVoltage": 3,
+        "blueVoltage": 3,
+        "maxCurrent": 0.02,
+        "redIntensity": 0.8,
+        "greenIntensity": 2,
+        "blueIntensity": 0.5
+      },
+      "broken": false
+    },
+    {
+      "id": "note14",
+      "ref": "N3",
+      "type": "note",
+      "x": 140,
+      "y": 420,
+      "rotation": 0,
+      "props": {
+        "text": "Orange: full red, a quarter of the green. Diffused lens: one blended colour.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor15",
+      "ref": "R7",
+      "type": "resistor",
+      "x": 400,
+      "y": 400,
+      "rotation": 0,
+      "props": {
+        "resistance": 150,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor16",
+      "ref": "R8",
+      "type": "resistor",
+      "x": 400,
+      "y": 420,
+      "rotation": 0,
+      "props": {
+        "resistance": 390,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "ground17",
+      "ref": "X3",
+      "type": "ground",
+      "x": 600,
+      "y": 460,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "rgbLed18",
+      "ref": "P4",
+      "type": "rgbLed",
+      "x": 520,
+      "y": 560,
+      "rotation": 0,
+      "props": {
+        "common": "cathode",
+        "lens": "clear",
+        "redVoltage": 2,
+        "greenVoltage": 3,
+        "blueVoltage": 3,
+        "maxCurrent": 0.02,
+        "redIntensity": 0.8,
+        "greenIntensity": 2,
+        "blueIntensity": 0.5
+      },
+      "broken": false
+    },
+    {
+      "id": "note19",
+      "ref": "N4",
+      "type": "note",
+      "x": 140,
+      "y": 560,
+      "rotation": 0,
+      "props": {
+        "text": "The same orange through a clear lens: the dies show as points of their own colour.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor20",
+      "ref": "R9",
+      "type": "resistor",
+      "x": 400,
+      "y": 540,
+      "rotation": 0,
+      "props": {
+        "resistance": 150,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor21",
+      "ref": "R10",
+      "type": "resistor",
+      "x": 400,
+      "y": 560,
+      "rotation": 0,
+      "props": {
+        "resistance": 390,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "ground22",
+      "ref": "X4",
+      "type": "ground",
+      "x": 600,
+      "y": 600,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "rgbLed23",
+      "ref": "P5",
+      "type": "rgbLed",
+      "x": 520,
+      "y": 700,
+      "rotation": 0,
+      "props": {
+        "common": "cathode",
+        "lens": "diffused",
+        "redVoltage": 2,
+        "greenVoltage": 3,
+        "blueVoltage": 3,
+        "maxCurrent": 0.02,
+        "redIntensity": 0.8,
+        "greenIntensity": 2,
+        "blueIntensity": 0.5
+      },
+      "broken": false
+    },
+    {
+      "id": "note24",
+      "ref": "N5",
+      "type": "note",
+      "x": 140,
+      "y": 700,
+      "rotation": 0,
+      "props": {
+        "text": "PWM: steady red, green pulsed by a 100 Hz clock. Drag G1's duty cycle to fade red to yellow. At full speed the eye blends it; slow it down to see the flicker.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor25",
+      "ref": "R11",
+      "type": "resistor",
+      "x": 400,
+      "y": 680,
+      "rotation": 0,
+      "props": {
+        "resistance": 150,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "resistor26",
+      "ref": "R12",
+      "type": "resistor",
+      "x": 400,
+      "y": 700,
+      "rotation": 0,
+      "props": {
+        "resistance": 100,
+        "powerRating": 0.25
+      },
+      "broken": false
+    },
+    {
+      "id": "clock27",
+      "ref": "G1",
+      "type": "clock",
+      "x": 320,
+      "y": 760,
+      "rotation": 0,
+      "props": {
+        "frequency": 100,
+        "duty": 50,
+        "supply": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "ground28",
+      "ref": "X5",
+      "type": "ground",
+      "x": 600,
+      "y": 740,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "rail29",
+      "ref": "X6",
+      "type": "rail",
+      "x": 300,
+      "y": 60,
+      "rotation": 0,
+      "props": {
+        "voltage": 5,
+        "maxCurrent": 3
+      },
+      "broken": false
+    },
+    {
+      "id": "mx-m",
+      "ref": "P6",
+      "type": "dotMatrix",
+      "x": 1060,
+      "y": 360,
       "rotation": 0,
       "props": {
         "columns": 3,
@@ -20,11 +418,11 @@
       "broken": false
     },
     {
-      "id": "v",
-      "ref": "X1",
+      "id": "mx-v",
+      "ref": "X7",
       "type": "rail",
-      "x": 300,
-      "y": 120,
+      "x": 760,
+      "y": 180,
       "rotation": 0,
       "props": {
         "voltage": 5,
@@ -33,11 +431,11 @@
       "broken": false
     },
     {
-      "id": "s1",
+      "id": "mx-s1",
       "ref": "S1",
       "type": "switch",
-      "x": 420,
-      "y": 220,
+      "x": 880,
+      "y": 280,
       "rotation": 0,
       "props": {
         "closed": true,
@@ -46,11 +444,11 @@
       "broken": false
     },
     {
-      "id": "s2",
+      "id": "mx-s2",
       "ref": "S2",
       "type": "switch",
-      "x": 420,
-      "y": 300,
+      "x": 880,
+      "y": 360,
       "rotation": 0,
       "props": {
         "closed": false,
@@ -59,11 +457,11 @@
       "broken": false
     },
     {
-      "id": "s3",
+      "id": "mx-s3",
       "ref": "S3",
       "type": "switch",
-      "x": 420,
-      "y": 380,
+      "x": 880,
+      "y": 440,
       "rotation": 0,
       "props": {
         "closed": false,
@@ -72,11 +470,11 @@
       "broken": false
     },
     {
-      "id": "rr",
-      "ref": "R1",
+      "id": "mx-rr",
+      "ref": "R13",
       "type": "resistor",
-      "x": 720,
-      "y": 440,
+      "x": 1180,
+      "y": 500,
       "rotation": 0,
       "props": {
         "resistance": 50,
@@ -85,11 +483,11 @@
       "broken": false
     },
     {
-      "id": "sr",
+      "id": "mx-sr",
       "ref": "S4",
       "type": "switch",
-      "x": 840,
-      "y": 440,
+      "x": 1300,
+      "y": 500,
       "rotation": 0,
       "props": {
         "closed": true,
@@ -98,21 +496,21 @@
       "broken": false
     },
     {
-      "id": "gr",
-      "ref": "X2",
+      "id": "mx-gr",
+      "ref": "X8",
       "type": "ground",
-      "x": 880,
-      "y": 480,
+      "x": 1340,
+      "y": 540,
       "rotation": 0,
       "props": {},
       "broken": false
     },
     {
-      "id": "rg",
-      "ref": "R2",
+      "id": "mx-rg",
+      "ref": "R14",
       "type": "resistor",
-      "x": 760,
-      "y": 200,
+      "x": 1220,
+      "y": 260,
       "rotation": 0,
       "props": {
         "resistance": 33,
@@ -121,11 +519,11 @@
       "broken": false
     },
     {
-      "id": "sg",
+      "id": "mx-sg",
       "ref": "S5",
       "type": "switch",
-      "x": 880,
-      "y": 200,
+      "x": 1340,
+      "y": 260,
       "rotation": 0,
       "props": {
         "closed": false,
@@ -134,21 +532,21 @@
       "broken": false
     },
     {
-      "id": "gg",
-      "ref": "X3",
+      "id": "mx-gg",
+      "ref": "X9",
       "type": "ground",
-      "x": 920,
-      "y": 240,
+      "x": 1380,
+      "y": 300,
       "rotation": 0,
       "props": {},
       "broken": false
     },
     {
-      "id": "rb",
-      "ref": "R3",
+      "id": "mx-rb",
+      "ref": "R15",
       "type": "resistor",
-      "x": 760,
-      "y": 120,
+      "x": 1220,
+      "y": 180,
       "rotation": 0,
       "props": {
         "resistance": 33,
@@ -157,11 +555,11 @@
       "broken": false
     },
     {
-      "id": "sb",
+      "id": "mx-sb",
       "ref": "S6",
       "type": "switch",
-      "x": 880,
-      "y": 120,
+      "x": 1340,
+      "y": 180,
       "rotation": 0,
       "props": {
         "closed": true,
@@ -170,13 +568,39 @@
       "broken": false
     },
     {
-      "id": "gb",
-      "ref": "X4",
+      "id": "mx-gb",
+      "ref": "X10",
       "type": "ground",
-      "x": 960,
-      "y": 160,
+      "x": 1420,
+      "y": 220,
       "rotation": 0,
       "props": {},
+      "broken": false
+    },
+    {
+      "id": "note44",
+      "ref": "N6",
+      "type": "note",
+      "x": 850,
+      "y": 660,
+      "rotation": 0,
+      "props": {
+        "text": "RGB dot matrix, rows are anodes: S1\u2013S3 connect each row to 5 V. All red columns are tied together and go to 0 V through R13 and S4; green through R14 and S5; blue through R15 and S6.",
+        "color": "violet"
+      },
+      "broken": false
+    },
+    {
+      "id": "note45",
+      "ref": "N7",
+      "type": "note",
+      "x": 1130,
+      "y": 660,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run (Space), then pick rows and colours. Red + green makes yellow, green + blue cyan; all three a tinted white, as with P1. Light more rows and each colour's current is shared: the dots dim but keep their colour.",
+        "color": "amber"
+      },
       "broken": false
     }
   ],
@@ -184,23 +608,79 @@
     {
       "id": "j1",
       "x": 300,
-      "y": 220
+      "y": 120
     },
     {
       "id": "j2",
       "x": 300,
+      "y": 140
+    },
+    {
+      "id": "j3",
+      "x": 300,
+      "y": 160
+    },
+    {
+      "id": "j4",
+      "x": 300,
+      "y": 260
+    },
+    {
+      "id": "j5",
+      "x": 300,
+      "y": 280
+    },
+    {
+      "id": "j6",
+      "x": 300,
       "y": 300
+    },
+    {
+      "id": "j7",
+      "x": 300,
+      "y": 400
+    },
+    {
+      "id": "j8",
+      "x": 300,
+      "y": 420
+    },
+    {
+      "id": "j9",
+      "x": 300,
+      "y": 540
+    },
+    {
+      "id": "j10",
+      "x": 300,
+      "y": 560
+    },
+    {
+      "id": "j11",
+      "x": 300,
+      "y": 680
+    },
+    {
+      "id": "mx-j1",
+      "x": 760,
+      "y": 280
+    },
+    {
+      "id": "mx-j2",
+      "x": 760,
+      "y": 360
     }
   ],
   "wires": [
     {
       "id": "w1",
       "from": {
-        "part": "v",
-        "pin": 0
+        "part": "resistor3",
+        "pin": 1
       },
       "to": {
-        "joint": "j1"
+        "part": "rgbLed1",
+        "pin": 0
       },
       "via": []
     },
@@ -210,18 +690,20 @@
         "joint": "j1"
       },
       "to": {
-        "joint": "j2"
+        "part": "resistor3",
+        "pin": 0
       },
       "via": []
     },
     {
       "id": "w3",
       "from": {
-        "joint": "j1"
+        "part": "resistor4",
+        "pin": 1
       },
       "to": {
-        "part": "s1",
-        "pin": 0
+        "part": "rgbLed1",
+        "pin": 1
       },
       "via": []
     },
@@ -231,7 +713,7 @@
         "joint": "j2"
       },
       "to": {
-        "part": "s2",
+        "part": "resistor4",
         "pin": 0
       },
       "via": []
@@ -239,152 +721,108 @@
     {
       "id": "w5",
       "from": {
-        "joint": "j2"
+        "part": "resistor5",
+        "pin": 1
       },
       "to": {
-        "part": "s3",
-        "pin": 0
+        "part": "rgbLed1",
+        "pin": 2
       },
-      "via": [
-        {
-          "x": 300,
-          "y": 380
-        }
-      ]
+      "via": []
     },
     {
       "id": "w6",
       "from": {
-        "part": "s1",
-        "pin": 1
+        "joint": "j3"
       },
       "to": {
-        "part": "m",
+        "part": "resistor5",
         "pin": 0
       },
-      "via": [
-        {
-          "x": 490,
-          "y": 220
-        },
-        {
-          "x": 490,
-          "y": 260
-        }
-      ]
+      "via": []
     },
     {
       "id": "w7",
       "from": {
-        "part": "s2",
+        "part": "rgbLed1",
+        "pin": 3
+      },
+      "to": {
+        "part": "ground6",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 600,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "id": "w8",
+      "from": {
+        "part": "resistor9",
         "pin": 1
       },
       "to": {
-        "part": "m",
+        "part": "rgbLed7",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w9",
+      "from": {
+        "joint": "j4"
+      },
+      "to": {
+        "part": "resistor9",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w10",
+      "from": {
+        "part": "resistor10",
+        "pin": 1
+      },
+      "to": {
+        "part": "rgbLed7",
         "pin": 1
       },
       "via": []
     },
     {
-      "id": "w8",
-      "from": {
-        "part": "s3",
-        "pin": 1
-      },
-      "to": {
-        "part": "m",
-        "pin": 2
-      },
-      "via": [
-        {
-          "x": 490,
-          "y": 380
-        },
-        {
-          "x": 490,
-          "y": 340
-        }
-      ]
-    },
-    {
-      "id": "w9",
-      "from": {
-        "part": "m",
-        "pin": 3
-      },
-      "to": {
-        "part": "m",
-        "pin": 4
-      },
-      "via": [
-        {
-          "x": 560,
-          "y": 400
-        },
-        {
-          "x": 600,
-          "y": 400
-        }
-      ]
-    },
-    {
-      "id": "w10",
-      "from": {
-        "part": "m",
-        "pin": 4
-      },
-      "to": {
-        "part": "m",
-        "pin": 5
-      },
-      "via": [
-        {
-          "x": 600,
-          "y": 400
-        },
-        {
-          "x": 640,
-          "y": 400
-        }
-      ]
-    },
-    {
       "id": "w11",
       "from": {
-        "part": "m",
-        "pin": 5
+        "joint": "j5"
       },
       "to": {
-        "part": "rr",
+        "part": "resistor10",
         "pin": 0
       },
-      "via": [
-        {
-          "x": 640,
-          "y": 440
-        }
-      ]
+      "via": []
     },
     {
       "id": "w12",
       "from": {
-        "part": "rr",
+        "part": "resistor11",
         "pin": 1
       },
       "to": {
-        "part": "sr",
-        "pin": 0
+        "part": "rgbLed7",
+        "pin": 2
       },
       "via": []
     },
     {
       "id": "w13",
       "from": {
-        "part": "sr",
-        "pin": 1
+        "joint": "j6"
       },
       "to": {
-        "part": "gr",
+        "part": "resistor11",
         "pin": 0
       },
       "via": []
@@ -392,82 +830,62 @@
     {
       "id": "w14",
       "from": {
-        "part": "m",
-        "pin": 6
+        "part": "rgbLed7",
+        "pin": 3
       },
       "to": {
-        "part": "m",
-        "pin": 7
+        "part": "ground12",
+        "pin": 0
       },
       "via": [
         {
-          "x": 560,
-          "y": 200
-        },
-        {
           "x": 600,
-          "y": 200
+          "y": 280
         }
       ]
     },
     {
       "id": "w15",
       "from": {
-        "part": "m",
-        "pin": 7
+        "part": "resistor15",
+        "pin": 1
       },
       "to": {
-        "part": "m",
-        "pin": 8
+        "part": "rgbLed13",
+        "pin": 0
       },
-      "via": [
-        {
-          "x": 600,
-          "y": 200
-        },
-        {
-          "x": 640,
-          "y": 200
-        }
-      ]
+      "via": []
     },
     {
       "id": "w16",
       "from": {
-        "part": "m",
-        "pin": 8
+        "joint": "j7"
       },
       "to": {
-        "part": "rg",
+        "part": "resistor15",
         "pin": 0
       },
-      "via": [
-        {
-          "x": 640,
-          "y": 200
-        }
-      ]
+      "via": []
     },
     {
       "id": "w17",
       "from": {
-        "part": "rg",
+        "part": "resistor16",
         "pin": 1
       },
       "to": {
-        "part": "sg",
-        "pin": 0
+        "part": "rgbLed13",
+        "pin": 1
       },
       "via": []
     },
     {
       "id": "w18",
       "from": {
-        "part": "sg",
-        "pin": 1
+        "joint": "j8"
       },
       "to": {
-        "part": "gg",
+        "part": "resistor16",
         "pin": 0
       },
       "via": []
@@ -475,95 +893,634 @@
     {
       "id": "w19",
       "from": {
-        "part": "m",
-        "pin": 9
+        "part": "rgbLed13",
+        "pin": 3
       },
       "to": {
-        "part": "m",
-        "pin": 10
+        "part": "ground17",
+        "pin": 0
       },
       "via": [
         {
-          "x": 580,
-          "y": 180
-        },
-        {
-          "x": 620,
-          "y": 180
+          "x": 600,
+          "y": 420
         }
       ]
     },
     {
       "id": "w20",
       "from": {
-        "part": "m",
-        "pin": 10
+        "part": "resistor20",
+        "pin": 1
       },
       "to": {
-        "part": "m",
-        "pin": 11
+        "part": "rgbLed18",
+        "pin": 0
       },
-      "via": [
-        {
-          "x": 620,
-          "y": 180
-        },
-        {
-          "x": 660,
-          "y": 180
-        }
-      ]
+      "via": []
     },
     {
       "id": "w21",
       "from": {
-        "part": "m",
-        "pin": 11
+        "joint": "j9"
       },
       "to": {
-        "part": "rb",
+        "part": "resistor20",
         "pin": 0
       },
-      "via": [
-        {
-          "x": 660,
-          "y": 120
-        }
-      ]
+      "via": []
     },
     {
       "id": "w22",
       "from": {
-        "part": "rb",
+        "part": "resistor21",
         "pin": 1
       },
       "to": {
-        "part": "sb",
-        "pin": 0
+        "part": "rgbLed18",
+        "pin": 1
       },
       "via": []
     },
     {
       "id": "w23",
       "from": {
-        "part": "sb",
-        "pin": 1
+        "joint": "j10"
       },
       "to": {
-        "part": "gb",
+        "part": "resistor21",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w24",
+      "from": {
+        "part": "rgbLed18",
+        "pin": 3
+      },
+      "to": {
+        "part": "ground22",
         "pin": 0
       },
       "via": [
         {
-          "x": 960,
-          "y": 120
+          "x": 600,
+          "y": 560
+        }
+      ]
+    },
+    {
+      "id": "w25",
+      "from": {
+        "part": "resistor25",
+        "pin": 1
+      },
+      "to": {
+        "part": "rgbLed23",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w26",
+      "from": {
+        "joint": "j11"
+      },
+      "to": {
+        "part": "resistor25",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w27",
+      "from": {
+        "part": "resistor26",
+        "pin": 1
+      },
+      "to": {
+        "part": "rgbLed23",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w28",
+      "from": {
+        "part": "clock27",
+        "pin": 0
+      },
+      "to": {
+        "part": "resistor26",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 360,
+          "y": 700
+        }
+      ]
+    },
+    {
+      "id": "w29",
+      "from": {
+        "part": "rgbLed23",
+        "pin": 3
+      },
+      "to": {
+        "part": "ground28",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 600,
+          "y": 700
+        }
+      ]
+    },
+    {
+      "id": "w30",
+      "from": {
+        "part": "rail29",
+        "pin": 0
+      },
+      "to": {
+        "joint": "j1"
+      },
+      "via": []
+    },
+    {
+      "id": "w31",
+      "from": {
+        "joint": "j1"
+      },
+      "to": {
+        "joint": "j2"
+      },
+      "via": []
+    },
+    {
+      "id": "w32",
+      "from": {
+        "joint": "j2"
+      },
+      "to": {
+        "joint": "j3"
+      },
+      "via": []
+    },
+    {
+      "id": "w33",
+      "from": {
+        "joint": "j3"
+      },
+      "to": {
+        "joint": "j4"
+      },
+      "via": []
+    },
+    {
+      "id": "w34",
+      "from": {
+        "joint": "j4"
+      },
+      "to": {
+        "joint": "j5"
+      },
+      "via": []
+    },
+    {
+      "id": "w35",
+      "from": {
+        "joint": "j5"
+      },
+      "to": {
+        "joint": "j6"
+      },
+      "via": []
+    },
+    {
+      "id": "w36",
+      "from": {
+        "joint": "j6"
+      },
+      "to": {
+        "joint": "j7"
+      },
+      "via": []
+    },
+    {
+      "id": "w37",
+      "from": {
+        "joint": "j7"
+      },
+      "to": {
+        "joint": "j8"
+      },
+      "via": []
+    },
+    {
+      "id": "w38",
+      "from": {
+        "joint": "j8"
+      },
+      "to": {
+        "joint": "j9"
+      },
+      "via": []
+    },
+    {
+      "id": "w39",
+      "from": {
+        "joint": "j9"
+      },
+      "to": {
+        "joint": "j10"
+      },
+      "via": []
+    },
+    {
+      "id": "w40",
+      "from": {
+        "joint": "j10"
+      },
+      "to": {
+        "joint": "j11"
+      },
+      "via": []
+    },
+    {
+      "id": "w41",
+      "from": {
+        "part": "mx-v",
+        "pin": 0
+      },
+      "to": {
+        "joint": "mx-j1"
+      },
+      "via": []
+    },
+    {
+      "id": "w42",
+      "from": {
+        "joint": "mx-j1"
+      },
+      "to": {
+        "joint": "mx-j2"
+      },
+      "via": []
+    },
+    {
+      "id": "w43",
+      "from": {
+        "joint": "mx-j1"
+      },
+      "to": {
+        "part": "mx-s1",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w44",
+      "from": {
+        "joint": "mx-j2"
+      },
+      "to": {
+        "part": "mx-s2",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w45",
+      "from": {
+        "joint": "mx-j2"
+      },
+      "to": {
+        "part": "mx-s3",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 760,
+          "y": 440
+        }
+      ]
+    },
+    {
+      "id": "w46",
+      "from": {
+        "part": "mx-s1",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 950,
+          "y": 280
+        },
+        {
+          "x": 950,
+          "y": 320
+        }
+      ]
+    },
+    {
+      "id": "w47",
+      "from": {
+        "part": "mx-s2",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w48",
+      "from": {
+        "part": "mx-s3",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 2
+      },
+      "via": [
+        {
+          "x": 950,
+          "y": 440
+        },
+        {
+          "x": 950,
+          "y": 400
+        }
+      ]
+    },
+    {
+      "id": "w49",
+      "from": {
+        "part": "mx-m",
+        "pin": 3
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 4
+      },
+      "via": [
+        {
+          "x": 1020,
+          "y": 460
+        },
+        {
+          "x": 1060,
+          "y": 460
+        }
+      ]
+    },
+    {
+      "id": "w50",
+      "from": {
+        "part": "mx-m",
+        "pin": 4
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 5
+      },
+      "via": [
+        {
+          "x": 1060,
+          "y": 460
+        },
+        {
+          "x": 1100,
+          "y": 460
+        }
+      ]
+    },
+    {
+      "id": "w51",
+      "from": {
+        "part": "mx-m",
+        "pin": 5
+      },
+      "to": {
+        "part": "mx-rr",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 1100,
+          "y": 500
+        }
+      ]
+    },
+    {
+      "id": "w52",
+      "from": {
+        "part": "mx-rr",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-sr",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w53",
+      "from": {
+        "part": "mx-sr",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-gr",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w54",
+      "from": {
+        "part": "mx-m",
+        "pin": 6
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 7
+      },
+      "via": [
+        {
+          "x": 1020,
+          "y": 260
+        },
+        {
+          "x": 1060,
+          "y": 260
+        }
+      ]
+    },
+    {
+      "id": "w55",
+      "from": {
+        "part": "mx-m",
+        "pin": 7
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 8
+      },
+      "via": [
+        {
+          "x": 1060,
+          "y": 260
+        },
+        {
+          "x": 1100,
+          "y": 260
+        }
+      ]
+    },
+    {
+      "id": "w56",
+      "from": {
+        "part": "mx-m",
+        "pin": 8
+      },
+      "to": {
+        "part": "mx-rg",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 1100,
+          "y": 260
+        }
+      ]
+    },
+    {
+      "id": "w57",
+      "from": {
+        "part": "mx-rg",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-sg",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w58",
+      "from": {
+        "part": "mx-sg",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-gg",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w59",
+      "from": {
+        "part": "mx-m",
+        "pin": 9
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 10
+      },
+      "via": [
+        {
+          "x": 1040,
+          "y": 240
+        },
+        {
+          "x": 1080,
+          "y": 240
+        }
+      ]
+    },
+    {
+      "id": "w60",
+      "from": {
+        "part": "mx-m",
+        "pin": 10
+      },
+      "to": {
+        "part": "mx-m",
+        "pin": 11
+      },
+      "via": [
+        {
+          "x": 1080,
+          "y": 240
+        },
+        {
+          "x": 1120,
+          "y": 240
+        }
+      ]
+    },
+    {
+      "id": "w61",
+      "from": {
+        "part": "mx-m",
+        "pin": 11
+      },
+      "to": {
+        "part": "mx-rb",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 1120,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "id": "w62",
+      "from": {
+        "part": "mx-rb",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-sb",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w63",
+      "from": {
+        "part": "mx-sb",
+        "pin": 1
+      },
+      "to": {
+        "part": "mx-gb",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 1420,
+          "y": 180
         }
       ]
     }
   ],
   "view": {
-    "x": 180,
-    "y": 40,
-    "scale": 1.2
+    "x": -20,
+    "y": 0,
+    "scale": 0.66
   }
 }

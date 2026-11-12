@@ -1,5 +1,5 @@
 import { GRID, snap, type Board } from './board.ts';
-import { LIGHT_COLORS, PARTS, defaults, hitOf, keepUpright, pinNamesOf, pinsOf, symbolMarkup, tagOf, type ChoiceSpec } from './components.ts';
+import { LIGHT_COLORS, PARTS, defaults, mixedLight, hitOf, keepUpright, pinNamesOf, pinsOf, symbolMarkup, tagOf, type ChoiceSpec } from './components.ts';
 import { fromControl } from './keys.ts';
 import type { Circuit } from './model.ts';
 import { buildNets, keyOf, pinKey, type Nets } from './nets.ts';
@@ -57,13 +57,32 @@ interface Box {
 // full an energy store is (for its gauge), `reading` what a meter shows,
 // `active` whether it's switched on by itself (an energized relay: its symbol
 // shows the contacts moved), `segments` each display segment's brightness,
+// `light` the mixed light of RGB LEDs (linear RGB, three numbers per spot,
+// see src/parts/light.ts),
 // `temp` how hot it runs as a fraction of the heat that destroys it (for the
 // thermal view; undefined for parts that don't heat up), `needle` where a
 // panel meter points (0..1 of full scale).
 export type Live = Map<
   string,
-  { glow: number; heat: number; level?: number; reading?: string; active?: boolean; segments?: number[]; temp?: number; needle?: number }
+  {
+    glow: number;
+    heat: number;
+    level?: number;
+    reading?: string;
+    active?: boolean;
+    segments?: number[];
+    light?: number[];
+    temp?: number;
+    needle?: number;
+  }
 >;
+
+// The light a part gives off, eased over time the way the eye blends flicker.
+interface Lit {
+  glow: number;
+  segments?: number[];
+  light?: number[];
+}
 
 const GAUGE_WIDTH = 15; // inner width of the gauge's fill bar
 
@@ -177,9 +196,19 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   let lit: string | null = null; // wire highlighted as the place a dragged part will drop into
   let nets = buildNets(circuit);
 
-  // One soft radial gradient per light colour, fading out to transparent.
+  // One soft radial gradient per light colour, fading out to transparent, and
+  // a mask fading any shape out the same way from its centre (for light whose
+  // colour changes as it runs, an RGB LED's).
   svg.querySelector('defs')!.insertAdjacentHTML(
     'beforeend',
+    `<radialGradient id="glow-fade">
+      <stop offset="0" stop-color="#fff" stop-opacity="1" />
+      <stop offset="0.35" stop-color="#fff" stop-opacity="0.5" />
+      <stop offset="1" stop-color="#fff" stop-opacity="0" />
+    </radialGradient>
+    <mask id="glow-mask" maskContentUnits="objectBoundingBox">
+      <rect width="1" height="1" fill="url(#glow-fade)" />
+    </mask>` +
     Object.entries(LIGHT_COLORS)
       .map(([key, color]) => `
         <radialGradient id="glow-${key}">
@@ -353,25 +382,24 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     window.addEventListener('pointercancel', release);
   }
 
-  // With `smooth`, light eases toward the new level in animate() the way the
-  // eye blends flicker; otherwise it jumps there.
-  const glows = new Map<string, { target: number; shown: number }>(); // light levels 0..1
+  // With `smooth`, light (glow, display segments, mixed colour) eases toward
+  // the new levels in animate() the way the eye blends flicker, so PWM and
+  // multiplexing show as the steady light you'd see; otherwise it jumps there.
+  const glows = new Map<string, { target: Lit; shown: Lit }>();
 
   function showLive(live: Live, smooth = false) {
-    for (const [id, { glow, heat, level: charge, reading, active, segments, temp, needle }] of live) {
+    for (const [id, { glow, heat, level: charge, reading, active, segments, light, temp, needle }] of live) {
       const g = nodes.get(id);
       if (!g) continue;
       if (charge !== undefined) paintGauge(g, charge);
       if (reading !== undefined) paintDisplay(g, reading);
       if (active !== undefined) g.classList.toggle('active', active);
-      if (segments) paintSegments(g, segments);
       if (needle !== undefined) g.querySelector('.needle')?.setAttribute('transform', `rotate(${(-50 + 100 * needle).toFixed(2)} 0 6)`);
-      const level = Math.min(1, Math.max(0, glow));
-      const s = glows.get(id) ?? { target: level, shown: level };
-      s.target = level;
-      if (!smooth) s.shown = level;
-      glows.set(id, s);
-      paintGlow(g, s.shown);
+      const target: Lit = { glow: Math.min(1, Math.max(0, glow)), segments, light };
+      const s = glows.get(id);
+      if (s && smooth) s.target = target;
+      else glows.set(id, { target, shown: copyLit(target) });
+      paintLit(g, glows.get(id)!.shown);
       g.style.setProperty('--heat', heat.toFixed(3));
       if (temp === undefined) g.style.removeProperty('--thermo');
       else g.style.setProperty('--thermo', thermalColor(temp));
@@ -387,9 +415,44 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     return `hsl(${Math.round(220 * (1 - x) ** 1.3)} 90% 55%)`;
   }
 
+  const copyLit = (l: Lit): Lit => ({ glow: l.glow, segments: l.segments?.slice(), light: l.light?.slice() });
+
+  // Move `shown` a fraction k of the way to `target`; false once it's there.
+  function easeLit(shown: Lit, target: Lit, k: number): boolean {
+    const step = (from: number, to: number) => (Math.abs(to - from) < 1e-3 ? to : from + (to - from) * k);
+    const list = (from: number[] | undefined, to: number[] | undefined) =>
+      !to || !from || from.length !== to.length ? to?.slice() : from.map((x, i) => step(x, to[i]));
+    const moving = (from: number[] | undefined, to: number[] | undefined) =>
+      from?.length !== to?.length || !!to?.some((x, i) => x !== from![i]);
+    if (shown.glow === target.glow && !moving(shown.segments, target.segments) && !moving(shown.light, target.light)) return false;
+    shown.glow = step(shown.glow, target.glow);
+    shown.segments = list(shown.segments, target.segments);
+    shown.light = list(shown.light, target.light);
+    return true;
+  }
+
+  function paintLit(g: SVGElement, l: Lit) {
+    paintGlow(g, l.glow);
+    if (l.segments) paintSegments(g, l.segments);
+    if (l.light) paintMix(g, l.light);
+  }
+
   // The eye sees brightness roughly as a square root, so dim parts still show.
   function paintGlow(g: SVGElement, level: number) {
     g.style.setProperty('--glow', Math.sqrt(level).toFixed(3));
+  }
+
+  // Light mixed from several colours (RGB LEDs and matrix dots): each spot
+  // (class "mix", data-mix) gets its colour, strength and how white-hot its
+  // centre is from its three numbers in `light`.
+  function paintMix(g: SVGElement, light: number[]) {
+    for (const spot of g.querySelectorAll<SVGElement>('.mix')) {
+      const i = 3 * Number(spot.dataset.mix);
+      const { color, glow, hot } = mixedLight([light[i] ?? 0, light[i + 1] ?? 0, light[i + 2] ?? 0]);
+      spot.style.setProperty('--mix', color);
+      spot.style.setProperty('--mix-glow', glow.toFixed(3));
+      spot.style.setProperty('--mix-hot', hot.toFixed(3));
+    }
   }
 
   // Each lit segment of a display (drawn with class "seg-lit" or "bar-lit"
@@ -1150,11 +1213,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // Advance light and current-flow dots by `dt` seconds of real time.
   function animate(dt: number) {
     const k = 1 - Math.exp(-dt / PERSISTENCE);
-    for (const [id, s] of glows) {
-      if (s.shown === s.target) continue;
-      s.shown = Math.abs(s.target - s.shown) < 1e-3 ? s.target : s.shown + (s.target - s.shown) * k;
-      paintGlow(nodes.get(id)!, s.shown);
-    }
+    for (const [id, s] of glows) if (easeLit(s.shown, s.target, k)) paintLit(nodes.get(id)!, s.shown);
     for (const [id, f] of flows) {
       f.speed += (f.target - f.speed) * k;
       if (Math.abs(f.speed) < 1e-3) continue;

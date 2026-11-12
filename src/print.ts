@@ -263,7 +263,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     const svg = schematic(o);
     const [x, y, width, height] = svg.getAttribute('viewBox')!.split(' ').map(Number);
     svg.insertAdjacentHTML('afterbegin', `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="#ffffff" />`);
-    const glows = [...src.board.querySelectorAll('defs radialGradient[id^="glow-"]')].map((g) => g.cloneNode(true));
+    const glows = [...src.board.querySelectorAll('defs radialGradient[id^="glow-"], defs mask[id^="glow-"]')].map((g) => g.cloneNode(true));
     const defs = document.createElementNS(SVG_NS, 'defs');
     defs.append(...glows);
     svg.prepend(defs);

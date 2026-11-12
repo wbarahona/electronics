@@ -25,6 +25,8 @@ export {
   type TextSpec,
 } from './parts/defs.ts';
 
+export { mixedLight } from './parts/light.ts';
+
 export const PARTS = DEFS as unknown as Record<PartType, AnyPartDef>;
 
 // A part's pins and grab box, which for some parts (a relay's contacts)

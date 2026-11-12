@@ -305,6 +305,32 @@
         "reverseVoltage": 100
       },
       "broken": false
+    },
+    {
+      "id": "note1",
+      "ref": "N1",
+      "type": "note",
+      "x": 210,
+      "y": 28,
+      "rotation": 0,
+      "props": {
+        "text": "Six generators ride on the 3 V rail X2, each 0.75 V rms at 0.5 Hz and 60° apart. Each drives the red dots of one column (through a resistor and a diode, which drop the extra volt red doesn't need) and the green and blue dots of two other columns. As the waves pass, every column cycles through the hues and the rainbow moves across. All rows go to 0 V.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "note2",
+      "ref": "N2",
+      "type": "note",
+      "x": 220,
+      "y": 178,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run. Raise the generators' frequency to speed it up, or use Slower to watch each colour fade in and out.",
+        "color": "amber"
+      },
+      "broken": false
     }
   ],
   "joints": [
@@ -1192,8 +1218,8 @@
     }
   ],
   "view": {
-    "x": 360,
-    "y": -140,
-    "scale": 0.8
+    "x": 40,
+    "y": -102,
+    "scale": 0.62
   }
 }

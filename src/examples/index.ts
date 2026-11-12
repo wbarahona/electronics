@@ -65,7 +65,7 @@ export const EXAMPLES: Example[] = [
     id: 'rgb-mixing',
     icon: 'palette',
     title: 'RGB colour mixing',
-    description: 'Switch rows and colours of an RGB dot matrix to mix colours.',
+    description: 'RGB LEDs and a switchable RGB dot matrix: how currents, lens and PWM set the colour you see.',
     load: file(() => import('./rgb-mixing.json?raw')),
   },
 ];

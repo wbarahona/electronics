@@ -1,6 +1,7 @@
 import { diode, stampJunction } from '../../sim/shared/junctions.ts';
 import { fmt } from '../../sim/shared/readout.ts';
-import { LIGHT_COLORS, type PartDefs } from '../defs.ts';
+import type { PartDefs } from '../defs.ts';
+import { LED_PRIMARIES, emitted, mixedSpot } from '../light.ts';
 import { pinText } from '../symbols.ts';
 import type { Element, ModelDefs, Result, Stamper } from '../../sim/models.ts';
 import type { LedColor, Point, PropsByType } from '../../types.ts';
@@ -24,9 +25,11 @@ export interface PartProps {
 
 type Props = PropsByType['dotMatrix'];
 
-// An RGB dot's forward voltages: red, green, blue.
+// An RGB dot's forward voltages and intensities at max current (cd, typical
+// of an RGB matrix module): red, green, blue.
 const RGB_VOLTAGES = [2, 3, 3];
-const RGB = ['red', 'green', 'blue'] as const;
+const RGB_INTENSITIES = [0.8, 2, 0.5];
+const RGB_PRIMARIES = (['red', 'green', 'blue'] as const).map((c) => LED_PRIMARIES[c]);
 const MAX_SIZE = 16;
 
 const size = (n: number) => Math.min(MAX_SIZE, Math.max(1, Math.round(n)));
@@ -119,11 +122,7 @@ export const defs: PartDefs<'dotMatrix'> = {
             dots += `<circle class="bar-off" cx="${x(c)}" cy="${y(r)}" r="6" /><circle class="bar-lit" data-seg="${i}" cx="${x(c)}" cy="${y(r)}" r="6" style="opacity: 0" />`;
             continue;
           }
-          dots += `<g class="rgb-mix">${RGB.map((col, k) => {
-            const [dx, dy] = [[-3.5, -3], [3.5, -3], [0, 3.5]][k];
-            const at = `cx="${x(c) + dx}" cy="${y(r) + dy}" r="6"`;
-            return `<circle class="rgb-off" ${at} style="fill: ${LIGHT_COLORS[col]}" /><circle class="seg-lit rgb-lit" data-seg="${3 * i + k}" ${at} style="opacity: 0; fill: ${LIGHT_COLORS[col]}" />`;
-          }).join('')}</g>`;
+          dots += mixedSpot({ x: x(c), y: y(r), r: 9, halo: 18, mix: i });
         }
       }
       const labels = pins.map((pin) => (pin.name.startsWith('r') ? pinText(pin.name.slice(1), pin.x + 2, pin.y - 3) : pinText(pin.name, pin.x + 3, pin.y > 0 ? pin.y - 4 : pin.y + 10)));
@@ -181,6 +180,12 @@ export const models: ModelDefs<'dotMatrix'> = {
     current: (el, s) => ledCurrents(el.props, (k) => s.v(el.nodes[k])).reduce((sum, i) => sum + i, 0),
     pinCurrents,
     segments: levels,
+    // Each RGB dot's mixed light, three numbers per dot.
+    light: (r, p) => {
+      if (p.color !== 'RGB') return [];
+      const all = levels(r, p);
+      return all.flatMap((_, i) => (i % 3 ? [] : emitted(RGB_PRIMARIES, all.slice(i, i + 3), RGB_INTENSITIES)));
+    },
     brightness: (r, p) => Math.max(0, ...levels(r, p)),
     readout: (r, p) => {
       const lit = levels(r, p).filter((l) => l > 0.01).length;

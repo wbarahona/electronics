@@ -1287,11 +1287,59 @@ body.dragging * {
   stroke-width: 1.5;
 }
 
-/* RGB LED: faint colour spots, lit ones adding their light together. */
-.part .rgb-mix {
-  isolation: isolate;
+/* RGB LED: the lens fills with the colour of its mixed light (--mix, set
+   from the simulation with its strength --mix-glow), haloed, with a white-hot
+   centre as it gets bright (--mix-hot). Dark, a diffused lens is milky and
+   shows the dies faintly; a clear one shows the dies and lets less light
+   spread, its lit dies shining through as points of their own colour. */
+.part .rgb-halo,
+.part .rgb-lens,
+.part .rgb-die,
+.part .rgb-wash,
+.part .rgb-core,
+.part .seg-lit.rgb-die-lit {
+  stroke: none;
+  pointer-events: none;
 }
 
+.part .rgb-halo {
+  fill: var(--mix, transparent);
+  opacity: calc(0.8 * var(--mix-glow, 0));
+}
+
+.part .rgb-lens {
+  fill: color-mix(in srgb, var(--muted) 18%, transparent);
+}
+
+.part .rgb-lens.clear {
+  fill: color-mix(in srgb, var(--muted) 6%, transparent);
+}
+
+.part .rgb-die {
+  fill-opacity: 0.5;
+}
+
+.part .rgb-wash {
+  fill: var(--mix, transparent);
+  fill-opacity: var(--mix-glow, 0);
+}
+
+.part .rgb-wash.clear {
+  fill-opacity: calc(0.45 * var(--mix-glow, 0));
+}
+
+.part .rgb-core {
+  fill: color-mix(in srgb, var(--mix, #fff) 30%, #fff);
+  opacity: var(--mix-hot, 0);
+}
+
+.part.broken .rgb-halo,
+.part.broken .rgb-wash,
+.part.broken .rgb-core {
+  display: none;
+}
+
+/* Bi-colour LED, stack light: faint colour, lit in full. */
 .part .rgb-off,
 .part .rgb-lit {
   stroke: none;

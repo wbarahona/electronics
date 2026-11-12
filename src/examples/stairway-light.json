@@ -66,6 +66,32 @@
       "rotation": 0,
       "props": {},
       "broken": false
+    },
+    {
+      "id": "note1",
+      "ref": "N1",
+      "type": "note",
+      "x": 680,
+      "y": 124,
+      "rotation": 0,
+      "props": {
+        "text": "Two-way switching. The phase X1 feeds the common of changeover S1; two wires (travellers) link S1 to S2; the common of S2 feeds lamp E1, back to neutral X2. The lamp lights when both switches sit on the same traveller.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "note2",
+      "ref": "N2",
+      "type": "note",
+      "x": 680,
+      "y": 244,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run (Space), then click either switch. Each one toggles the lamp, whatever the position of the other.",
+        "color": "amber"
+      },
+      "broken": false
     }
   ],
   "joints": [],
@@ -142,8 +168,8 @@
     }
   ],
   "view": {
-    "x": 40,
-    "y": 40,
-    "scale": 1.4
+    "x": 20,
+    "y": 24,
+    "scale": 1.34
   }
 }

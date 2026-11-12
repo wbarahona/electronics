@@ -68,6 +68,32 @@
         "ratedCurrent": 0.5
       },
       "broken": false
+    },
+    {
+      "id": "note1",
+      "ref": "N1",
+      "type": "note",
+      "x": 730,
+      "y": 114,
+      "rotation": 0,
+      "props": {
+        "text": "Bell transformer T1 steps the 230 V mains down 14.4 : 1, to about 16 V, safe to run to the door. Push button S1 closes the secondary circuit through chime P1.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "note2",
+      "ref": "N2",
+      "type": "note",
+      "x": 720,
+      "y": 224,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run (Space), then press and hold S1. Click the transformer or the chime to read its voltages and currents.",
+        "color": "amber"
+      },
+      "broken": false
     }
   ],
   "joints": [],
@@ -153,8 +179,8 @@
     }
   ],
   "view": {
-    "x": 40,
-    "y": 40,
-    "scale": 1.4
+    "x": 20,
+    "y": 24,
+    "scale": 1.25
   }
 }

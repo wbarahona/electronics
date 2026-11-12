@@ -335,6 +335,45 @@
       "rotation": 0,
       "props": {},
       "broken": false
+    },
+    {
+      "id": "note1",
+      "ref": "N1",
+      "type": "note",
+      "x": 150,
+      "y": 610,
+      "rotation": 0,
+      "props": {
+        "text": "Transformer T1 brings 120 V down to 8 V. Diodes R1–R4 (a bridge) turn both halves of the wave positive and electrolytic C1 smooths them, with a ripple.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "note2",
+      "ref": "N2",
+      "type": "note",
+      "x": 430,
+      "y": 620,
+      "rotation": 0,
+      "props": {
+        "text": "Regulator: R8 feeds zener R7 (5.1 V) plus diode R6; Darlington K1 follows that voltage, less its base–emitter drop, so the output stays near 5 V. C2 steadies it; R5 (10 Ω) is the load, P1 reads it and LED P4 shows it is on.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "note3",
+      "ref": "N3",
+      "type": "note",
+      "x": 710,
+      "y": 610,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run and open the Scope. CH1 (P2) shows the mains, CH2 (P3) the ripple on C1. Make C1 smaller or R5 lower and watch the ripple grow while the output holds.",
+        "color": "amber"
+      },
+      "broken": false
     }
   ],
   "joints": [
@@ -764,8 +803,8 @@
     }
   ],
   "view": {
-    "x": -665.505300633682,
-    "y": -132.43166411906404,
-    "scale": 0.695810140007812
+    "x": -20,
+    "y": 4,
+    "scale": 0.78
   }
 }

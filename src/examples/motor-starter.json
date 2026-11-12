@@ -114,6 +114,32 @@
       "rotation": 0,
       "props": {},
       "broken": false
+    },
+    {
+      "id": "note1",
+      "ref": "N1",
+      "type": "note",
+      "x": 1010,
+      "y": 200,
+      "rotation": 0,
+      "props": {
+        "text": "Main circuit: the three phases X1–X3, 120° apart, reach motor M1 through the main contacts of contactor Q1.\nControl circuit: from L1 through stop S1 (NC) and start S2 (NO) to the 230 V coil of Q1. Q1's auxiliary NO contact, in parallel with S2, is the seal-in: once Q1 pulls in it keeps its own coil fed.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "note2",
+      "ref": "N2",
+      "type": "note",
+      "x": 1000,
+      "y": 340,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run (Space), click start S2 briefly. The motor keeps running after you let go; click stop S1 to drop it out.",
+        "color": "amber"
+      },
+      "broken": false
     }
   ],
   "joints": [
@@ -368,7 +394,7 @@
   ],
   "view": {
     "x": 40,
-    "y": 60,
-    "scale": 1.1
+    "y": 80,
+    "scale": 0.96
   }
 }

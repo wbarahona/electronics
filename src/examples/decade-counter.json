@@ -98,6 +98,32 @@
       "rotation": 0,
       "props": {},
       "broken": false
+    },
+    {
+      "id": "note1",
+      "ref": "N1",
+      "type": "note",
+      "x": 730,
+      "y": 174,
+      "rotation": 0,
+      "props": {
+        "text": "Clock G1 (4 Hz) steps CD4017 K1: on each rising edge the next of its ten outputs Q0–Q9 goes high, lighting one bar of P1 at a time. Clock inhibit and reset are tied to 0 V; the bars share one current-limiting resistor, R1, as only one is lit at a time.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "note2",
+      "ref": "N2",
+      "type": "note",
+      "x": 720,
+      "y": 304,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run, then raise G1's frequency. Past about 25 Hz the eye sees all ten bars lit at once.",
+        "color": "amber"
+      },
+      "broken": false
     }
   ],
   "joints": [
@@ -338,8 +364,8 @@
     }
   ],
   "view": {
-    "x": 60,
-    "y": 60,
-    "scale": 1.2
+    "x": 80,
+    "y": 64,
+    "scale": 1.09
   }
 }
