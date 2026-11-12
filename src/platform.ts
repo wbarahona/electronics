@@ -5,6 +5,9 @@
 
 export const isApp = '__TAURI_INTERNALS__' in window;
 
+// The macOS app's web view ignores window.print(): it prints natively instead.
+export const nativePrint = isApp && /Mac/.test(navigator.userAgent);
+
 const CIRCUIT_FILTERS = [{ name: 'Circuit', extensions: ['json'] }];
 
 const baseName = (path: string) => path.split(/[\\/]/).pop() ?? path;
@@ -48,4 +51,12 @@ export async function saveFile(blob: Blob, fileName: string): Promise<void> {
   const extension = fileName.split('.').pop() ?? '';
   const path = await save({ defaultPath: fileName, filters: [{ name: extension.toUpperCase(), extensions: [extension] }] });
   if (path) await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+}
+
+// Open the system print panel on paper `widthMm` × `heightMm` (macOS app,
+// see print_sheet in src-tauri/src/lib.rs). It returns at once, while the
+// panel is still open.
+export async function printNatively(widthMm: number, heightMm: number): Promise<void> {
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('print_sheet', { widthMm, heightMm });
 }

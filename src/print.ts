@@ -1,7 +1,7 @@
 import type { MdDialog } from '@material/web/dialog/dialog.js';
 import { PARTS, tagOf } from './components.ts';
 import { language, t } from './i18n/index.ts';
-import { saveFile } from './platform.ts';
+import { nativePrint, printNatively, saveFile } from './platform.ts';
 import { lightTokens } from './theme.ts';
 import dDin from './fonts/d-din/D-DIN.woff2?url';
 import dDinBold from './fonts/d-din/D-DIN-Bold.woff2?url';
@@ -347,6 +347,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     remember(o);
     const [w, h] = pageSize(o);
     pageStyle.textContent = `@page { size: ${w}mm ${h}mm; margin: 0; }`;
+    document.getElementById('print-sheet')?.remove(); // left by a native print
     const s = sheet(o);
     s.id = 'print-sheet';
     for (const page of s.querySelectorAll<HTMLElement>('.print-page')) {
@@ -354,6 +355,12 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
       page.style.height = `${h}mm`;
     }
     document.body.append(s);
+    // The panel renders the sheet while it's open, so it stays (hidden on
+    // screen) until the next print.
+    if (nativePrint) {
+      printNatively(w, h).catch((e) => console.error('Print failed:', e));
+      return;
+    }
     const done = () => {
       s.remove();
       window.removeEventListener('afterprint', done);

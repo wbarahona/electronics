@@ -47,7 +47,22 @@
     "publisher": "wbarahona",
     "macOS": {
       "signingIdentity": "-",
-      "minimumSystemVersion": "11.0"
+      "minimumSystemVersion": "11.0",
+      "dmg": {
+        "background": "dmg/background.tif",
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        },
+        "appPosition": {
+          "x": 170,
+          "y": 185
+        },
+        "applicationFolderPosition": {
+          "x": 485,
+          "y": 185
+        }
+      }
     },
     "windows": {
       "nsis": {
