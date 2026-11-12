@@ -340,6 +340,9 @@
               <md-select-option value="A4" selected
                 ><div slot="headline">A4</div></md-select-option
               >
+              <md-select-option value="A3"
+                ><div slot="headline">A3</div></md-select-option
+              >
               <md-select-option value="Letter"
                 ><div slot="headline">Letter</div></md-select-option
               >
@@ -352,6 +355,26 @@
                 ><div slot="headline">Portrait</div></md-select-option
               >
             </md-outlined-select>
+          </div>
+          <div class="print-group">Sheet</div>
+          <label class="print-check"
+            ><md-checkbox
+              name="frame"
+              touch-target="wrapper"
+              checked
+            ></md-checkbox
+            >Frame and title block</label
+          >
+          <div class="print-block-fields">
+            <md-outlined-text-field name="owner" label="Legal owner"></md-outlined-text-field>
+            <div class="print-row">
+              <md-outlined-text-field name="createdBy" label="Created by"></md-outlined-text-field>
+              <md-outlined-text-field name="approvedBy" label="Approved by"></md-outlined-text-field>
+            </div>
+            <div class="print-row">
+              <md-outlined-text-field name="number" label="Drawing number"></md-outlined-text-field>
+              <md-outlined-text-field name="revision" label="Revision" class="print-narrow"></md-outlined-text-field>
+            </div>
           </div>
           <div class="print-group">Show</div>
           <label class="print-check"

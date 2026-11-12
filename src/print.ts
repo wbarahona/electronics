@@ -8,13 +8,28 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const MARGIN = 40; // world units of space around the circuit
 
 // Sheet sizes in mm (portrait), and the preview's pixels per mm.
-const PAPER = { A4: [210, 297], Letter: [216, 279] } as const;
+const PAPER = { A4: [210, 297], A3: [297, 420], Letter: [216, 279] } as const;
 type Paper = keyof typeof PAPER;
 const PX_PER_MM = 96 / 25.4; // CSS pixels
 const SCOPE_PRINT = [720, 200]; // CSS px of the scope snapshot (scaled to fit on paper)
 
+// The drawing frame (ISO 5457): its line 20 mm in from the left edge (for
+// filing) and 10 mm from the others, with grid reference zones of about
+// 50 mm in the 5 mm strip outside it, numbered along the top and bottom and
+// lettered down the sides, counted from centring marks at each edge's middle.
+const FRAME = { left: 20, other: 10, strip: 5, zone: 50 };
+const BLOCK_WIDTH = 180; // mm, the title block in the frame's bottom-right corner
+const ZONE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I or O
+
+// What the title block says that isn't the title, remembered in this browser.
+const BLOCK_FIELDS = ['owner', 'createdBy', 'approvedBy', 'number', 'revision'] as const;
+type BlockFields = Record<(typeof BLOCK_FIELDS)[number], string>;
+const BLOCK_KEY = 'ampage:title-block';
+
 export interface PrintOptions {
   title: string;
+  frame: boolean; // ISO 5457 frame and ISO 7200 title block instead of a plain heading
+  block: BlockFields;
   paper: Paper;
   landscape: boolean;
   grid: boolean;
@@ -38,9 +53,10 @@ export interface PrintSources {
 // Printing: ⌘P / Ctrl+P or the Print button open our own M3 dialog (with a
 // live preview) instead of the browser's; its Print button lays the sheet
 // out for real and hands it to the browser, where the printer (or PDF) is
-// chosen. The sheet: a title block, the schematic fitted to the page, and,
-// as chosen, a snapshot of the oscilloscope, the thermal view's colours and
-// legend, and a parts list on a page of its own.
+// chosen. The sheet: a drawing frame and title block (or a plain heading),
+// the schematic fitted to the page, and, as chosen, a snapshot of the
+// oscilloscope, the thermal view's colours and legend, and a parts list on a
+// sheet of its own.
 export function createPrint(dialog: MdDialog, src: PrintSources) {
   const form = dialog.querySelector('form')!;
   const preview = dialog.querySelector<HTMLElement>('.print-preview')!;
@@ -50,6 +66,8 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
   function options(): PrintOptions {
     return {
       title: field('title').value.trim() || t('Untitled circuit'),
+      frame: field('frame').checked,
+      block: Object.fromEntries(BLOCK_FIELDS.map((name) => [name, field(name).value.trim()])) as BlockFields,
       paper: field('paper').value as Paper,
       landscape: field('orientation').value === 'landscape',
       grid: field('grid').checked,
@@ -110,25 +128,106 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     return table;
   }
 
+  // The frame of an ISO 5457 sheet, w × h mm, as SVG in mm.
+  function frame(w: number, h: number): string {
+    const { left, other, strip, zone } = FRAME;
+    const [x1, y1, x2, y2] = [left, other, w - other, h - other];
+    const [ox1, oy1, ox2, oy2] = [x1 - strip, y1 - strip, x2 + strip, y2 + strip];
+    // Zones: an even number, counted out from the middle of each side.
+    const count = (length: number) => Math.max(2, 2 * Math.round(length / (2 * zone)));
+    const [nx, ny] = [count(x2 - x1), count(y2 - y1)];
+    const [zx, zy] = [(x2 - x1) / nx, (y2 - y1) / ny];
+    let marks = '';
+    let labels = '';
+    const label = (x: number, y: number, text: string) =>
+      `<text x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" dominant-baseline="central">${text}</text>`;
+    for (let i = 0; i < nx; i++) {
+      const x = x1 + i * zx;
+      if (i) marks += `M ${x} ${oy1} V ${y1} M ${x} ${y2} V ${oy2} `;
+      labels += label(x + zx / 2, y1 - strip / 2, String(i + 1)) + label(x + zx / 2, y2 + strip / 2, String(i + 1));
+    }
+    for (let j = 0; j < ny; j++) {
+      const y = y1 + j * zy;
+      if (j) marks += `M ${ox1} ${y} H ${x1} M ${x2} ${y} H ${ox2} `;
+      labels += label(x1 - strip / 2, y + zy / 2, ZONE_LETTERS[j]) + label(x2 + strip / 2, y + zy / 2, ZONE_LETTERS[j]);
+    }
+    // Centring marks: from the sheet's edge to 5 mm inside the frame, except
+    // where the title block sits (the bottom one stops at the frame there).
+    const [cx, cy] = [(x1 + x2) / 2, (y1 + y2) / 2];
+    const bottom = cx > x2 - BLOCK_WIDTH ? y2 : y2 - 5;
+    const centring = `M ${cx} 0 V ${y1 + 5} M ${cx} ${h} V ${bottom} M 0 ${cy} H ${x1 + 5} M ${w} ${cy} H ${x2 - 5}`;
+    return `
+      <svg class="print-frame" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+        <rect class="print-frame-zones" x="${ox1}" y="${oy1}" width="${ox2 - ox1}" height="${oy2 - oy1}" />
+        <path class="print-frame-zones" d="${marks}" />
+        <rect class="print-frame-line" x="${x1}" y="${y1}" width="${x2 - x1}" height="${y2 - y1}" />
+        <path class="print-frame-line" d="${centring}" />
+        <g class="print-frame-labels">${labels}</g>
+      </svg>`;
+  }
+
+  // The title block (ISO 7200), 180 mm wide at the frame's bottom right.
+  function titleBlock(o: PrintOptions, sheetNo: number, sheets: number, title: string): HTMLElement {
+    const block = document.createElement('div');
+    block.className = 'print-block';
+    const cell = (area: string, label: string, cls = '') =>
+      `<div class="print-cell ${cls}" style="grid-area: ${area}"><span class="print-cell-label">${t(label)}</span><span class="print-cell-value"></span></div>`;
+    block.innerHTML =
+      cell('owner', 'Legal owner', 'print-cell-owner') +
+      cell('created', 'Created by') +
+      cell('approved', 'Approved by') +
+      cell('type', 'Document type') +
+      cell('date', 'Date of issue') +
+      cell('title', 'Title', 'print-cell-title') +
+      cell('number', 'Drawing number') +
+      cell('rev', 'Rev.') +
+      cell('sheet', 'Sheet');
+    const date = new Date();
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const values = [
+      o.block.owner,
+      o.block.createdBy,
+      o.block.approvedBy,
+      sheetNo === 1 ? t('Circuit diagram') : t('Parts list'),
+      iso,
+      title,
+      o.block.number,
+      o.block.revision,
+      `${sheetNo} / ${sheets}`,
+    ];
+    block.querySelectorAll('.print-cell-value').forEach((el, i) => (el.textContent = values[i]));
+    return block;
+  }
+
+  // A page of the printout: framed with a title block, or under a plain heading.
+  function page(o: PrintOptions, meta: string, extraClass = ''): HTMLElement {
+    const el = document.createElement('section');
+    el.className = `print-page ${extraClass}`.trim();
+    if (o.frame) {
+      el.classList.add('framed');
+      const [w, h] = pageSize(o);
+      el.innerHTML = frame(w, h);
+    } else {
+      el.innerHTML = `<header class="print-head"><div class="print-title"></div><div class="print-meta"></div></header>`;
+      el.querySelector('.print-title')!.textContent = o.title;
+      el.querySelector('.print-meta')!.textContent = meta;
+    }
+    return el;
+  }
+
   // The whole printout: one page, plus one for the parts list if asked.
   function sheet(o: PrintOptions): HTMLElement {
     const root = document.createElement('div');
     root.className = 'print-sheet';
     // The chosen theme's light colours, whatever the screen's mode.
     for (const [name, value] of Object.entries(lightTokens())) root.style.setProperty(name, value);
-    const page = document.createElement('section');
-    page.className = 'print-page';
+    const sheets = o.parts ? 2 : 1;
     const date = new Date().toLocaleDateString(language(), { year: 'numeric', month: 'long', day: 'numeric' });
-    page.innerHTML = `
-      <header class="print-head">
-        <div class="print-title"></div>
-        <div class="print-meta">Ampage · ${date}</div>
-      </header>`;
-    page.querySelector('.print-title')!.textContent = o.title;
+    const first = page(o, `Ampage · ${date}`);
     const drawing = document.createElement('div');
     drawing.className = 'print-drawing';
     drawing.append(schematic(o));
-    page.append(drawing);
+    first.append(drawing);
 
     const extras: HTMLElement[] = [];
     if (o.scope) {
@@ -153,16 +252,19 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
       const row = document.createElement('div');
       row.className = 'print-extras';
       row.append(...extras);
-      page.append(row);
+      first.append(row);
     }
-    root.append(page);
+    if (o.frame) first.append(titleBlock(o, 1, sheets, o.title));
+    root.append(first);
 
     if (o.parts) {
-      const list = document.createElement('section');
-      list.className = 'print-page print-list';
-      list.innerHTML = `<header class="print-head"><div class="print-title"></div><div class="print-meta">${t('Parts list')}</div></header>`;
-      list.querySelector('.print-title')!.textContent = o.title;
+      const list = page(o, t('Parts list'), 'print-list');
       list.append(partsList());
+      if (o.frame) {
+        const spacer = document.createElement('div');
+        spacer.className = 'print-spacer';
+        list.append(spacer, titleBlock(o, 2, sheets, o.title));
+      }
       root.append(list);
     }
     return root;
@@ -200,6 +302,14 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
   function open() {
     if (dialog.open) return;
     field('title').value = src.title();
+    try {
+      const saved = JSON.parse(localStorage.getItem(BLOCK_KEY) ?? '{}') as Partial<BlockFields & { frame: boolean }>;
+      for (const name of BLOCK_FIELDS) field(name).value = saved[name] ?? '';
+      if (typeof saved.frame === 'boolean') field('frame').checked = saved.frame;
+    } catch {
+      // nothing remembered
+    }
+    form.querySelector<HTMLElement>('.print-block-fields')!.hidden = !field('frame').checked;
     // Instruments that are showing start ticked; the scope only if it has probes.
     const scopeBox = field('scope');
     scopeBox.checked = src.scopeShowing();
@@ -209,8 +319,17 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     requestAnimationFrame(showPreview);
   }
 
+  function remember(o: PrintOptions) {
+    try {
+      localStorage.setItem(BLOCK_KEY, JSON.stringify({ ...o.block, frame: o.frame }));
+    } catch {
+      // no storage here
+    }
+  }
+
   function print() {
     const o = options();
+    remember(o);
     const [w, h] = pageSize(o);
     pageStyle.textContent = `@page { size: ${w}mm ${h}mm; margin: 0; }`;
     const s = sheet(o);
@@ -229,7 +348,10 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
   }
 
   form.addEventListener('input', showPreview);
-  form.addEventListener('change', showPreview);
+  form.addEventListener('change', () => {
+    showPreview();
+    form.querySelector<HTMLElement>('.print-block-fields')!.hidden = !field('frame').checked;
+  });
   dialog.addEventListener('close', () => {
     if (dialog.returnValue === 'print') print();
   });

@@ -7,14 +7,13 @@ add. Parts and instruments still to come are in
 ## Top picks
 
 The most value for the effort, roughly in order (already built: the example
-gallery, net labels, share by link, fault injection, image export, and notes
-explaining every example on the board, fit-on-open and component
-tolerances):
+gallery, net labels, share by link, fault injection, image export, notes
+explaining every example, fit-on-open, component tolerances, and the ISO
+sheet frame and title block for printing):
 
-1. **Title block and sheet frame**: proper DIN / ISO printouts.
-2. **Challenges and lessons**: builds on the gallery and fault injection
+1. **Challenges and lessons**: builds on the gallery and fault injection
    (find the hidden fault, checked by the simulator).
-3. **Subcircuits / blocks**: reuse for larger schematics.
+2. **Subcircuits / blocks**: reuse for larger schematics.
 
 ## Learning and sharing
 
@@ -25,8 +24,6 @@ tolerances):
 
 - **Subcircuits / blocks**: turn a selection into one reusable block and drop
   copies of it.
-- **Title block and sheet frame**: a proper DIN / ISO drawing frame for
-  printing.
 - **Align and distribute**: tidy a selection, with its wires following.
 
 ## Simulation depth

@@ -1959,9 +1959,18 @@ body.dragging * {
   gap: 8px;
 }
 
-.print-row md-outlined-select {
+.print-row md-outlined-select,
+.print-row md-outlined-text-field {
   flex: 1;
   min-width: 0;
+}
+
+.print-block-fields > md-outlined-text-field {
+  width: 100%;
+}
+
+.print-row .print-narrow {
+  flex: 0 0 88px;
 }
 
 /* M3 title-small */
@@ -2131,6 +2140,104 @@ body.dragging * {
 
 .print-meta {
   color: #5f6368;
+}
+
+/* A framed sheet (ISO 5457): the frame drawn over the page in mm, the
+   content inside it, and the title block (ISO 7200) in its bottom-right
+   corner, against the frame lines. */
+.print-page.framed {
+  position: relative;
+  padding: 12mm 12mm 10mm 22mm;
+}
+
+.print-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.print-frame-line,
+.print-frame-zones {
+  fill: none;
+  stroke: #191c22;
+}
+
+.print-frame-line {
+  stroke-width: 0.7;
+}
+
+.print-frame-zones {
+  stroke-width: 0.25;
+}
+
+.print-frame-labels {
+  fill: #191c22;
+  font:
+    3px "Roboto",
+    system-ui,
+    sans-serif;
+}
+
+.print-page.framed .print-drawing {
+  border: none;
+  border-radius: 0;
+}
+
+.print-spacer {
+  flex: 1;
+}
+
+.print-block {
+  flex: none;
+  align-self: flex-end;
+  margin-right: -2mm;
+  width: 180mm;
+  display: grid;
+  grid-template-columns: 45mm 45mm 50mm 20mm 20mm;
+  grid-template-rows: 9mm 12mm 9mm;
+  grid-template-areas:
+    "created approved type date date"
+    "owner owner title title title"
+    "owner owner number rev sheet";
+  border: 0.7mm solid #191c22;
+  box-sizing: border-box;
+}
+
+.print-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 0.6mm 1.5mm 0.8mm;
+  border-right: 0.25mm solid #191c22;
+  border-bottom: 0.25mm solid #191c22;
+}
+
+.print-cell-label {
+  font-size: 5.5pt;
+  line-height: 1.2;
+  color: #5f6368;
+}
+
+.print-cell-value {
+  overflow: hidden;
+  font-size: 9pt;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.print-cell-title .print-cell-value {
+  font-size: 13pt;
+  font-weight: 500;
+}
+
+.print-cell-owner .print-cell-value {
+  font-size: 11pt;
+  font-weight: 500;
+  white-space: normal;
 }
 
 .print-drawing {
