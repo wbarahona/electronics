@@ -2,13 +2,19 @@ import { t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
 import { confirmDialog } from './confirm.ts';
-import { isApp, openCircuitFile, saveCircuitFile, saveFile } from './platform.ts';
+import { isApp, onOpenedFiles, openCircuitFile, saveCircuitFile, saveFile, type CircuitFile } from './platform.ts';
 import { circuitInLink, clearLink, linkFor } from './share.ts';
 import type { Circuit } from './model.ts';
 
 const AUTOSAVE_KEY = 'electronics:autosave';
 const AUTOSAVE_EVERY_MS = 5000;
-const FILE_TYPES = [{ description: 'Circuit', accept: { 'application/json': ['.json'] } }];
+// Circuits are saved as .ampage (JSON inside); .json files from before still open.
+const MIME = 'application/vnd.ampage+json';
+const OPEN_TYPES = [{ description: 'Ampage circuit', accept: { [MIME]: ['.ampage'], 'application/json': ['.json'] } }];
+const SAVE_TYPES = [{ description: 'Ampage circuit', accept: { [MIME]: ['.ampage'] } }];
+const NEW_NAME = 'circuit.ampage';
+// A name to save under that no file stands behind yet: always .ampage.
+const ampageName = (name: string) => name.replace(/\.(json|ampage)$/i, '') + '.ampage';
 
 // The File System Access API (Chrome, Edge) gives a real "Save as" dialog and
 // lets later saves go straight back to the same file. Elsewhere, saving
@@ -32,12 +38,13 @@ export interface FileActionsOptions {
   report: (message: string) => void;
 }
 
-// New / Open / Save (the File menu on the navigation rail, ⌘O / ⌘S, dropping a .json file
-// on the window), plus autosave to this browser so a reload loses nothing.
+// New / Open / Save (the File menu on the navigation rail, ⌘O / ⌘S, dropping a
+// circuit file on the window, or in the desktop app opening one from the
+// system), plus autosave to this browser so a reload loses nothing.
 export function createFileActions(root: HTMLElement, { circuit, getView, load, report }: FileActionsOptions) {
   let handle: FileSystemFileHandle | null = null; // file the last save or open used
   let path: string | null = null; // the same, in the desktop app
-  let name = 'circuit.json';
+  let name = NEW_NAME;
 
   const empty = () => !circuit.components.length && !circuit.wires.length && !circuit.joints.length;
   // Whether the circuit on the board may go: asked, unless the board is empty,
@@ -59,7 +66,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   async function newCircuit() {
     if (!(await replaceOk('new'))) return;
     detach();
-    name = 'circuit.json';
+    name = NEW_NAME;
     load({ format: 'electronics-circuit', version: 1, parts: [], joints: [], wires: [] });
   }
 
@@ -92,7 +99,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
     if (picker.showOpenFilePicker) {
       try {
-        const [h] = await picker.showOpenFilePicker({ types: FILE_TYPES });
+        const [h] = await picker.showOpenFilePicker({ types: OPEN_TYPES });
         const file = await h.getFile();
         if (open(await file.text(), file.name)) handle = h;
       } catch (e) {
@@ -102,7 +109,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,application/json';
+    input.accept = `.ampage,.json,${MIME},application/json`;
     input.addEventListener('change', async () => {
       const file = input.files?.[0];
       if (file && open(await file.text(), file.name)) handle = null;
@@ -113,7 +120,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   async function save() {
     if (isApp) {
       try {
-        const file = await saveCircuitFile(text(), path, name);
+        const file = await saveCircuitFile(text(), path, ampageName(name));
         if (file) ({ path, name } = file);
       } catch (e) {
         report(t('Couldn’t save: {error}', { error: String(e) }));
@@ -122,7 +129,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
     if (picker.showSaveFilePicker) {
       try {
-        handle ??= await picker.showSaveFilePicker({ suggestedName: name, types: FILE_TYPES });
+        handle ??= await picker.showSaveFilePicker({ suggestedName: ampageName(name), types: SAVE_TYPES });
         const writable = await handle.createWritable();
         await writable.write(text());
         await writable.close();
@@ -132,7 +139,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
       }
       return;
     }
-    saveFile(new Blob([text()], { type: 'application/json' }), name);
+    saveFile(new Blob([text()], { type: MIME }), ampageName(name));
   }
 
   root.querySelector('#file-new')!.addEventListener('click', newCircuit);
@@ -221,7 +228,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
     if (text === null) return;
     clearLink();
-    if ((await replaceOk()) && open(text, 'shared-circuit.json')) detach();
+    if ((await replaceOk()) && open(text, 'shared-circuit.ampage')) detach();
   }
 
   // A link from the desktop app would point into the app itself: none there.
@@ -229,13 +236,39 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   else root.querySelector('#file-share')!.addEventListener('click', copyLink);
   window.addEventListener('hashchange', openLink);
 
+  // The desktop app: circuit files opened from the system (double-clicked,
+  // or dropped on the app's icon), at launch or while running; the last of a
+  // batch goes on the board, saving back to its file. Resolves, once the
+  // launch's files are handled, to whether there were any.
+  function openSystemFiles(): Promise<boolean> {
+    if (!isApp) return Promise.resolve(false);
+    return new Promise((launched) => {
+      let first = true;
+      onOpenedFiles(async (batch) => {
+        let file: CircuitFile | undefined;
+        try {
+          file = (await batch).at(-1);
+        } catch (e) {
+          report(t('Couldn’t open the file: {error}', { error: String(e) }));
+        }
+        if (first) launched(Boolean(file));
+        first = false;
+        if (!file || !(await replaceOk())) return;
+        if (open(file.text, file.name)) {
+          detach();
+          path = file.path;
+        }
+      }).catch(() => launched(false));
+    });
+  }
+
   // A circuit from elsewhere (an example), opened as an unsaved new file.
   async function openText(text: string, fileName: string) {
     if ((await replaceOk()) && open(text, fileName)) detach();
   }
 
   // The circuit's file name without its extension (for print titles).
-  const title = () => name.replace(/\.json$/i, '');
+  const title = () => name.replace(/\.(ampage|json)$/i, '');
 
-  return { changed, restore, title, openText, openLink };
+  return { changed, restore, title, openText, openLink, openSystemFiles };
 }

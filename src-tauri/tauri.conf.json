@@ -43,6 +43,28 @@
     "category": "Education",
     "shortDescription": "Electronics circuit simulator",
     "longDescription": "Draw circuits with European (IEC / DIN EN 60617) symbols and watch them run: a live simulator for learning electronics.",
+    "fileAssociations": [
+      {
+        "ext": [
+          "ampage"
+        ],
+        "name": "Ampage circuit",
+        "description": "Ampage circuit",
+        "role": "Editor",
+        "rank": "Owner",
+        "mimeType": "application/vnd.ampage+json",
+        "contentTypes": [
+          "io.github.wbarahona.ampage.circuit"
+        ],
+        "exportedType": {
+          "identifier": "io.github.wbarahona.ampage.circuit",
+          "conformsTo": [
+            "public.data",
+            "public.content"
+          ]
+        }
+      }
+    ],
     "copyright": "MIT License",
     "publisher": "wbarahona",
     "macOS": {

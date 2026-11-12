@@ -194,13 +194,15 @@ const files = createFileActions(byId('file-menu'), {
 const restored = files.restore();
 if (restored) loadCircuit(restored);
 else history.reset();
-// Opened from a shared link: its circuit (asking first if that replaces one).
-// Otherwise a tip of the day, unless turned off (here or in Settings).
+// Opened from a shared link or a file: its circuit (asking first if that
+// replaces one). Otherwise a tip of the day, unless turned off (here or in Settings).
 const fromLink = location.hash.length > 1;
 files.openLink();
+// In the desktop app, a circuit file it was started to open.
+const fromFile = files.openSystemFiles();
 const tips = createTips(byId('tip-dialog'), settings);
 settings.onChange(tips.sync);
-if (settings.tips && !fromLink) tips.show();
+if (settings.tips && !fromLink) fromFile.then((opened) => opened || tips.show());
 byId('settings-show-tip').addEventListener('click', async () => {
   await byId<MdDialog>('settings-dialog').close(); // one dialog at a time, as M3 asks
   tips.show();

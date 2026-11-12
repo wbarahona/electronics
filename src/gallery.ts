@@ -25,7 +25,7 @@ export function createGallery(dialog: MdDialog, open: (text: string, name: strin
     button.querySelector('.gallery-description')!.textContent = t(example.description);
     button.addEventListener('click', async () => {
       dialog.close();
-      open(await example.load(), `${example.id}.json`);
+      open(await example.load(), `${example.id}.ampage`);
     });
     return button;
   }

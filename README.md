@@ -47,7 +47,8 @@ The builds aren't code-signed yet, so your system warns you once:
   wire to splice it in, copy/cut/paste/duplicate, marquee select
 - **Visual feedback**: animated current flow, glowing lights, charge
   gauges, net highlighting and live readouts on hover
-- **Files**: save and open circuits as JSON; autosaves in the browser
+- **Files**: save and open circuits as `.ampage` files (JSON inside; older `.json`
+  files still open), which the desktop app opens on double-click; autosaves in the browser
 
 ## Getting started
 
