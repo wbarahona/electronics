@@ -1,0 +1,78 @@
+# Desktop builds of Ampage (Tauri, see src-tauri) for macOS and Windows,
+# attached to a draft GitHub Release. Runs when a version tag is pushed:
+#
+#   npm version 0.2.0 --no-git-tag-version   # or edit "version" in package.json
+#   git commit -am "release: v0.2.0" && git tag v0.2.0 && git push --follow-tags
+#
+# Review the draft on the Releases page, then publish it. The builds are not
+# code-signed yet (macOS: ad-hoc only), so the release notes tell people how
+# to open them the first time.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target universal-apple-darwin # one app for Apple Silicon and Intel
+          - platform: windows-latest
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          version="v$(node -p "require('./package.json').version")"
+          if [ "$version" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} doesn't match package.json version ${version}." >&2
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Ampage ${{ github.ref_name }}
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          releaseBody: |
+            ## Download
+            - **macOS** (Apple Silicon and Intel): `Ampage_…_universal.dmg`
+            - **Windows** (10 and 11): `Ampage_…_x64-setup.exe`
+
+            ## Opening it the first time
+            These builds aren't code-signed yet, so your system will warn you once.
+
+            **macOS:** open the `.dmg` and drag Ampage into Applications. On first launch macOS says it can't verify the developer: click **Done**, then go to **System Settings › Privacy & Security**, scroll down and click **Open Anyway** next to Ampage. (Or in Terminal: `xattr -dr com.apple.quarantine /Applications/Ampage.app`.)
+
+            **Windows:** run the installer. If SmartScreen shows "Windows protected your PC", click **More info › Run anyway**. It installs for your user only, no administrator rights needed.

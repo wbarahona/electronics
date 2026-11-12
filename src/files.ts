@@ -1,6 +1,7 @@
 import { t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
+import { ask, isApp, openCircuitFile, saveCircuitFile, saveFile } from './platform.ts';
 import { circuitInLink, clearLink, linkFor } from './share.ts';
 import type { Circuit } from './model.ts';
 
@@ -10,7 +11,8 @@ const FILE_TYPES = [{ description: 'Circuit', accept: { 'application/json': ['.j
 
 // The File System Access API (Chrome, Edge) gives a real "Save as" dialog and
 // lets later saves go straight back to the same file. Elsewhere, saving
-// downloads a file and opening uses a plain file input.
+// downloads a file and opening uses a plain file input. The desktop app uses
+// native dialogs and keeps the file's path the same way (see platform.ts).
 interface PickerWindow {
   showSaveFilePicker?: (options: object) => Promise<FileSystemFileHandle>;
   showOpenFilePicker?: (options: object) => Promise<FileSystemFileHandle[]>;
@@ -33,15 +35,21 @@ export interface FileActionsOptions {
 // on the window), plus autosave to this browser so a reload loses nothing.
 export function createFileActions(root: HTMLElement, { circuit, getView, load, report }: FileActionsOptions) {
   let handle: FileSystemFileHandle | null = null; // file the last save or open used
+  let path: string | null = null; // the same, in the desktop app
   let name = 'circuit.json';
 
   const empty = () => !circuit.components.length && !circuit.wires.length && !circuit.joints.length;
-  const replaceOk = () => empty() || confirm(t('Replace the circuit on the board? Anything not saved to a file will be lost.'));
+  const replaceOk = async () => empty() || ask(t('Replace the circuit on the board? Anything not saved to a file will be lost.'));
+  // A circuit now on the board that no file stands behind yet.
+  const detach = () => {
+    handle = null;
+    path = null;
+  };
   const text = () => JSON.stringify(serialize(circuit, getView()), null, 2);
 
-  function newCircuit() {
-    if (!replaceOk()) return;
-    handle = null;
+  async function newCircuit() {
+    if (!(await replaceOk())) return;
+    detach();
     name = 'circuit.json';
     load({ format: 'electronics-circuit', version: 1, parts: [], joints: [], wires: [] });
   }
@@ -60,7 +68,19 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   }
 
   async function openFile() {
-    if (!replaceOk()) return;
+    if (!(await replaceOk())) return;
+    if (isApp) {
+      try {
+        const file = await openCircuitFile();
+        if (file && open(file.text, file.name)) {
+          detach();
+          path = file.path;
+        }
+      } catch (e) {
+        report(t('Couldn’t open the file: {error}', { error: String(e) }));
+      }
+      return;
+    }
     if (picker.showOpenFilePicker) {
       try {
         const [h] = await picker.showOpenFilePicker({ types: FILE_TYPES });
@@ -82,6 +102,15 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   }
 
   async function save() {
+    if (isApp) {
+      try {
+        const file = await saveCircuitFile(text(), path, name);
+        if (file) ({ path, name } = file);
+      } catch (e) {
+        report(t('Couldn’t save: {error}', { error: String(e) }));
+      }
+      return;
+    }
     if (picker.showSaveFilePicker) {
       try {
         handle ??= await picker.showSaveFilePicker({ suggestedName: name, types: FILE_TYPES });
@@ -94,11 +123,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
       }
       return;
     }
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([text()], { type: 'application/json' }));
-    a.download = name;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    saveFile(new Blob([text()], { type: 'application/json' }), name);
   }
 
   root.querySelector('#file-new')!.addEventListener('click', newCircuit);
@@ -125,7 +150,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     const file = e.dataTransfer?.files[0];
     if (!file) return;
     e.preventDefault();
-    if (replaceOk() && open(await file.text(), file.name)) handle = null;
+    if ((await replaceOk()) && open(await file.text(), file.name)) detach();
   });
 
   // --- Autosave ---------------------------------------------------------------
@@ -187,15 +212,17 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
     if (text === null) return;
     clearLink();
-    if (replaceOk() && open(text, 'shared-circuit.json')) handle = null;
+    if ((await replaceOk()) && open(text, 'shared-circuit.json')) detach();
   }
 
-  root.querySelector('#file-share')!.addEventListener('click', copyLink);
+  // A link from the desktop app would point into the app itself: none there.
+  if (isApp) root.querySelector<HTMLElement>('#file-share')!.hidden = true;
+  else root.querySelector('#file-share')!.addEventListener('click', copyLink);
   window.addEventListener('hashchange', openLink);
 
   // A circuit from elsewhere (an example), opened as an unsaved new file.
-  function openText(text: string, fileName: string) {
-    if (replaceOk() && open(text, fileName)) handle = null;
+  async function openText(text: string, fileName: string) {
+    if ((await replaceOk()) && open(text, fileName)) detach();
   }
 
   // The circuit's file name without its extension (for print titles).

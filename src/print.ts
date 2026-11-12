@@ -1,6 +1,7 @@
 import type { MdDialog } from '@material/web/dialog/dialog.js';
 import { PARTS, tagOf } from './components.ts';
 import { language, t } from './i18n/index.ts';
+import { saveFile } from './platform.ts';
 import { lightTokens } from './theme.ts';
 import dDin from './fonts/d-din/D-DIN.woff2?url';
 import dDinBold from './fonts/d-din/D-DIN-Bold.woff2?url';
@@ -432,11 +433,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
   }
 
   function download(blob: Blob, extension: string) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${src.title() || 'circuit'}.${extension}`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    saveFile(blob, `${src.title() || 'circuit'}.${extension}`);
   }
 
   // The @font-face rules for EXPORT_FONTS, each font inlined (fetched once).
