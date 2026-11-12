@@ -1,7 +1,7 @@
 // Where Ampage is running: a browser tab, or the desktop app (Tauri, see
-// src-tauri). The desktop app's web view has no File System Access API, no
-// downloads and no reliable confirm(), so there these go through native
-// dialogs and file access instead. The Tauri modules load only in the app.
+// src-tauri). The desktop app's web view has no File System Access API and no
+// downloads, so there these go through native dialogs and file access
+// instead. The Tauri modules load only in the app.
 
 export const isApp = '__TAURI_INTERNALS__' in window;
 
@@ -11,13 +11,6 @@ export const nativePrint = isApp && /Mac/.test(navigator.userAgent);
 const CIRCUIT_FILTERS = [{ name: 'Circuit', extensions: ['json'] }];
 
 const baseName = (path: string) => path.split(/[\\/]/).pop() ?? path;
-
-// Ask a yes/no question.
-export async function ask(message: string): Promise<boolean> {
-  if (!isApp) return confirm(message);
-  const { ask } = await import('@tauri-apps/plugin-dialog');
-  return ask(message, { title: 'Ampage', kind: 'warning' });
-}
 
 // A circuit file picked in an open dialog, or null if cancelled.
 export async function openCircuitFile(): Promise<{ path: string; name: string; text: string } | null> {

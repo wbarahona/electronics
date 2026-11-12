@@ -91,8 +91,8 @@ export default {
   'RGB LEDs and a switchable RGB dot matrix: how currents, lens and PWM set the colour you see.': 'RGB-LEDs und eine schaltbare RGB-Punktmatrix: wie Ströme, Linse und PWM die sichtbare Farbe bestimmen.',
 
   // --- Files ---------------------------------------------------------------------
-  'Replace the circuit on the board? Anything not saved to a file will be lost.':
-    'Die Schaltung auf der Fläche ersetzen? Alles, was nicht in einer Datei gespeichert ist, geht verloren.',
+  'Replace the circuit?': 'Schaltung ersetzen?',
+  'The circuit on the board will be closed. Anything not saved to a file will be lost.': 'Die Schaltung auf der Arbeitsfläche wird geschlossen. Alles, was nicht in einer Datei gespeichert ist, geht verloren.',
   'Couldn’t open {file}: {error}': '{file} konnte nicht geöffnet werden: {error}',
   'Couldn’t open the file: {error}': 'Die Datei konnte nicht geöffnet werden: {error}',
   'Couldn’t save: {error}': 'Speichern fehlgeschlagen: {error}',

@@ -1,7 +1,8 @@
 import { t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
-import { ask, isApp, openCircuitFile, saveCircuitFile, saveFile } from './platform.ts';
+import { confirmDialog } from './confirm.ts';
+import { isApp, openCircuitFile, saveCircuitFile, saveFile } from './platform.ts';
 import { circuitInLink, clearLink, linkFor } from './share.ts';
 import type { Circuit } from './model.ts';
 
@@ -39,7 +40,13 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   let name = 'circuit.json';
 
   const empty = () => !circuit.components.length && !circuit.wires.length && !circuit.joints.length;
-  const replaceOk = async () => empty() || ask(t('Replace the circuit on the board? Anything not saved to a file will be lost.'));
+  const replaceOk = async () =>
+    empty() ||
+    confirmDialog({
+      headline: t('Replace the circuit?'),
+      message: t('The circuit on the board will be closed. Anything not saved to a file will be lost.'),
+      action: t('Replace'),
+    });
   // A circuit now on the board that no file stands behind yet.
   const detach = () => {
     handle = null;

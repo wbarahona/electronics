@@ -2616,6 +2616,24 @@ body.dragging * {
   padding: 8px 16px 32px;
 }
 
+/* A confirmation (src/confirm.ts): headline, one sentence, Cancel / action. */
+.confirm-dialog {
+  max-width: min(400px, calc(100vw - 48px));
+}
+
+.confirm-body {
+  padding: 0 16px; /* in line with the headline */
+}
+
+/* M3 body-medium */
+.confirm-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
 /* Settings sits at the bottom of the rail; on phones it's the bar's last
    destination. */
 .rail-settings {
