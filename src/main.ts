@@ -24,6 +24,7 @@ import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
 import { onLanguage, t } from './i18n/index.ts';
 import { onNorm, refText } from './norm.ts';
+import { onDecimalMark } from './units.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
 import { MODELS, type Sound } from './sim/models.ts';
@@ -114,7 +115,7 @@ function showResults() {
   editor.showLive(live, smooth);
   panel.showLive(live);
   currents = nets ? wireCurrents(circuit, nets, engine.results) : new Map();
-  editor.setFlow(currents, smooth);
+  editor.setFlow(currents, smooth, settings.flow === 'electron');
   readout.refresh();
 }
 
@@ -182,6 +183,8 @@ function loadCircuit(data: SavedCircuit, opened = false) {
   if (fit) board.fitAll();
   controls.showTime(engine.time);
   history.reset();
+  // Settings may ask for an opened circuit to start running at once.
+  if (opened && settings.autoRun && !controls.running) controls.toggle();
 }
 
 const files = createFileActions(byId('file-menu'), {
@@ -235,7 +238,7 @@ requestAnimationFrame(function frame(now) {
   scope.draw(engine.time, controls.speed);
   // Sounders are heard only while the simulation runs (pausing silences them
   // without a door chime's closing dong).
-  audio.play(controls.running ? sounds : new Map(), !controls.running);
+  audio.play(controls.running && settings.sound ? sounds : new Map(), !controls.running || !settings.sound);
   logo.classList.toggle('running', controls.running);
   const burnt = circuit.components.some((c) => c.broken);
   logo.classList.toggle('burnt', burnt);
@@ -358,9 +361,28 @@ byId('file-export-svg').addEventListener('click', () => printer.exportImage('svg
 const backdrop = createBackdrop(byId('backdrop-dialog'), board);
 byId('file-backdrop').addEventListener('click', () => backdrop.open());
 
-// The drawing standard changed (Settings): every symbol and reference again.
+// The drawing standard or the decimal mark changed (Settings): every symbol,
+// reference and value again.
 onNorm(() => {
   editor.reload();
+  showResults();
+});
+onDecimalMark(() => {
+  editor.reload();
+  showResults();
+});
+
+// Settings the board and simulation follow as they change: the grid, the
+// current-flow dots, whether parts burn out. (Flow direction and sound are
+// read as results are shown.)
+function applyBoardSettings() {
+  board.svg.dataset.grid = settings.grid;
+  board.svg.classList.toggle('no-flow', !settings.flowDots);
+  engine.burnOut = settings.burnOut;
+}
+applyBoardSettings();
+settings.onChange(() => {
+  applyBoardSettings();
   showResults();
 });
 

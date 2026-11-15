@@ -98,6 +98,7 @@ export function createEngine(circuit: Circuit) {
     dynamic: false,
     ac: false, // driven by an alternating source: readouts show RMS
     tolerances: false, // simulate parts as built (within their tolerance), not as marked
+    burnOut: true, // overloaded parts fail (else they only get hot)
     heating: false,
     draining: false,
     // Called after every time step (with the time reached), for instruments
@@ -359,7 +360,7 @@ export function createEngine(circuit: Circuit) {
       const h = el.state.heat ?? 0;
       el.state.heat = r.load + (h - r.load) * Math.exp(-dt / thermal.tau);
       r.heat = el.state.heat;
-      if (el.state.heat > thermal.limit) failed.push(el.id);
+      if (engine.burnOut && el.state.heat > thermal.limit) failed.push(el.id);
     }
     checkHeating();
     return failed;

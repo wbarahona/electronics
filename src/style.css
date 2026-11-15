@@ -1897,14 +1897,45 @@ body.dragging * {
   stroke-width: var(--px);
 }
 
+/* The grid as dots (Settings): round caps on zero-length strokes, each a
+   dot; a tile's corners are shared with its neighbours, which draw the rest. */
+.grid-dot {
+  display: none;
+  fill: none;
+  stroke: var(--grid-major);
+  stroke-width: calc(var(--px) * 2);
+  stroke-linecap: round;
+}
+
+.grid-dot-major {
+  stroke-width: calc(var(--px) * 3.5);
+}
+
+#board[data-grid='dots'] .grid-line {
+  display: none;
+}
+
+#board[data-grid='dots'] .grid-dot {
+  display: inline;
+}
+
+#board[data-grid='none'] #grid {
+  display: none;
+}
+
+/* Current flow off (Settings). */
+#board.no-flow .wire-flow {
+  display: none;
+}
+
 /* --px is one screen pixel in world units, so grid lines stay 1px at any zoom */
-#grid-minor path {
+#grid-minor .grid-line {
   fill: none;
   stroke: var(--grid-minor);
   stroke-width: var(--px);
 }
 
-#grid-major > path {
+#grid-major > .grid-line {
   fill: none;
   stroke: var(--grid-major);
   stroke-width: var(--px);
@@ -2657,6 +2688,21 @@ body.dragging * {
 
 .dialog-actions {
   padding: 8px 16px 32px;
+}
+
+/* An on / off setting: its name and note, an M3 switch at the end (list item
+   with trailing switch). */
+.settings-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  cursor: pointer;
+}
+
+.settings-segmented {
+  width: 100%;
 }
 
 /* A button under a settings section's options, in line with them. */

@@ -1204,7 +1204,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   // --- Current flow -----------------------------------------------------------
   // Dots travel along each wire in the direction of conventional current
-  // (+ to −). Speed grows with the logarithm of the current, so microamps and
+  // (+ to −), or of the electrons (− to +) when `electron`. Speed grows with the logarithm of the current, so microamps and
   // amps are both visible without either looking frozen or a blur.
 
   // wire id -> speed (units/s along from → to) easing toward target, dash offset
@@ -1212,9 +1212,9 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   // `smooth` as for showLive: on AC the dots ease between directions instead
   // of jittering at the frame rate.
-  function setFlow(currents: Map<string, number>, smooth = false) {
+  function setFlow(currents: Map<string, number>, smooth = false, electron = false) {
     for (const w of circuit.wires) {
-      const i = currents.get(w.id) ?? 0;
+      const i = (electron ? -1 : 1) * (currents.get(w.id) ?? 0);
       const f = flows.get(w.id) ?? { target: 0, speed: 0, offset: 0 };
       f.target = Math.abs(i) < FLOW_MIN ? 0 : Math.sign(i) * FLOW_SPEED * Math.log10(1 + Math.abs(i) / FLOW_REF);
       if (!smooth) f.speed = f.target;

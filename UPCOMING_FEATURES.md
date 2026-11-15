@@ -50,6 +50,3 @@ sheet frame and title block for printing):
 - **Installable app (PWA)**: works offline and opens like a desktop app.
 - **Touch and tablet support**: pinch zoom, long-press for the context menu,
   larger targets.
-- **Localised numbers**: the interface speaks English, Spanish and German
-  (Settings), but values still show with a decimal point ("4.7 kΩ"); Spanish
-  and German would use a comma ("4,7 kΩ"). Typing either already works.

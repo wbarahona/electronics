@@ -156,7 +156,8 @@
             height="20"
             patternUnits="userSpaceOnUse"
           >
-            <path d="M 20 0 L 0 0 0 20" />
+            <path class="grid-line" d="M 20 0 L 0 0 0 20" />
+            <path class="grid-dot" d="M 0 0 h 0 M 20 0 h 0 M 0 20 h 0 M 20 20 h 0" />
           </pattern>
           <pattern
             id="grid-major"
@@ -165,7 +166,8 @@
             patternUnits="userSpaceOnUse"
           >
             <rect width="100" height="100" fill="url(#grid-minor)" />
-            <path d="M 100 0 L 0 0 0 100" />
+            <path class="grid-line" d="M 100 0 L 0 0 0 100" />
+            <path class="grid-dot grid-dot-major" d="M 0 0 h 0 M 100 0 h 0 M 0 100 h 0 M 100 100 h 0" />
           </pattern>
         </defs>
         <rect id="grid" fill="url(#grid-major)" />
@@ -261,6 +263,7 @@
           <md-primary-tab inline-icon aria-controls="settings-appearance"><md-icon slot="icon">palette</md-icon>Appearance</md-primary-tab>
           <md-primary-tab inline-icon aria-controls="settings-board"><md-icon slot="icon">grid_on</md-icon>Board</md-primary-tab>
           <md-primary-tab inline-icon aria-controls="settings-simulation"><md-icon slot="icon">bolt</md-icon>Simulation</md-primary-tab>
+          <md-primary-tab inline-icon aria-controls="settings-misc"><md-icon slot="icon">more_horiz</md-icon>Misc</md-primary-tab>
         </md-tabs>
       </div>
       <form slot="content" id="settings-form" method="dialog" class="settings-body">
@@ -279,6 +282,14 @@
               <md-outlined-segmented-button data-mode="system" label="System"><md-icon slot="icon">brightness_auto</md-icon></md-outlined-segmented-button>
               <md-outlined-segmented-button data-mode="light" label="Light"><md-icon slot="icon">light_mode</md-icon></md-outlined-segmented-button>
               <md-outlined-segmented-button data-mode="dark" label="Dark"><md-icon slot="icon">dark_mode</md-icon></md-outlined-segmented-button>
+            </md-outlined-segmented-button-set>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>123</md-icon>Numbers</h3>
+            <md-outlined-segmented-button-set class="settings-segmented" data-setting="decimal" aria-label="Numbers">
+              <md-outlined-segmented-button data-value="auto" label="By language"></md-outlined-segmented-button>
+              <md-outlined-segmented-button data-value="point" label="4.7 k"></md-outlined-segmented-button>
+              <md-outlined-segmented-button data-value="comma" label="4,7 k"></md-outlined-segmented-button>
             </md-outlined-segmented-button-set>
           </section>
         </div>
@@ -310,18 +321,25 @@
             </div>
           </section>
           <section class="settings-section">
-            <h3 class="settings-heading"><md-icon>lightbulb</md-icon>Tip of the day</h3>
-            <div role="radiogroup" aria-label="Tip of the day">
+            <h3 class="settings-heading"><md-icon>arrow_selector_tool</md-icon>Values on hover</h3>
+            <div role="radiogroup" aria-label="Values on hover">
               <label class="settings-radio">
-                <md-radio name="tips" value="show" touch-target="wrapper"></md-radio>
-                <span><span class="settings-option">Show at startup</span><span class="settings-note">A short tip each time Ampage opens</span></span>
+                <md-radio name="readout" value="show" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Show</span><span class="settings-note">Live values of the part or wire under the pointer (press I to toggle)</span></span>
               </label>
               <label class="settings-radio">
-                <md-radio name="tips" value="hide" touch-target="wrapper"></md-radio>
-                <span><span class="settings-option">Don’t show</span><span class="settings-note">Start straight on the board</span></span>
+                <md-radio name="readout" value="hide" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Hide</span><span class="settings-note">Nothing pops up over the board</span></span>
               </label>
             </div>
-            <md-text-button id="settings-show-tip" class="settings-action"><md-icon slot="icon">lightbulb</md-icon>Show a tip now</md-text-button>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>apps</md-icon>Grid</h3>
+            <md-outlined-segmented-button-set class="settings-segmented" data-setting="grid" aria-label="Grid">
+              <md-outlined-segmented-button data-value="lines" label="Lines"><md-icon slot="icon">grid_on</md-icon></md-outlined-segmented-button>
+              <md-outlined-segmented-button data-value="dots" label="Dots"><md-icon slot="icon">apps</md-icon></md-outlined-segmented-button>
+              <md-outlined-segmented-button data-value="none" label="None"><md-icon slot="icon">check_box_outline_blank</md-icon></md-outlined-segmented-button>
+            </md-outlined-segmented-button-set>
           </section>
         </div>
         <div id="settings-simulation" class="settings-panel" role="tabpanel" hidden>
@@ -339,17 +357,56 @@
             </div>
           </section>
           <section class="settings-section">
-            <h3 class="settings-heading"><md-icon>arrow_selector_tool</md-icon>Values on hover</h3>
-            <div role="radiogroup" aria-label="Values on hover">
+            <h3 class="settings-heading"><md-icon>swap_horiz</md-icon>Current flow</h3>
+            <div role="radiogroup" aria-label="Current flow">
               <label class="settings-radio">
-                <md-radio name="readout" value="show" touch-target="wrapper"></md-radio>
-                <span><span class="settings-option">Show</span><span class="settings-note">Live values of the part or wire under the pointer (press I to toggle)</span></span>
+                <md-radio name="flow" value="conventional" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Conventional</span><span class="settings-note">Dots move from + to −, as most textbooks draw it</span></span>
               </label>
               <label class="settings-radio">
-                <md-radio name="readout" value="hide" touch-target="wrapper"></md-radio>
-                <span><span class="settings-option">Hide</span><span class="settings-note">Nothing pops up over the board</span></span>
+                <md-radio name="flow" value="electron" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Electron flow</span><span class="settings-note">Dots move from − to +, the way electrons go</span></span>
               </label>
             </div>
+            <label class="settings-switch">
+              <span><span class="settings-option">Moving dots</span><span class="settings-note">Show current moving along the wires</span></span>
+              <md-switch data-setting="flowDots"></md-switch>
+            </label>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>play_circle</md-icon>While running</h3>
+            <label class="settings-switch">
+              <span><span class="settings-option">Sound</span><span class="settings-note">Buzzers, bells and speakers are heard</span></span>
+              <md-switch data-setting="sound"></md-switch>
+            </label>
+            <label class="settings-switch">
+              <span><span class="settings-option">Parts can burn out</span><span class="settings-note">Overloaded parts fail; off, they only get hot</span></span>
+              <md-switch data-setting="burnOut"></md-switch>
+            </label>
+            <label class="settings-switch">
+              <span><span class="settings-option">Run on opening</span><span class="settings-note">An opened circuit or example starts running at once</span></span>
+              <md-switch data-setting="autoRun"></md-switch>
+            </label>
+          </section>
+        </div>
+        <div id="settings-misc" class="settings-panel" role="tabpanel" hidden>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>lightbulb</md-icon>Tip of the day</h3>
+            <div role="radiogroup" aria-label="Tip of the day">
+              <label class="settings-radio">
+                <md-radio name="tips" value="show" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Show at startup</span><span class="settings-note">A short tip each time Ampage opens</span></span>
+              </label>
+              <label class="settings-radio">
+                <md-radio name="tips" value="hide" touch-target="wrapper"></md-radio>
+                <span><span class="settings-option">Don’t show</span><span class="settings-note">Start straight on the board</span></span>
+              </label>
+            </div>
+            <md-text-button id="settings-show-tip" class="settings-action"><md-icon slot="icon">lightbulb</md-icon>Show a tip now</md-text-button>
+          </section>
+          <section class="settings-section">
+            <h3 class="settings-heading"><md-icon>restart_alt</md-icon>Reset</h3>
+            <md-outlined-button id="settings-reset" class="settings-action"><md-icon slot="icon">restart_alt</md-icon>Reset settings to defaults</md-outlined-button>
           </section>
         </div>
       </form>
