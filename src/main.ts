@@ -410,3 +410,14 @@ settings.onChange(() => {
 
 // Zoom buttons and shortcuts at the board's bottom-left corner.
 createZoom(byId('zoom'), board);
+
+// Everything is set up: show the app (index.html kept it hidden behind its
+// loading screen) once its fonts are in, as icons read as words before the
+// icon font arrives; at most two seconds, whatever happens to the fonts.
+Promise.race([document.fonts.ready, new Promise((done) => setTimeout(done, 2000))]).then(() => {
+  document.documentElement.classList.add('ready');
+  const splash = document.getElementById('splash');
+  splash?.addEventListener('transitionend', () => splash.remove(), { once: true });
+  setTimeout(() => splash?.remove(), 500); // in case the transition never runs
+});
+

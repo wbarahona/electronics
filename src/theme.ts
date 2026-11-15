@@ -52,6 +52,22 @@ export function applyTheme(id: ThemeId, mode: ThemeMode) {
   root.dataset.theme = dark ? 'dark' : 'light';
   root.style.colorScheme = dark ? 'dark' : 'light';
   for (const [name, value] of Object.entries(schemeTokens(seedOf(id), dark))) root.style.setProperty(name, value);
+  rememberForSplash(id, mode);
+}
+
+// The colours the loading screen in index.html starts in next time (before
+// any of this has loaded): the theme's surface, and its primary for the
+// loading indicator, in light and dark, with the mode to pick between them.
+function rememberForSplash(id: ThemeId, mode: ThemeMode) {
+  const pick = (dark: boolean) => {
+    const t = schemeTokens(seedOf(id), dark);
+    return { bg: t['--md-sys-color-surface'], shape: t['--md-sys-color-primary'], box: t['--md-sys-color-primary-container'] };
+  };
+  try {
+    localStorage.setItem('ampage:splash', JSON.stringify({ mode, light: pick(false), dark: pick(true) }));
+  } catch {
+    // no storage: the next start uses Ampage green
+  }
 }
 systemDark.addEventListener('change', () => current.mode === 'system' && applyTheme(current.id, current.mode));
 
