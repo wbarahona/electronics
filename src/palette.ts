@@ -166,8 +166,7 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
       <md-focus-ring></md-focus-ring>
       <md-ripple></md-ripple>
       <md-icon>${category.icon}</md-icon>
-      <span></span>
-      <md-icon class="arrow">arrow_drop_down</md-icon>`;
+      <span></span>`;
     button.addEventListener('click', () => {
       if (openCategory === button) closeTray();
       else openTray(button, category);
@@ -190,8 +189,7 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     <md-focus-ring></md-focus-ring>
     <md-ripple></md-ripple>
     <md-icon>more_horiz</md-icon>
-    <span></span>
-    <md-icon class="arrow">arrow_drop_down</md-icon>`;
+    <span></span>`;
   container.append(more);
   moreMenu.anchor = more.id;
   moreMenu.positioning = 'fixed';
