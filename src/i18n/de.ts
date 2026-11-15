@@ -393,6 +393,13 @@ export default {
   'Net name': 'Netzname',
   Net: 'Netz',
 
+  Annotate: 'Anmerken',
+  'Text label': 'Textbeschriftung',
+  Label: 'Beschriftung',
+  Small: 'Klein',
+  Medium: 'Mittel',
+  Large: 'Groß',
+  Bold: 'Fett',
   Notes: 'Notizen',
   Note: 'Notiz',
   Text: 'Text',

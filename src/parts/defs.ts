@@ -38,11 +38,11 @@ export const LIGHT_COLORS = {
 
 export type LightColor = keyof typeof LIGHT_COLORS;
 
-export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters' | 'notes';
+export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters' | 'annotate';
 
 // Groups shown as the clickable entries of the parts bar, in order: the way a
 // circuit is built (power, control, components, what it lights or drives, then
-// measuring), logic and ICs after, notes last. Those that don't fit the bar
+// measuring), logic and ICs after, annotations (notes, labels) last. Those that don't fit the bar
 // overflow into More from the end. `icon` is a Material Symbols name (it must
 // also be listed in scripts/icons.mjs), or inline SVG on a 24×24 grid where no
 // symbol fits.
@@ -62,7 +62,7 @@ export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
   { id: 'meters', label: 'Meters', icon: 'speed' },
   { id: 'digital', label: 'Digital', icon: 'developer_board' },
   { id: 'chips', label: 'Chips', icon: 'memory' },
-  { id: 'notes', label: 'Notes', icon: 'sticky_note_2' },
+  { id: 'annotate', label: 'Annotate', icon: 'edit_note' },
 ];
 
 // How the panel edits one value.

@@ -42,7 +42,8 @@ import * as panelMeter from './meters/panel-meter.ts';
 import * as multimeter from './meters/multimeter.ts';
 import * as diodes from './semiconductors/diodes.ts';
 import * as transistors from './semiconductors/transistors.ts';
-import * as note from './notes/note.ts';
+import * as note from './annotate/note.ts';
+import * as textLabel from './annotate/text-label.ts';
 import type { PartDefs } from './defs.ts';
 import type { ModelDefs } from '../sim/models.ts';
 import type { PartType } from '../types.ts';
@@ -98,6 +99,7 @@ export const DEFS: PartDefs<PartType> = {
   ...diodes.defs,
   ...transistors.defs,
   ...note.defs,
+  ...textLabel.defs,
 };
 
 export const MODEL_DEFS: ModelDefs<PartType> = {
@@ -146,4 +148,5 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...diodes.models,
   ...transistors.models,
   ...note.models,
+  ...textLabel.models,
 };

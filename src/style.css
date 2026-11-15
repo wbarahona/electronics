@@ -1211,6 +1211,17 @@ body.dragging * {
     11px var(--md-ref-typeface-plain);
 }
 
+/* A text label: plain text in ink. */
+.part .text-label {
+  fill: var(--ink);
+  stroke: none;
+  font-family: var(--md-ref-typeface-plain);
+}
+
+#board .part.selected .text-label {
+  fill: var(--accent);
+}
+
 #board .part.selected .note-card {
   stroke: var(--accent);
   stroke-width: 2;

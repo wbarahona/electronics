@@ -393,6 +393,13 @@ export default {
   'Net name': 'Nombre de la red',
   Net: 'Red',
 
+  Annotate: 'Anotar',
+  'Text label': 'Etiqueta de texto',
+  Label: 'Etiqueta',
+  Small: 'Pequeño',
+  Medium: 'Mediano',
+  Large: 'Grande',
+  Bold: 'Negrita',
   Notes: 'Notas',
   Note: 'Nota',
   Text: 'Texto',

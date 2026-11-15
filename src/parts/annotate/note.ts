@@ -20,7 +20,7 @@ const LINE_H = 14; // px between lines
 const CHAR_W = 6.2; // an 11px character, roughly
 const WRAP = 36; // characters before a line wraps
 const PAD = 10;
-const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+export const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // The text as drawn: its own line breaks, long lines wrapped between words.
 function lines(p: PropsByType['note']): string[] {
@@ -51,7 +51,7 @@ export const defs: PartDefs<'note'> = {
   note: {
     name: 'Note',
     letter: 'N',
-    category: 'notes',
+    category: 'annotate',
     pins: [],
     props: {
       text: { label: 'Text', value: 'Note', text: true, multiline: true, maxLength: 500 },
