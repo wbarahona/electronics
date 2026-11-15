@@ -4,7 +4,7 @@ import { fromControl } from './keys.ts';
 // Zoom controls floating at the board's bottom-left corner (an M3 surface
 // with icon buttons): zoom in and out a step at a time, the zoom level (click
 // it for 100 %), and fit the whole circuit in view. Keyboard: ⌘= / ⌘− / ⌘0
-// (in place of the browser's page zoom) and ⇧1 to fit. ⌘-scroll zooms too;
+// (in place of the browser's page zoom) and ⇧1, F or Home to fit. ⌘-scroll zooms too;
 // the level shown follows any zoom.
 export function createZoom(root: HTMLElement, board: Board) {
   const level = root.querySelector<HTMLElement>('#zoom-level')!;
@@ -26,7 +26,8 @@ export function createZoom(root: HTMLElement, board: Board) {
       else if (e.key === '-') board.zoomStep(-1);
       else if (e.key === '0') board.zoomTo(1);
       else return;
-    } else if (e.shiftKey && e.code === 'Digit1') {
+    } else if ((e.shiftKey && e.code === 'Digit1') || (!e.shiftKey && (e.key === 'f' || e.key === 'F' || e.key === 'Home'))) {
+      if (e.repeat) return;
       fit();
     } else {
       return;

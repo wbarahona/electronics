@@ -17,7 +17,7 @@ export const TIPS = [
   'Hover a part to read its live values. Press I to hide them when they’re in the way.',
   'Press ← or → to slow down or speed up the simulation in 10× steps.',
   'Hold Space and drag to pan the board.',
-  'Press Shift+1 to fit the whole circuit in view, and {mod}0 to go back to 100 %.',
+  'Press F (or Home, or Shift+1) to fit the whole circuit in view, and {mod}0 to go back to 100 %.',
   'Drag across an empty part of the board to select several parts at once.',
   'Right-click the board to cut, copy, paste or duplicate.',
   'Open Examples in the rail for working circuits you can change.',

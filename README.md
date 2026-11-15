@@ -89,6 +89,8 @@ Windows installers into a draft release to review and publish.
 | Esc                    | Cancel a drag or wire; otherwise close the properties panel, parts tray and search results |
 | Backspace while wiring | Undo the last bend                                                                         |
 | Space + drag           | Pan the board (doesn't run or pause)                                                       |
+| F / Home / ⇧1          | Fit the whole circuit in view                                                              |
+| ⌘= / ⌘− / ⌘0           | Zoom in / zoom out / zoom to 100 %                                                         |
 | Double-click a wire    | Branch a new wire from it                                                                  |
 | ⌘C / ⌘X / ⌘V / ⌘D      | Copy / cut / paste / duplicate                                                             |
 | ⌘S / ⌘O                | Save / open                                                                                |
