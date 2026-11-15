@@ -85,7 +85,7 @@ Windows installers into a draft release to review and publish.
 | ← / →                  | Slow down / speed up the simulation (10× steps)                                            |
 | R                      | Rotate (also while dragging)                                                               |
 | I                      | Show / hide the live values on hover (also in Settings)                                    |
-| Delete / Backspace     | Delete selection                                                                           |
+| Delete / Backspace / ⌘⌫ | Delete selection                                                                          |
 | Esc                    | Cancel a drag or wire; otherwise close the properties panel, parts tray and search results |
 | Backspace while wiring | Undo the last bend                                                                         |
 | Space + drag           | Pan the board (doesn't run or pause)                                                       |

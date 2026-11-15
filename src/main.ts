@@ -159,7 +159,7 @@ const editor = createEditor(board, circuit, {
       { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste(), action: () => editor.paste(at) },
       { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy(), action: editor.duplicate },
       'separator',
-      { label: t('Delete'), icon: 'delete', shortcut: t('Del'), enabled: editor.hasSelection(), danger: true, action: editor.deleteSelected },
+      { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection(), danger: true, action: editor.deleteSelected },
     ]),
 });
 const menu = createMenu(byId('menu'), byId('menu-anchor'));

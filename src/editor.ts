@@ -1166,6 +1166,10 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       } else if (key === 'v' && clipboard) {
         e.preventDefault();
         paste(pointerAt ?? nextTo(clipboard));
+      } else if ((key === 'backspace' || key === 'delete') && selected.size) {
+        // ⌘⌫, the Mac's own delete (Ctrl+Backspace / Ctrl+Del elsewhere).
+        e.preventDefault();
+        deleteSelected();
       }
       return;
     }
