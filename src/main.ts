@@ -20,6 +20,7 @@ import { createScope } from './scope.ts';
 import { createSearch } from './search.ts';
 import { createSettings } from './settings.ts';
 import { createTips } from './tips.ts';
+import { createTour, toured } from './tour.ts';
 import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
 import { onLanguage, t } from './i18n/index.ts';
@@ -38,6 +39,16 @@ function byId<T extends Element = HTMLElement>(id: string): T {
   if (!el) throw new Error(`index.html is missing #${id}`);
   return el as unknown as T;
 }
+
+// Someone new here: nothing saved in this browser yet (checked before
+// anything is), so the tour takes the tip of the day's place at startup.
+const newcomer = (() => {
+  try {
+    return !localStorage.getItem('ampage:settings') && !localStorage.getItem('electronics:autosave') && !toured();
+  } catch {
+    return false;
+  }
+})();
 
 // Settings first: the theme colours everything else, and the language
 // translates index.html before anything is added to it.
@@ -206,7 +217,18 @@ files.openLink();
 const fromFile = files.openSystemFiles();
 const tips = createTips(byId('tip-dialog'), settings);
 settings.onChange(tips.sync);
-if (settings.tips && !fromLink) fromFile.then((opened) => opened || tips.show());
+const tour = createTour();
+if (!fromLink) {
+  fromFile.then((opened) => {
+    if (opened) return;
+    if (newcomer) tour.start();
+    else if (settings.tips) tips.show();
+  });
+}
+byId('settings-tour').addEventListener('click', async () => {
+  await byId<MdDialog>('settings-dialog').close();
+  tour.start();
+});
 byId('settings-show-tip').addEventListener('click', async () => {
   await byId<MdDialog>('settings-dialog').close(); // one dialog at a time, as M3 asks
   tips.show();
