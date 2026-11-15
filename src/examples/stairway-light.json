@@ -75,7 +75,7 @@
       "y": 124,
       "rotation": 0,
       "props": {
-        "text": "Two-way switching. The phase X1 feeds the common of changeover S1; two wires (travellers) link S1 to S2; the common of S2 feeds lamp E1, back to neutral X2. The lamp lights when both switches sit on the same traveller.",
+        "text": "Two-way switching. The phase {X1} feeds the common of changeover {S1}; two wires (travellers) link {S1} to {S2}; the common of {S2} feeds lamp {E1}, back to neutral {X2}. The lamp lights when both switches sit on the same traveller.",
         "color": "blue"
       },
       "broken": false

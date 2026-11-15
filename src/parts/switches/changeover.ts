@@ -51,6 +51,12 @@ export const defs: PartDefs<'changeover'> = {
     actuator: { prop: 'thrown', momentary: false },
     draw: ({ thrown }) => `
       <path d="M -40 0 H -14 L 14 ${thrown ? 20 : -20} M 40 -20 H 14 M 40 20 H 14" />`,
+    // US: the blade between terminal circles.
+    us: {
+      draw: ({ thrown }) => `
+      <path d="M -40 0 H -17 M 40 -20 H 17 M 40 20 H 17 M -11 0 L 11.5 ${thrown ? 18 : -18}" />
+      <circle class="dot-hollow" cx="-14" r="3" /><circle class="dot-hollow" cx="14" cy="-20" r="3" /><circle class="dot-hollow" cx="14" cy="20" r="3" />`,
+    },
   },
 };
 

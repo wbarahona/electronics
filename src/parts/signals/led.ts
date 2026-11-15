@@ -26,6 +26,7 @@ export const defs: PartDefs<'led'> = {
   led: {
     name: 'LED',
     letter: 'P',
+    us: { letter: 'D' },
     category: 'signals',
     group: 'Lights',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }], // anode, cathode

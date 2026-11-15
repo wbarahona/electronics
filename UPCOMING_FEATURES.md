@@ -53,9 +53,3 @@ sheet frame and title block for printing):
 - **Localised numbers**: the interface speaks English, Spanish and German
   (Settings), but values still show with a decimal point ("4.7 kΩ"); Spanish
   and German would use a comma ("4,7 kΩ"). Typing either already works.
-- **Norms and standards: EU or US**: the drawing standard, chosen in
-  Settings (the option is there, with US marked "Coming soon").
-  EU (today): IEC / DIN EN 60617 symbols and EN 81346 references (-R1).
-  US: ANSI / IEEE 315 symbols (zigzag resistors and so on), US reference
-  designators (R1, Q1, CR1 for diodes), and US default part numbers (2N3904,
-  2N3906, 1N4733A instead of BC547, BC557, BZX55C5V1).

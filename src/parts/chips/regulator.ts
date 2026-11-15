@@ -80,6 +80,7 @@ export const defs: PartDefs<'regulator'> = {
   regulator: {
     name: 'Voltage regulator',
     letter: 'T',
+    us: { letter: 'U' },
     category: 'chips',
     group: 'Regulators',
     pins: [{ x: -40, y: 0 }, { x: 0, y: 40 }, { x: 40, y: 0 }], // 1 IN, 2 GND, 3 OUT

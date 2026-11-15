@@ -27,10 +27,19 @@ const lampModel: ModelDef<PropsByType['lamp']> = {
   failure: { label: 'filament blown', open: true },
 };
 
+// A pilot light's lens colour as NEMA letters it (C: clear).
+const LENS_LETTER = { warm: 'C', red: 'R', yellow: 'Y', green: 'G', blue: 'B', white: 'W' };
+
 export const defs: PartDefs<'lamp' | 'pilot'> = {
   lamp: {
     name: 'Lamp',
     letter: 'E',
+    us: {
+      letter: 'DS',
+      draw: () => `
+        <circle class="bulb" r="14" />
+        <path d="M -40 0 H -6 A 6 6 0 0 1 6 0 H 40" />`,
+    },
     category: 'signals',
     group: 'Lights',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -49,6 +58,14 @@ export const defs: PartDefs<'lamp' | 'pilot'> = {
   pilot: {
     name: 'Pilot lamp',
     letter: 'P',
+    // US (NEMA pilot light): rays around the lens, its colour's letter inside.
+    us: {
+      letter: 'DS',
+      draw: (p) => `
+      <circle class="bulb tinted" r="12" />
+      <path d="M -40 0 H -12 M 12 0 H 40 M 10 -10 L 14 -14 M 10 10 L 14 14 M -10 -10 L -14 -14 M -10 10 L -14 14" />
+      <text class="sym-text upright" y="3.5" text-anchor="middle">${LENS_LETTER[p.color]}</text>`,
+    },
     category: 'signals',
     group: 'Indicators',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

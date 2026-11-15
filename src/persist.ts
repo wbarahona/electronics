@@ -1,5 +1,5 @@
-import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, isTextSpec, pinsOf } from './components.ts';
-import type { Circuit } from './model.ts';
+import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, isTextSpec, pinsOf, usLetterOf } from './components.ts';
+import { freeRef, type Circuit } from './model.ts';
 import type { End, Fault, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
 // A circuit as stored in a file (and in the browser's autosave): what was
@@ -50,6 +50,16 @@ export function parse(text: string): SavedCircuit {
   }
 
   const parts = list(d.parts, 'parts').map((p, i) => readPart(obj(p, `part ${i + 1}`)));
+  // Saved before parts carried a US reference: each gets one now, with its EU
+  // number where that is free (-R3, an inductor, becomes L3).
+  const usRefs = new Set(parts.map((p) => p.usRef).filter(Boolean));
+  for (const p of parts) {
+    if (p.usRef) continue;
+    const letter = usLetterOf(p.type);
+    const same = `${letter}${p.ref.match(/\d+$/)?.[0] ?? ''}`;
+    p.usRef = /\d$/.test(same) && !usRefs.has(same) ? same : freeRef(letter, usRefs);
+    usRefs.add(p.usRef);
+  }
   const joints = list(d.joints, 'joints').map((j, i) => {
     const o = obj(j, `joint ${i + 1}`);
     return { id: str(o.id, 'joint id'), x: num(o.x, 'joint x'), y: num(o.y, 'joint y') };
@@ -113,6 +123,7 @@ function readPart(o: Record<string, unknown>): Part {
   return {
     id: str(o.id, 'part id'),
     ref: str(o.ref, 'part reference'),
+    usRef: typeof o.usRef === 'string' ? o.usRef : '',
     type: type as PartType,
     x: num(o.x, 'part x'),
     y: num(o.y, 'part y'),

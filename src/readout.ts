@@ -1,6 +1,7 @@
 import { PARTS } from './components.ts';
 import { t } from './i18n/index.ts';
 import type { Circuit } from './model.ts';
+import { refText } from './norm.ts';
 import type { Engine } from './sim/engine.ts';
 import { MODELS, type Lines } from './sim/models.ts';
 import { actualFactor } from './sim/shared/tolerance.ts';
@@ -24,7 +25,7 @@ export function createReadout(
   function partLines(c: Part): Lines {
     const r = engine.results.get(c.id);
     const model = MODELS[c.type];
-    const lines: Lines = [[`-${c.ref}`, PARTS[c.type].name]];
+    const lines: Lines = [[refText(c), PARTS[c.type].name]];
     lines.push(...(r ? model.readout(r, c.props) : ([['', engine.error ?? 'No result']] as Lines)));
     // Load against the rating, unless brightness already says the same thing.
     if (r && model.thermal && !model.brightness && !c.broken) {

@@ -50,3 +50,7 @@ export const pinText = (text: string, x: number, y: number, anchor = 'start') =>
 // Arcs above a sounder while it sounds (shown when the part is .active).
 export const SOUND_WAVES = `
   <path class="when-on waves" d="M 18 -14 A 10 10 0 0 1 18 -26 M 23 -10 A 16 16 0 0 1 23 -30" />`;
+
+// A resistance the US way (ANSI / IEEE 315): a zigzag between the leads, where
+// the EU symbol has its box (x −18 to 18).
+export const ZIGZAG = 'M -40 0 H -18 L -15 -7 L -9 7 L -3 -7 L 3 7 L 9 -7 L 15 7 L 18 0 H 40';

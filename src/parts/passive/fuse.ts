@@ -16,6 +16,10 @@ export const defs: PartDefs<'fuse'> = {
   fuse: {
     name: 'Fuse',
     letter: 'F',
+    us: {
+      draw: () => `
+        <path d="M -40 0 H -16 C -11 -13 -5 -13 0 0 S 11 13 16 0 H 40" />`,
+    },
     category: 'passive',
     group: 'Protection',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

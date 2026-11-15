@@ -44,6 +44,7 @@ export const defs: PartDefs<'stackLight'> = {
   stackLight: {
     name: 'Stack light',
     letter: 'P',
+    us: { letter: 'DS' },
     category: 'signals',
     group: 'Indicators',
     pins: [{ x: -40, y: -40 }, { x: -40, y: 0 }, { x: -40, y: 40 }, { x: 40, y: 60 }],

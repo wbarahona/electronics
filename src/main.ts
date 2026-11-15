@@ -23,6 +23,7 @@ import { createTips } from './tips.ts';
 import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
 import { onLanguage, t } from './i18n/index.ts';
+import { onNorm, refText } from './norm.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
 import { MODELS, type Sound } from './sim/models.ts';
@@ -226,7 +227,7 @@ logo.addEventListener('click', () => {
   for (const c of burnt) c.broken = false;
   for (const c of burnt) editor.refreshPart(c.id);
   panel.refresh();
-  if (burnt.length) showToast(t('Replaced {parts}.', { parts: burnt.map((c) => `-${c.ref}`).join(', ') }));
+  if (burnt.length) showToast(t('Replaced {parts}.', { parts: burnt.map(refText).join(', ') }));
 });
 let waveSpeed = 0;
 let last = performance.now();
@@ -259,7 +260,7 @@ requestAnimationFrame(function frame(now) {
       controls.pause();
       const parts = failed.map((id) => circuit.part(id)!);
       const what = t(parts.length === 1 ? (MODELS[parts[0].type].failure?.label ?? 'failed') : 'failed');
-      showToast(t('{parts} {what}. Simulation paused.', { parts: parts.map((p) => `-${p.ref}`).join(', '), what }));
+      showToast(t('{parts} {what}. Simulation paused.', { parts: parts.map(refText).join(', '), what }));
     }
     if (engine.dynamic || engine.heating || engine.draining || failed.length) showResults();
     editor.animate(dt);
@@ -356,6 +357,12 @@ byId('file-export-png').addEventListener('click', () => printer.exportImage('png
 byId('file-export-svg').addEventListener('click', () => printer.exportImage('svg'));
 const backdrop = createBackdrop(byId('backdrop-dialog'), board);
 byId('file-backdrop').addEventListener('click', () => backdrop.open());
+
+// The drawing standard changed (Settings): every symbol and reference again.
+onNorm(() => {
+  editor.reload();
+  showResults();
+});
 
 // Zoom buttons and shortcuts at the board's bottom-left corner.
 createZoom(byId('zoom'), board);

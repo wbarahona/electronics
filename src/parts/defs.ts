@@ -1,6 +1,7 @@
 import type { PartType, Point, Props, PropsByType } from '../types.ts';
 
-// Schematic symbols follow DIN EN 60617 and are drawn in local coordinates around (0, 0), spanning x -40..40.
+// Schematic symbols follow DIN EN 60617 (and ANSI / IEEE 315 where a part has a
+// `us` symbol) and are drawn in local coordinates around (0, 0), spanning x -40..40.
 // Pins sit on multiples of GRID so they land on grid points at any 90° rotation.
 //
 // `props` describes each editable value and its default; the simulator reads the
@@ -8,7 +9,7 @@ import type { PartType, Point, Props, PropsByType } from '../types.ts';
 // `options`, and a boolean default makes a checkbox. `tag` is the value text
 // shown next to the symbol on the board. `category` is one of CATEGORIES.
 // `letter` is the DIN EN 81346-2 class code used for reference designations
-// (-R1, -S2, ...). A prop marked `hidden` is state the
+// (-R1, -S2, ...); `us` holds what differs under the US standard. A prop marked `hidden` is state the
 // part manages itself and isn't shown in the panel. Parts that give off light
 // have a `glow`: its colour (a key of LIGHT_COLORS) and radius; elements drawn
 // with class "bulb" fill with that colour as they light up. Parts you operate
@@ -130,6 +131,17 @@ export type BooleanKeys<P> = { [K in keyof P]: P[K] extends boolean ? K : never 
 
 export type ChoiceKeys<P> = { [K in keyof P]: P[K] extends string ? K : never }[keyof P] & string;
 
+// What a part type does differently under the US standard (src/norm.ts): its
+// ASME Y14.44 class letter (R1, Q1, BT1...), its ANSI / IEEE 315 symbol, drawn
+// on the same pins and footprint so wiring is the same in both standards, and
+// values a newly placed part starts with instead (a US part number, 60 Hz).
+// Whatever is left out is as in the EU standard.
+export interface UsDef<P> {
+  letter?: string;
+  draw?: (p: P, broken: boolean) => string;
+  values?: Partial<P>;
+}
+
 // One part type's definition, checked against its values P.
 export interface PartDef<P> {
   name: string;
@@ -151,6 +163,7 @@ export interface PartDef<P> {
   labelBelow?: boolean;
   labelAt?: (vertical: boolean, p: P, rotation: number) => LabelSpot;
   draw: (p: P, broken: boolean) => string;
+  us?: UsDef<P>;
 }
 
 export type LabelSpot = [number, number, 'start' | 'middle' | 'end'];
@@ -184,6 +197,7 @@ export interface AnyPartDef {
   labelBelow?: boolean;
   labelAt?: (vertical: boolean, p: Props, rotation: number) => LabelSpot;
   draw: (p: Props, broken: boolean) => string;
+  us?: UsDef<Props>;
 }
 
 // Definitions for the part types K, each checked against its values.

@@ -314,7 +314,7 @@
       "y": 28,
       "rotation": 0,
       "props": {
-        "text": "Six generators ride on the 3 V rail X2, each 0.75 V rms at 0.5 Hz and 60° apart. Each drives the red dots of one column (through a resistor and a diode, which drop the extra volt red doesn't need) and the green and blue dots of two other columns. As the waves pass, every column cycles through the hues and the rainbow moves across. All rows go to 0 V.",
+        "text": "Six generators ride on the 3 V rail {X2}, each 0.75 V rms at 0.5 Hz and 60° apart. Each drives the red dots of one column (through a resistor and a diode, which drop the extra volt red doesn't need) and the green and blue dots of two other columns. As the waves pass, every column cycles through the hues and the rainbow moves across. All rows go to 0 V.",
         "color": "blue"
       },
       "broken": false

@@ -113,6 +113,7 @@ export const defs: PartDefs<'lm358'> = {
   lm358: {
     name: 'Dual op-amp',
     letter: 'K',
+    us: { letter: 'U' },
     category: 'chips',
     group: 'Op-amps',
     pins: [

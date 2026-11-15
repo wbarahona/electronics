@@ -18,29 +18,33 @@ export interface PartProps {
 // negation circle. Pins: the data/clock inputs, then S, R, Q, Q̄.
 const ffLabel = (): LabelSpot => [44, -38, 'start'];
 
+// Under the US standard the inputs carry their plain names (D, J, K, T, CLK).
 function flipFlop(name: string, title: string, inputs: [string, number][]) {
   const clockY = inputs.find(([n]) => n === 'C1')![1];
   // The clock's label starts after the ▷ marker.
-  const pins: ChipPin[] = [
-    ...inputs.map(([n, y]): ChipPin => [n === 'C1' ? '<tspan dx="5">C1</tspan>' : n, null, -40, y]),
+  const pinsFor = (us: boolean): ChipPin[] => [
+    ...inputs.map(([n, y]): ChipPin => [n === 'C1' ? `<tspan dx="5">${us ? 'CLK' : 'C1'}</tspan>` : us ? n.slice(1) : n, null, -40, y]),
     ['S', null, 0, -40],
     ['R', null, 0, 40],
     ['Q', null, 40, -20],
     ['<tspan text-decoration="overline">Q</tspan>', null, 40, 20],
   ];
+  const pins = pinsFor(false);
+  const symbol = (us: boolean) => () => `
+      ${chip({ w: 30, h: 30 }, title, pinsFor(us))}
+      <path d="M -30 ${clockY - 4} L -24 ${clockY} L -30 ${clockY + 4}" />
+      <circle class="dot-hollow" cx="33" cy="20" r="3" />`;
   return {
     name,
     letter: 'K',
+    us: { letter: 'U', draw: symbol(true) },
     category: 'digital' as const,
     group: 'Flip-flops',
     pins: pins.map(([, , x, y]) => ({ x, y })),
     props: gateProps,
     hit: { w: 80, h: 80 },
     labelAt: ffLabel,
-    draw: () => `
-      ${chip({ w: 30, h: 30 }, title, pins)}
-      <path d="M -30 ${clockY - 4} L -24 ${clockY} L -30 ${clockY + 4}" />
-      <circle class="dot-hollow" cx="33" cy="20" r="3" />`,
+    draw: symbol(false),
   };
 }
 

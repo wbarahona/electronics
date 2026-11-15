@@ -1,3 +1,5 @@
+import { getNorm } from './norm.ts';
+
 const PREFIXES: [number, string][] = [
   [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''],
   [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p'],
@@ -26,10 +28,32 @@ export function parseSI(text: string): number {
     .trim()
     .replace(',', '.')
     .replace(/\s+/g, '')
-    .replace(/(ohms?|Ω|V|Ah|A|W|F|H|Hz|°)$/i, '');
+    .replace(/(°[CF]?|ohms?|Ω|V|Ah|A|W|F|H|Hz)$/i, '');
   let m = s.match(/^([+-]?(?:\d+\.?\d*|\.\d+))([pnuµmkKMGR]?)$/);
   if (m) return Number(m[1]) * MULTIPLIERS[m[2]];
   m = s.match(/^(\d+)([pnuµmkKMGR])(\d+)$/); // RKM code: the prefix is the decimal point
   if (m) return Number(`${m[1]}.${m[3]}`) * MULTIPLIERS[m[2]];
   return NaN;
 }
+
+// --- Temperatures -------------------------------------------------------------
+// Kept in °C everywhere (parts' values, files, the simulation); under the US
+// standard they are shown and typed in °F. Every other unit is the same in
+// both standards.
+
+const fahrenheit = (unit: string) => unit === '°C' && getNorm() === 'us';
+
+// The unit a value of `unit` is shown in.
+export const shownUnit = (unit: string): string => (fahrenheit(unit) ? '°F' : unit);
+
+// A value of `unit` as shown, and a shown (typed) value back as it's kept.
+export const toShown = (v: number, unit: string): number => (fahrenheit(unit) ? +((v * 9) / 5 + 32).toFixed(1) : v);
+export const fromShown = (v: number, unit: string): number => (fahrenheit(unit) ? +(((v - 32) * 5) / 9).toFixed(2) : v);
+
+// 25 -> "25.0 °C", or "77.0 °F" under the US standard.
+export const formatTemp = (celsius: number, digits = 1): string => `${toShown(celsius, '°C').toFixed(digits)} ${shownUnit('°C')}`;
+
+// A text's temperatures as shown: "Resistance at 25 °C" reads "at 77 °F"
+// under the US standard.
+export const shownTemps = (text: string): string =>
+  getNorm() === 'us' ? text.replace(/(-?\d+(?:\.\d+)?) °C/g, (_, c: string) => `${toShown(Number(c), '°C')} °F`) : text;

@@ -83,6 +83,7 @@ export const defs: PartDefs<'dotMatrix'> = {
   dotMatrix: {
     name: 'Dot-matrix display',
     letter: 'P',
+    us: { letter: 'DS' },
     category: 'signals',
     group: 'Displays',
     pins: (p) => matrixPins(p).map(({ x, y }) => ({ x, y })),

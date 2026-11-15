@@ -127,7 +127,7 @@ export default {
   'EU: IEC / DIN EN 60617': 'UE: IEC / DIN EN 60617',
   'European symbols, EN 81346 references (-R1)': 'Símbolos europeos, referencias EN 81346 (-R1)',
   'US: ANSI / IEEE 315': 'EE. UU.: ANSI / IEEE 315',
-  'Coming soon': 'Próximamente',
+  'American symbols, references like R1, temperatures in °F': 'Símbolos americanos, referencias como R1, temperaturas en °F',
   Tolerance: 'Tolerancia',
   'Component values': 'Valores de los componentes',
   Ideal: 'Ideales',

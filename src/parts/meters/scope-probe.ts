@@ -18,6 +18,7 @@ export const defs: PartDefs<'scopeProbe'> = {
   scopeProbe: {
     name: 'Scope probe',
     letter: 'P',
+    us: { letter: 'TP' },
     category: 'meters',
     group: 'Oscilloscope',
     pins: [{ x: 0, y: 20 }],

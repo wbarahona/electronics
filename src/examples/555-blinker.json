@@ -150,7 +150,7 @@
       "y": 238,
       "rotation": 0,
       "props": {
-        "text": "NE555 K1 as an astable: C1 charges through R1 + R2 and discharges through R2 alone, between 1/3 and 2/3 of the supply. The output (pin 3) drives LED P1 through R3.\nf ≈ 1.44 / ((R1 + 2·R2)·C1) ≈ 1.5 Hz.",
+        "text": "NE555 {K1} as an astable: {C1} charges through {R1} + {R2} and discharges through {R2} alone, between 1/3 and 2/3 of the supply. The output (pin 3) drives LED {P1} through {R3}.\nf ≈ 1.44 / (({R1} + 2·{R2})·{C1}) ≈ 1.5 Hz.",
         "color": "blue"
       },
       "broken": false
@@ -163,7 +163,7 @@
       "y": 358,
       "rotation": 0,
       "props": {
-        "text": "Try: press Run, then change R2 or C1 to set the rate. Make R1 much larger than R2 and the LED stays on longer than off.",
+        "text": "Try: press Run, then change {R2} or {C1} to set the rate. Make {R1} much larger than {R2} and the LED stays on longer than off.",
         "color": "amber"
       },
       "broken": false

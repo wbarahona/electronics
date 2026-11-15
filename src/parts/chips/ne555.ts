@@ -125,6 +125,7 @@ export const defs: PartDefs<'ne555'> = {
   ne555: {
     name: '555 timer',
     letter: 'K',
+    us: { letter: 'U' },
     category: 'chips',
     group: 'Timers',
     pins: [

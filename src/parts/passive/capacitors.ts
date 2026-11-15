@@ -50,6 +50,11 @@ export const defs: PartDefs<'capacitor' | 'electrolytic'> = {
   capacitor: {
     name: 'Capacitor',
     letter: 'C',
+    us: {
+      draw: () => `
+        <path d="M -40 0 H -4 M 6 0 H 40" />
+        <path class="thick" d="M -4 -14 V 14 M 10 -14 Q 2 0 10 14" />`,
+    },
     category: 'passive',
     group: 'Capacitors & inductors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -68,6 +73,11 @@ export const defs: PartDefs<'capacitor' | 'electrolytic'> = {
   electrolytic: {
     name: 'Electrolytic cap',
     letter: 'C',
+    us: {
+      draw: () => `
+        <path d="M -40 0 H -4 M 6 0 H 40 M -16 -14 H -10 M -13 -17 V -11" />
+        <path class="thick" d="M -4 -14 V 14 M 10 -14 Q 2 0 10 14" />`,
+    },
     category: 'passive',
     group: 'Capacitors & inductors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }], // +, −

@@ -74,6 +74,7 @@ export const defs: PartDefs<'logicSwitch' | 'clock' | 'probe'> = {
   probe: {
     name: 'Logic probe',
     letter: 'P',
+    us: { letter: 'DS' },
     category: 'digital',
     group: 'Input/Output',
     pins: [{ x: -40, y: 0 }],

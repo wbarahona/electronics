@@ -7,7 +7,10 @@ import { THEMES } from '../../themes.ts';
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
   // A note on the board: text to explain a circuit or mark its sections, on
-  // a card in one of the theme colours. Not part of the circuit.
+  // a card in one of the theme colours. Not part of the circuit. A part's EU
+  // reference in braces ({R1}) reads as that part's reference in the drawing
+  // standard in use (see noteText in src/editor.ts), so a note stays right
+  // in both; the examples' notes are written that way.
   note: { text: string; color: NoteColor };
 }
 

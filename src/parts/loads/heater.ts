@@ -3,6 +3,7 @@ import { ohmic } from '../../sim/shared/resistance.ts';
 import { formatSI } from '../../units.ts';
 import type { ModelDef, ModelDefs, Result } from '../../sim/models.ts';
 import type { PartDefs } from '../defs.ts';
+import { ZIGZAG } from '../symbols.ts';
 import type { PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
@@ -44,6 +45,12 @@ export const defs: PartDefs<'heater'> = {
   heater: {
     name: 'Heater',
     letter: 'E',
+    us: {
+      letter: 'HR',
+      draw: () => `
+        <rect class="bulb" x="-20" y="-8" width="40" height="16" style="stroke: none" />
+        <path d="${ZIGZAG}" />`,
+    },
     category: 'loads',
     group: 'Heat',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

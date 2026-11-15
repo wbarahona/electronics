@@ -32,6 +32,7 @@ export const defs: PartDefs<'battery'> = {
   battery: {
     name: 'Battery',
     letter: 'G',
+    us: { letter: 'BT' },
     category: 'sources',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }], // +, −
     props: {

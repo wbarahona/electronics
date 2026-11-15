@@ -62,6 +62,7 @@ export const defs: PartDefs<'rail' | 'phase'> = {
   phase: {
     name: 'AC phase',
     letter: 'X',
+    us: { values: { frequency: 60 } },
     category: 'sources',
     group: 'Rails',
     pins: [{ x: 0, y: 20 }],

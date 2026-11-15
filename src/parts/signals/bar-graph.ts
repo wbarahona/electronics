@@ -16,6 +16,7 @@ export const defs: PartDefs<'barGraph'> = {
   barGraph: {
     name: 'LED bar graph',
     letter: 'P',
+    us: { letter: 'DS' },
     category: 'signals',
     group: 'Displays',
     pins: [...Array.from({ length: 10 }, (_, k) => ({ x: -40, y: -100 + 20 * k })), { x: 40, y: 80 }],

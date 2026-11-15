@@ -123,6 +123,7 @@ export type PropValue = number | string | boolean;
 export interface Part<T extends PartType = PartType> {
   id: string;
   ref: string; // reference designation without the leading dash, e.g. "R1"
+  usRef: string; // the same under the US standard, e.g. "L1" for an inductor (see src/norm.ts)
   type: T;
   x: number;
   y: number;

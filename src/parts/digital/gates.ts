@@ -20,11 +20,31 @@ export interface PartProps {
 
 const gateLabel = (vertical: boolean): LabelSpot => (vertical ? [36, 4, 'start'] : [0, -36, 'middle']);
 
-function gate(name: string, qualifier: string, inverted: boolean, inputs: 1 | 2) {
+// The same gates the US way (ANSI / IEEE 91 distinctive shapes): AND a D, OR
+// a shield, XOR a shield with a second back, NOT a triangle; the circle on the
+// output for inversion as in the EU symbols, on the same pins.
+type Shape = 'and' | 'or' | 'xor' | 'not';
+const SHAPES: Record<Shape, { body: string; inputs: string }> = {
+  and: { body: 'M -20 -24 H -4 A 24 24 0 0 1 -4 24 H -20 Z', inputs: 'M -40 -20 H -20 M -40 20 H -20' },
+  or: { body: 'M -20 -24 C -2 -24 10 -14 20 0 C 10 14 -2 24 -20 24 Q -10 0 -20 -24 Z', inputs: 'M -40 -20 H -18.5 M -40 20 H -18.5' },
+  xor: {
+    body: 'M -16 -24 C 0 -24 11 -14 20 0 C 11 14 0 24 -16 24 Q -6 0 -16 -24 Z M -22 24 Q -12 0 -22 -24',
+    inputs: 'M -40 -20 H -20.5 M -40 20 H -20.5',
+  },
+  not: { body: 'M -20 -18 V 18 L 20 0 Z', inputs: 'M -40 0 H -20' },
+};
+
+const usGate = (shape: Shape, inverted: boolean) => () => `
+      <path d="${SHAPES[shape].inputs} M ${inverted ? 28 : 20} 0 H 40" />
+      <path d="${SHAPES[shape].body}" />
+      ${inverted ? '<circle cx="24" r="4" />' : ''}`;
+
+function gate(name: string, qualifier: string, inverted: boolean, inputs: 1 | 2, shape: Shape) {
   const half = inputs === 2 ? 28 : 18;
   return {
     name,
     letter: 'K',
+    us: { letter: 'U', draw: usGate(shape, inverted) },
     category: 'digital' as const,
     group: 'Gates',
     pins: inputs === 2 ? [{ x: -40, y: -20 }, { x: -40, y: 20 }, { x: 40, y: 0 }] : [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -77,13 +97,13 @@ function gateModel(fn: (a: boolean, b: boolean) => boolean, inputs: 1 | 2 = 2): 
 }
 
 export const defs: PartDefs<'and' | 'or' | 'not' | 'nand' | 'nor' | 'xor' | 'xnor'> = {
-  and: gate('AND', '&amp;', false, 2),
-  or: gate('OR', '≥1', false, 2),
-  not: gate('NOT', '1', true, 1),
-  nand: gate('NAND', '&amp;', true, 2),
-  nor: gate('NOR', '≥1', true, 2),
-  xor: gate('XOR', '=1', false, 2),
-  xnor: gate('XNOR', '=1', true, 2),
+  and: gate('AND', '&amp;', false, 2, 'and'),
+  or: gate('OR', '≥1', false, 2, 'or'),
+  not: gate('NOT', '1', true, 1, 'not'),
+  nand: gate('NAND', '&amp;', true, 2, 'and'),
+  nor: gate('NOR', '≥1', true, 2, 'or'),
+  xor: gate('XOR', '=1', false, 2, 'xor'),
+  xnor: gate('XNOR', '=1', true, 2, 'xor'),
 };
 
 export const models: ModelDefs<'and' | 'or' | 'not' | 'nand' | 'nor' | 'xor' | 'xnor'> = {

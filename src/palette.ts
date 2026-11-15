@@ -3,6 +3,7 @@ import type { Board } from './board.ts';
 import { CATEGORIES, PARTS, defaults, keepUpright, symbolMarkup, type CategoryId } from './components.ts';
 import type { Editor } from './editor.ts';
 import { onLanguage, t } from './i18n/index.ts';
+import { onNorm } from './norm.ts';
 import { fromControl } from './keys.ts';
 import type { PartType } from './types.ts';
 
@@ -250,6 +251,13 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     const open = openCategory;
     if (open) openTray(open, CATEGORIES[buttons.indexOf(open)]);
     layout();
+  });
+
+  // Another drawing standard: other symbols, so other icons.
+  onNorm(() => {
+    iconCache.clear();
+    const open = openCategory;
+    if (open) openTray(open, CATEGORIES[buttons.indexOf(open)]);
   });
 
   function addToView(type: PartType, rotation = 0) {

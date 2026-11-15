@@ -2,6 +2,7 @@ import { formatSI } from '../../units.ts';
 import { ohmic } from '../../sim/shared/resistance.ts';
 import type { ModelDefs } from '../../sim/models.ts';
 import type { PartDefs } from '../defs.ts';
+import { ZIGZAG } from '../symbols.ts';
 import { toleranceProps, type Tolerance } from '../tolerance.ts';
 
 // The values each of these parts carries: what the properties panel edits
@@ -14,6 +15,10 @@ export const defs: PartDefs<'resistor'> = {
   resistor: {
     name: 'Resistor',
     letter: 'R',
+    us: {
+      draw: () => `
+        <path d="${ZIGZAG}" />`,
+    },
     category: 'passive',
     group: 'Resistors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

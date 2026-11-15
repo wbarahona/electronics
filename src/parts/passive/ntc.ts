@@ -1,8 +1,9 @@
 import { basicReadout, fmt } from '../../sim/shared/readout.ts';
 import { ohmic, powerThermal } from '../../sim/shared/resistance.ts';
-import { formatSI } from '../../units.ts';
+import { formatSI, formatTemp } from '../../units.ts';
 import type { ModelDefs } from '../../sim/models.ts';
 import type { PartDefs } from '../defs.ts';
+import { ZIGZAG } from '../symbols.ts';
 import type { PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
@@ -31,6 +32,12 @@ export const defs: PartDefs<'ntc'> = {
   ntc: {
     name: 'NTC thermistor',
     letter: 'R',
+    us: {
+      letter: 'RT',
+      draw: () => `
+        <path d="${ZIGZAG} M -22 14 H -16 L 16 -14" />
+        <text class="sym-text upright" x="6" y="22" data-x="12" data-y="19">−t°</text>`,
+    },
     category: 'passive',
     group: 'Sensors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -55,7 +62,7 @@ export const models: ModelDefs<'ntc'> = {
       (p, el) => ntcResistance(p, el.state.rise ?? 0),
       (r, p) => [
         ...basicReadout(r),
-        ['Temperature', `${(p.ambient + (r.state.rise ?? 0)).toFixed(1)} °C`],
+        ['Temperature', formatTemp(p.ambient + (r.state.rise ?? 0))],
         ['Resistance', fmt(ntcResistance(p, r.state.rise ?? 0), 'Ω')],
       ],
     ),

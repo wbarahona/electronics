@@ -43,6 +43,7 @@ export const defs: PartDefs<'cd4511'> = {
   cd4511: {
     name: 'CD4511 decoder',
     letter: 'K',
+    us: { letter: 'U' },
     category: 'chips',
     group: 'Counters & decoders',
     pins: [

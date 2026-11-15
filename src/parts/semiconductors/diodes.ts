@@ -86,6 +86,7 @@ export const defs: PartDefs<'diode' | 'schottky' | 'zener'> = {
   diode: {
     name: 'Diode',
     letter: 'R',
+    us: { letter: 'D' },
     category: 'semiconductors',
     group: 'Diodes',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -102,6 +103,7 @@ export const defs: PartDefs<'diode' | 'schottky' | 'zener'> = {
   schottky: {
     name: 'Schottky diode',
     letter: 'R',
+    us: { letter: 'D' },
     category: 'semiconductors',
     group: 'Diodes',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -120,6 +122,7 @@ export const defs: PartDefs<'diode' | 'schottky' | 'zener'> = {
   zener: {
     name: 'Zener diode',
     letter: 'R',
+    us: { letter: 'D', values: { partNumber: '1N4733A' } },
     category: 'semiconductors',
     group: 'Diodes',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

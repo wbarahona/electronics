@@ -107,7 +107,7 @@
       "y": 174,
       "rotation": 0,
       "props": {
-        "text": "Clock G1 (4 Hz) steps CD4017 K1: on each rising edge the next of its ten outputs Q0–Q9 goes high, lighting one bar of P1 at a time. Clock inhibit and reset are tied to 0 V; the bars share one current-limiting resistor, R1, as only one is lit at a time.",
+        "text": "Clock {G1} (4 Hz) steps CD4017 {K1}: on each rising edge the next of its ten outputs Q0–Q9 goes high, lighting one bar of {P1} at a time. Clock inhibit and reset are tied to 0 V; the bars share one current-limiting resistor, {R1}, as only one is lit at a time.",
         "color": "blue"
       },
       "broken": false
@@ -120,7 +120,7 @@
       "y": 304,
       "rotation": 0,
       "props": {
-        "text": "Try: press Run, then raise G1's frequency. Past about 25 Hz the eye sees all ten bars lit at once.",
+        "text": "Try: press Run, then raise {G1}'s frequency. Past about 25 Hz the eye sees all ten bars lit at once.",
         "color": "amber"
       },
       "broken": false

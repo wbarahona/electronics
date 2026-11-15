@@ -15,6 +15,7 @@ export const defs: PartDefs<'inductor'> = {
   inductor: {
     name: 'Inductor',
     letter: 'R',
+    us: { letter: 'L' },
     category: 'passive',
     group: 'Capacitors & inductors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

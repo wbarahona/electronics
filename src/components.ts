@@ -1,3 +1,4 @@
+import { getNorm } from './norm.ts';
 import { DEFS } from './parts/index.ts';
 import type { AnyPartDef, HitBox, Preset } from './parts/defs.ts';
 import type { Point, Props, PropsByType, PartType, PropValue } from './types.ts';
@@ -23,6 +24,7 @@ export {
   type SliderRange,
   type SwitchSpec,
   type TextSpec,
+  type UsDef,
 } from './parts/defs.ts';
 
 export { mixedLight } from './parts/light.ts';
@@ -45,14 +47,18 @@ export const hitOf = (type: PartType, props: Props): HitBox | undefined => {
   return typeof hit === 'function' ? hit(props) : hit;
 };
 
-// The values a new part of this type starts with.
-// (A part with part numbers starts as its default one, with its values.)
+// A part type's class letter under the US standard (its EU one unless it differs).
+export const usLetterOf = (type: PartType): string => PARTS[type].us?.letter ?? PARTS[type].letter;
+
+// The values a new part of this type starts with, the US ones under the US
+// standard. (A part with part numbers starts as its default one, with its values.)
 export function defaults<T extends PartType>(type: T): PropsByType[T] {
   const entries = Object.entries(PARTS[type].props).map(([key, spec]): [string, PropValue] => [
     key,
     'fresh' in spec && spec.fresh ? spec.fresh() : spec.value,
   ]);
   const props = Object.fromEntries(entries) as PropsByType[T];
+  if (getNorm() === 'us') Object.assign(props, PARTS[type].us?.values);
   Object.assign(props, presetOf(type, props)?.values);
   return props;
 }
@@ -118,5 +124,6 @@ export function keepUpright(root: Element, rotation: number) {
 export function symbolMarkup(type: PartType, props: Props, broken = false): string {
   const part = PARTS[type];
   const pins = pinsOf(type, props).map((p, i) => `<circle class="pin" data-pin="${i}" cx="${p.x}" cy="${p.y}" r="3" />`);
-  return part.draw(props, broken) + pins.join('');
+  const draw = (getNorm() === 'us' && part.us?.draw) || part.draw;
+  return draw(props, broken) + pins.join('');
 }

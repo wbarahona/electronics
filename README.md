@@ -9,7 +9,8 @@ Circuits that come alive in your browser.
 Ampage is a browser technology-based electronics simulator. Drag parts onto a grid,
 wire them up and press Run to watch lamps glow, current flow and
 overloaded parts burn out. Schematics follow DIN EN 60617 symbols and
-EN 81346 reference designations (-R1, -S1, -P1…).
+EN 81346 reference designations (-R1, -S1, -P1…), or, chosen in Settings,
+ANSI / IEEE 315 symbols and US designations (R1, Q1, D1…).
 
 ![Ampage window](public/ampage-app.png)
 
@@ -47,6 +48,9 @@ The builds aren't code-signed yet, so your system warns you once:
   wire to splice it in, copy/cut/paste/duplicate, marquee select
 - **Visual feedback**: animated current flow, glowing lights, charge
   gauges, net highlighting and live readouts on hover
+- **Drawing standards**: EU (IEC) or US (ANSI / IEEE) symbols and references,
+  switched in Settings without touching the circuit; under US, new parts take
+  US part numbers and 60 Hz, and temperatures read in °F
 - **Files**: save and open circuits as `.ampage` files (JSON inside; older `.json`
   files still open), which the desktop app opens on double-click; autosaves in the browser
 

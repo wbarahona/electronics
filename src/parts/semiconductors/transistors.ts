@@ -212,6 +212,7 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
   npn: {
     name: 'NPN transistor',
     letter: 'K',
+    us: { letter: 'Q', values: { partNumber: '2N3904' } },
     category: 'semiconductors',
     group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: -40 }, { x: 20, y: 40 }],
@@ -233,6 +234,7 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
   pnp: {
     name: 'PNP transistor',
     letter: 'K',
+    us: { letter: 'Q', values: { partNumber: '2N3906' } },
     category: 'semiconductors',
     group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: 40 }, { x: 20, y: -40 }],
@@ -254,6 +256,7 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
   nmos: {
     name: 'N-MOSFET',
     letter: 'K',
+    us: { letter: 'Q' },
     category: 'semiconductors',
     group: 'Transistors',
     pins: [{ x: -40, y: 0 }, { x: 20, y: -40 }, { x: 20, y: 40 }],

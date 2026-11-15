@@ -55,6 +55,7 @@ export const defs: PartDefs<'speaker'> = {
   speaker: {
     name: 'Speaker',
     letter: 'P',
+    us: { letter: 'LS' },
     category: 'signals',
     group: 'Sounders',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

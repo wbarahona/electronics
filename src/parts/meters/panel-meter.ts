@@ -41,6 +41,7 @@ export const defs: PartDefs<'panelMeter'> = {
   panelMeter: {
     name: 'Panel meter',
     letter: 'P',
+    us: { letter: 'M' },
     category: 'meters',
     group: 'Analog',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

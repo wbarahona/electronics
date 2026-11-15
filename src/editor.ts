@@ -1,4 +1,5 @@
 import { GRID, snap, type Board } from './board.ts';
+import { getNorm, refText } from './norm.ts';
 import { LIGHT_COLORS, PARTS, defaults, mixedLight, hitOf, keepUpright, pinNamesOf, pinsOf, symbolMarkup, tagOf, type ChoiceSpec } from './components.ts';
 import { fromControl } from './keys.ts';
 import type { Circuit } from './model.ts';
@@ -318,6 +319,18 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // The names of each part's pins as last drawn (see refreshPart).
   const drawnPins = new Map<string, string[]>();
 
+  // A note's values with its text as shown: a part's EU reference in braces
+  // ({R1}) reads as that part's reference in the drawing standard in use
+  // (R1, or L1 for an inductor under US), so notes stay right in both. Braces
+  // round anything else are left alone.
+  function noteText(c: Part<'note'>): Part<'note'>['props'] {
+    const text = c.props.text.replace(/\{([A-Z]+\d+)\}/g, (all, ref: string) => {
+      const part = circuit.components.find((p) => p.ref === ref);
+      return part ? (getNorm() === 'us' ? part.usRef : part.ref) : all;
+    });
+    return { ...c.props, text };
+  }
+
   // (Re)draw a part's symbol, value text and hit areas from its current props.
   function renderPart(c: Part) {
     const part = PARTS[c.type];
@@ -335,12 +348,13 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       glow = `<circle class="glow" r="${part.glow.radius}" fill="url(#glow-${key})" />`;
       g.style.setProperty('--glow-color', LIGHT_COLORS[key]);
     }
-    const hit = hitOf(c.type, c.props);
+    const props = c.type === 'note' ? noteText(c as Part<'note'>) : c.props;
+    const hit = hitOf(c.type, props);
     g.innerHTML =
       thermoBox(hit) +
       glow +
-      symbolMarkup(c.type, c.props, c.broken) +
-      (part.noLabel ? '' : `<text class="value"><tspan class="ref">-${c.ref}</tspan>${tag ? ` ${tag}` : ''}</text>`) +
+      symbolMarkup(c.type, props, c.broken) +
+      (part.noLabel ? '' : `<text class="value"><tspan class="ref">${refText(c)}</tspan>${tag ? ` ${tag}` : ''}</text>`) +
       hitBox(hit) +
       pinHits.join('') +
       (part.actuator ? actuatorMarkup(c) : '') +

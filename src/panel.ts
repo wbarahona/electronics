@@ -2,10 +2,11 @@ import { PARTS, applyPreset, canReset, isChoiceSpec, isModified, resetValues, is
 import type { Editor, Live } from './editor.ts';
 import type { Circuit } from './model.ts';
 import { onLanguage, t } from './i18n/index.ts';
+import { refText } from './norm.ts';
 import { MODELS } from './sim/models.ts';
 import type { Part, PropValue } from './types.ts';
 import './slider.ts';
-import { formatNumber, parseSI } from './units.ts';
+import { formatNumber, fromShown, parseSI, shownTemps, shownUnit, toShown } from './units.ts';
 
 // Parts with nothing to fail: references and probes.
 const NO_FAULTS = new Set(['ground', 'netLabel', 'scopeProbe']);
@@ -120,27 +121,29 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
   // current value.
   function numberInput(c: Part, key: string, spec: NumberSpec) {
     const field = document.createElement('md-outlined-text-field');
-    field.label = t(spec.label);
-    field.suffixText = spec.unit;
+    field.label = shownTemps(t(spec.label));
+    field.suffixText = shownUnit(spec.unit);
     field.inputMode = 'decimal';
-    field.value = formatNumber(value(c, key) as number);
+    // As shown: a temperature is in °F under the US standard, kept in °C.
+    const text = (v: number) => formatNumber(toShown(v, spec.unit));
+    field.value = text(value(c, key) as number);
     field.addEventListener('input', () => {
       field.error = false;
     });
     field.addEventListener('change', () => {
-      const v = parseSI(field.value);
+      const v = fromShown(parseSI(field.value), spec.unit);
       if (Number.isNaN(v) || v < (spec.min ?? -Infinity) || v > (spec.max ?? Infinity)) {
         field.error = true;
         field.errorText = t('Not a valid value');
         return;
       }
       set(c, key, v);
-      field.value = formatNumber(v);
+      field.value = text(v);
     });
     field.addEventListener('focusout', () => {
       if (!field.error) return;
       field.error = false;
-      field.value = formatNumber(value(c, key) as number);
+      field.value = text(value(c, key) as number);
     });
     return field;
   }
@@ -154,28 +157,29 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const head = document.createElement('div');
     head.className = 'slider-head';
     const name = document.createElement('span');
-    name.textContent = t(spec.label);
+    name.textContent = shownTemps(t(spec.label));
     const shown = document.createElement('span');
     shown.className = 'slider-value';
     head.append(name, shown);
     const slider = document.createElement('ampage-slider');
     const step = range.step ?? 1;
-    slider.min = range.min;
-    slider.max = range.max;
+    // The slider works in the unit shown (°F under the US standard for a temperature).
+    slider.min = Math.round(toShown(range.min, spec.unit) / step) * step;
+    slider.max = Math.round(toShown(range.max, spec.unit) / step) * step;
     slider.step = step;
     slider.ticks = (range.max - range.min) / step <= 20;
     slider.label = t(spec.label);
     const show = (v: number) => {
       slider.valueLabel = formatNumber(v);
-      shown.textContent = `${formatNumber(v)} ${spec.unit}`.trim();
+      shown.textContent = `${formatNumber(v)} ${shownUnit(spec.unit)}`.trim();
     };
     slider.addEventListener('input', () => {
       const v = slider.value;
       show(v);
-      set(c, key, v);
+      set(c, key, fromShown(v, spec.unit));
     });
-    slider.value = value(c, key) as number;
-    show(value(c, key) as number); // the real value, even if past the slider's ends
+    slider.value = toShown(value(c, key) as number, spec.unit);
+    show(toShown(value(c, key) as number, spec.unit)); // the real value, even if past the slider's ends
     row.append(head, slider);
     return row;
   }
@@ -264,7 +268,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const heading = document.createElement('h2');
     const ref = document.createElement('span');
     ref.className = 'ref';
-    ref.textContent = `-${c.ref}`;
+    ref.textContent = refText(c);
     heading.append(ref, ` ${t(PARTS[c.type].name)}`);
     const close = document.createElement('md-icon-button');
     close.title = t('Close (Esc)');

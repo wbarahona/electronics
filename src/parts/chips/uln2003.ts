@@ -87,6 +87,7 @@ export const defs: PartDefs<'uln2003'> = {
   uln2003: {
     name: 'ULN2003 driver',
     letter: 'K',
+    us: { letter: 'U' },
     category: 'chips',
     group: 'Drivers',
     pins: [

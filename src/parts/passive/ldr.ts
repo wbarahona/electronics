@@ -2,6 +2,7 @@ import { basicReadout, fmt, pct } from '../../sim/shared/readout.ts';
 import { ohmic, powerThermal } from '../../sim/shared/resistance.ts';
 import type { ModelDefs } from '../../sim/models.ts';
 import type { PartDefs } from '../defs.ts';
+import { ZIGZAG } from '../symbols.ts';
 import type { PropsByType } from '../../types.ts';
 
 // The values each of these parts carries: what the properties panel edits
@@ -23,6 +24,11 @@ export const defs: PartDefs<'ldr'> = {
   ldr: {
     name: 'LDR',
     letter: 'R',
+    us: {
+      draw: () => `
+        <path d="${ZIGZAG} M -14 -24 L -6 -11 M 0 -24 L 8 -11" />
+        <path class="fill" d="M -4 -7.5 L -5 -14 L -9.5 -11.5 Z M 10 -7.5 L 9 -14 L 4.5 -11.5 Z" />`,
+    },
     category: 'passive',
     group: 'Sensors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

@@ -332,7 +332,7 @@
       "y": 700,
       "rotation": 0,
       "props": {
-        "text": "PWM: steady red, green pulsed by a 100 Hz clock. Drag G1's duty cycle to fade red to yellow. At full speed the eye blends it; slow it down to see the flicker.",
+        "text": "PWM: steady red, green pulsed by a 100 Hz clock. Drag {G1}'s duty cycle to fade red to yellow. At full speed the eye blends it; slow it down to see the flicker.",
         "color": "blue"
       },
       "broken": false
@@ -585,7 +585,7 @@
       "y": 660,
       "rotation": 0,
       "props": {
-        "text": "RGB dot matrix, rows are anodes: S1\u2013S3 connect each row to 5 V. All red columns are tied together and go to 0 V through R13 and S4; green through R14 and S5; blue through R15 and S6.",
+        "text": "RGB dot matrix, rows are anodes: {S1}\u2013{S3} connect each row to 5 V. All red columns are tied together and go to 0 V through {R13} and {S4}; green through {R14} and {S5}; blue through {R15} and {S6}.",
         "color": "violet"
       },
       "broken": false
@@ -598,7 +598,7 @@
       "y": 660,
       "rotation": 0,
       "props": {
-        "text": "Try: press Run (Space), then pick rows and colours. Red + green makes yellow, green + blue cyan; all three a tinted white, as with P1. Light more rows and each colour's current is shared: the dots dim but keep their colour.",
+        "text": "Try: press Run (Space), then pick rows and colours. Red + green makes yellow, green + blue cyan; all three a tinted white, as with {P1}. Light more rows and each colour's current is shared: the dots dim but keep their colour.",
         "color": "amber"
       },
       "broken": false

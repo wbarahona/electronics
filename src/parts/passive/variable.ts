@@ -3,6 +3,7 @@ import { ohmic, powerThermal } from '../../sim/shared/resistance.ts';
 import { formatSI } from '../../units.ts';
 import type { ModelDefs } from '../../sim/models.ts';
 import type { PartDefs } from '../defs.ts';
+import { ZIGZAG } from '../symbols.ts';
 import { toleranceProps, type Tolerance } from '../tolerance.ts';
 import type { PropsByType } from '../../types.ts';
 
@@ -29,6 +30,11 @@ export const defs: PartDefs<'potentiometer' | 'rheostat'> = {
   potentiometer: {
     name: 'Potentiometer',
     letter: 'R',
+    us: {
+      draw: () => `
+        <path d="${ZIGZAG} M 0 -40 V -11" />
+        <path class="fill" d="M 0 -3 L -4 -11 H 4 Z" />`,
+    },
     category: 'passive',
     group: 'Resistors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }, { x: 0, y: -40 }],
@@ -49,6 +55,11 @@ export const defs: PartDefs<'potentiometer' | 'rheostat'> = {
   rheostat: {
     name: 'Variable resistor',
     letter: 'R',
+    us: {
+      draw: () => `
+        <path d="${ZIGZAG} M -16 14 L 14 -12" />
+        <path class="fill" d="M 18 -15.5 L 9.5 -12.5 L 14.5 -7 Z" />`,
+    },
     category: 'passive',
     group: 'Resistors',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

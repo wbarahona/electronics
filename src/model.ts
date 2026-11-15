@@ -1,9 +1,17 @@
-import { PARTS, defaults } from './components.ts';
+import { PARTS, defaults, usLetterOf } from './components.ts';
 import type { End, Item, Joint, Part, PartType, Point, Wire } from './types.ts';
 
 export type Circuit = ReturnType<typeof createCircuit>;
 
 const endId = (end: End): string => end.part ?? end.joint;
+
+// `letter` with the lowest number that makes a reference not in `taken`.
+export function freeRef(letter: string, taken: Iterable<string>, from = 1): string {
+  const used = new Set(taken);
+  let n = from;
+  while (used.has(`${letter}${n}`)) n++;
+  return `${letter}${n}`;
+}
 
 // The circuit as plain data: the source of truth the view draws and the simulator reads.
 export function createCircuit() {
@@ -19,17 +27,14 @@ export function createCircuit() {
     wires,
     joints,
 
-    // Each part gets a reference designation from its DIN letter code and the
-    // lowest number not yet taken by that letter: R1, R2, ...; freed numbers
-    // are reused.
+    // Each part gets a reference designation for each standard (see
+    // src/norm.ts), from its class letter there and the lowest number not yet
+    // taken by that letter: R1, R2, ...; freed numbers are reused.
     add(type: PartType, x: number, y: number, rotation = 0): Part {
-      const { letter } = PARTS[type];
-      const taken = new Set(components.filter((c) => c.ref[0] === letter).map((c) => Number(c.ref.slice(1))));
-      let n = 1;
-      while (taken.has(n)) n++;
       const c: Part = {
         id: `c${nextPart++}`,
-        ref: `${letter}${n}`,
+        ref: freeRef(PARTS[type].letter, components.map((p) => p.ref)),
+        usRef: freeRef(usLetterOf(type), components.map((p) => p.usRef)),
         type,
         x,
         y,

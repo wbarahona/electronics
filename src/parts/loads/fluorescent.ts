@@ -133,6 +133,7 @@ export const defs: PartDefs<'tube' | 'ballast' | 'starter'> = {
   tube: {
     name: 'Fluorescent tube',
     letter: 'E',
+    us: { letter: 'DS' },
     category: 'loads',
     group: 'Fluorescent',
     pins: [{ x: -60, y: -20 }, { x: -60, y: 20 }, { x: 60, y: -20 }, { x: 60, y: 20 }],
@@ -153,6 +154,7 @@ export const defs: PartDefs<'tube' | 'ballast' | 'starter'> = {
   ballast: {
     name: 'Ballast',
     letter: 'R',
+    us: { letter: 'L' },
     category: 'loads',
     group: 'Fluorescent',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

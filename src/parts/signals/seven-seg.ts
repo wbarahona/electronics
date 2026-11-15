@@ -32,6 +32,7 @@ export const defs: PartDefs<'sevenSeg'> = {
   sevenSeg: {
     name: '7-segment display',
     letter: 'P',
+    us: { letter: 'DS' },
     category: 'signals',
     group: 'Displays',
     pins: [

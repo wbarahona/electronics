@@ -59,6 +59,7 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
   buzzer: {
     name: 'Buzzer',
     letter: 'P',
+    us: { letter: 'LS' },
     category: 'signals',
     group: 'Sounders',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -75,6 +76,7 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
   piezo: {
     name: 'Piezo buzzer',
     letter: 'P',
+    us: { letter: 'LS' },
     category: 'signals',
     group: 'Sounders',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -93,6 +95,7 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
   bell: {
     name: 'Bell',
     letter: 'P',
+    us: { letter: 'LS' },
     category: 'signals',
     group: 'Sounders',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -108,6 +111,7 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
   chime: {
     name: 'Door chime',
     letter: 'P',
+    us: { letter: 'LS' },
     category: 'signals',
     group: 'Sounders',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

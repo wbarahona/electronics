@@ -3,6 +3,7 @@ import { PARTS, tagOf } from './components.ts';
 import { language, t } from './i18n/index.ts';
 import { nativePrint, printNatively, saveFile } from './platform.ts';
 import { lightTokens } from './theme.ts';
+import { refText } from './norm.ts';
 import dDin from './fonts/d-din/D-DIN.woff2?url';
 import dDinBold from './fonts/d-din/D-DIN-Bold.woff2?url';
 import sansLatin from '@fontsource/google-sans/files/google-sans-latin-400-normal.woff2?url';
@@ -134,11 +135,11 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
     table.className = 'print-parts';
     const parts = [...src.circuit.components]
       .filter((c) => !PARTS[c.type].noLabel)
-      .sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
+      .sort((a, b) => refText(a).localeCompare(refText(b), undefined, { numeric: true }));
     table.innerHTML = `
       <thead><tr><th>${t('Ref.')}</th><th>${t('Part')}</th><th>${t('Value')}</th></tr></thead>
       <tbody>${parts
-        .map((c) => `<tr><td>-${c.ref}</td><td>${t(PARTS[c.type].name)}</td><td>${tagOf(c.type, c.props) ?? ''}</td></tr>`)
+        .map((c) => `<tr><td>${refText(c)}</td><td>${t(PARTS[c.type].name)}</td><td>${tagOf(c.type, c.props) ?? ''}</td></tr>`)
         .join('')}</tbody>`;
     return table;
   }

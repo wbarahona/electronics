@@ -1,12 +1,10 @@
 import type { MdDialog } from '@material/web/dialog/dialog.js';
 import { LANGUAGES, browserLanguage, initLanguage, onLanguage, setLanguage, t, type Language } from './i18n/index.ts';
+import { setNorm, type Norm } from './norm.ts';
 import { THEMES, applyTheme, type ThemeId, type ThemeMode } from './theme.ts';
 
 const KEY = 'ampage:settings';
 
-// The drawing standard: EU (IEC / DIN EN 60617 symbols, EN 81346 references)
-// is what the app draws; US (ANSI / IEEE 315) is still to come.
-export type Norm = 'eu' | 'us';
 
 // What to show when a circuit is opened: all of it, or the view saved with it.
 export type OpenView = 'fit' | 'saved';
@@ -29,7 +27,7 @@ function load(): Settings {
     if (!LANGUAGES.some((l) => l.id === saved.language)) saved.language = DEFAULTS.language;
     if (!THEMES.some((theme) => theme.id === saved.theme)) saved.theme = DEFAULTS.theme;
     if (!['system', 'light', 'dark'].includes(saved.mode)) saved.mode = DEFAULTS.mode;
-    if (saved.norm !== 'eu') saved.norm = 'eu'; // only EU is available so far
+    if (!['eu', 'us'].includes(saved.norm)) saved.norm = DEFAULTS.norm;
     if (!['fit', 'saved'].includes(saved.openView)) saved.openView = DEFAULTS.openView;
     if (typeof saved.tolerances !== 'boolean') saved.tolerances = DEFAULTS.tolerances;
     if (typeof saved.readout !== 'boolean') saved.readout = DEFAULTS.readout;
@@ -59,6 +57,7 @@ export function createSettings(dialog: MdDialog) {
   const settings = load();
   applyTheme(settings.theme, settings.mode);
   initLanguage(settings.language);
+  setNorm(settings.norm);
 
   const languages = dialog.querySelector<HTMLElement>('.settings-languages')!;
   languages.innerHTML = LANGUAGES.map(
@@ -103,6 +102,15 @@ export function createSettings(dialog: MdDialog) {
       dialog.querySelector<HTMLElement>(`#${tab.getAttribute('aria-controls')}`)!.hidden = i !== tabs.activeTabIndex;
     }
   });
+
+  for (const radio of radios('norm')) {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      settings.norm = radio.value as Norm;
+      setNorm(settings.norm); // redraws the board, tray and panel (onNorm)
+      update();
+    });
+  }
 
   for (const radio of radios('tolerances')) {
     radio.addEventListener('change', () => {

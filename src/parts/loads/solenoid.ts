@@ -34,6 +34,14 @@ export const defs: PartDefs<'solenoid'> = {
   solenoid: {
     name: 'Solenoid',
     letter: 'M',
+    // US: a coil with its plunger (core) above, out at rest and in when pulled.
+    us: {
+      letter: 'L',
+      draw: () => `
+      <path d="M -40 0 H -20 A 5 5 0 0 1 -10 0 A 5 5 0 0 1 0 0 A 5 5 0 0 1 10 0 A 5 5 0 0 1 20 0 H 40" />
+      <path class="when-off" d="M -6 -11 H 34" />
+      <path class="when-on" d="M -20 -11 H 20" />`,
+    },
     category: 'loads',
     group: 'Electromagnetic',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

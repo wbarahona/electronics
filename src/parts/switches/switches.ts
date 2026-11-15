@@ -18,6 +18,11 @@ const switchModel: ModelDef<PropsByType['switch']> = {
   failure: { label: 'contacts welded', open: false },
 };
 
+// The terminal circles of the US symbols: a switch's, and a push button's
+// (closer together, under or over its bar).
+const TERMINALS = '<circle class="dot-hollow" cx="-14" r="3" /><circle class="dot-hollow" cx="14" r="3" />';
+const TERMINALS_NEAR = '<circle class="dot-hollow" cx="-10" r="3" /><circle class="dot-hollow" cx="10" r="3" />';
+
 export const defs: PartDefs<'switch' | 'button' | 'buttonNC'> = {
   switch: {
     name: 'Switch',
@@ -34,6 +39,13 @@ export const defs: PartDefs<'switch' | 'button' | 'buttonNC'> = {
     draw: ({ closed }, broken) => `
       <path d="M -40 0 H -14 L ${closed || broken ? '14 0' : '16 -12'} M 14 0 H 40" />
       ${broken ? '<circle class="weld" cx="14" r="3.5" />' : ''}`,
+    // US: the blade between two terminal circles.
+    us: {
+      draw: ({ closed }, broken) => `
+      <path d="M -40 0 H -17 M 17 0 H 40 M -11 0 L ${closed || broken ? '11 0' : '13 -13'}" />
+      ${TERMINALS}
+      ${broken ? '<circle class="weld" cx="14" r="3.5" />' : ''}`,
+    },
   },
   // Normally-open push button: closed only while held down.
   button: {
@@ -56,6 +68,16 @@ export const defs: PartDefs<'switch' | 'button' | 'buttonNC'> = {
         <path d="M -6 ${head - 4} V ${head} H 8 V ${head - 4}" />
         <path class="link" d="M 1 ${head} V ${shut ? 0 : -6}" />
         ${broken ? '<circle class="weld" cx="14" r="3.5" />' : ''}`;
+    },
+    // US (NEMA): a bar on a stem above two terminals, pushed down onto them.
+    us: {
+      draw: ({ closed }, broken) => {
+        const bar = closed || broken ? -3 : -9;
+        return `
+        <path d="M -40 0 H -13 M 13 0 H 40 M -15 ${bar} H 15 M 0 ${bar} V ${bar - 12} M -5 ${bar - 12} H 5" />
+        ${TERMINALS_NEAR}
+        ${broken ? '<circle class="weld" cx="10" cy="-3" r="3.5" />' : ''}`;
+      },
     },
   },
   // Normally-closed push button: conducts until held down. DIN break contact:
@@ -80,6 +102,17 @@ export const defs: PartDefs<'switch' | 'button' | 'buttonNC'> = {
         <path d="M -6 ${head - 4} V ${head} H 8 V ${head - 4}" />
         <path class="link" d="M 1 ${head} V ${open ? -14 : -7}" />
         ${broken ? '<circle class="weld" cx="14" cy="-9" r="3.5" />' : ''}`;
+    },
+    // US (NEMA): the bar rests under the two terminals, joining them, and is
+    // pushed down off them.
+    us: {
+      draw: ({ pressed }, broken) => {
+        const bar = pressed && !broken ? 9 : 3;
+        return `
+        <path d="M -40 0 H -13 M 13 0 H 40 M -15 ${bar} H 15 M 0 ${bar} V ${bar - 18} M -5 ${bar - 18} H 5" />
+        ${TERMINALS_NEAR}
+        ${broken ? '<circle class="weld" cx="10" cy="3" r="3.5" />' : ''}`;
+      },
     },
   },
 };

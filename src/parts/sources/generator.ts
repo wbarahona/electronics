@@ -16,6 +16,7 @@ export const defs: PartDefs<'generator'> = {
   generator: {
     name: 'AC generator',
     letter: 'G',
+    us: { values: { frequency: 60 } },
     category: 'sources',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
     props: {

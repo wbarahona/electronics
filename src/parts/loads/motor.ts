@@ -157,6 +157,8 @@ export const defs: PartDefs<'motor'> = {
   motor: {
     name: 'Motor',
     letter: 'M',
+    // US (IEEE 315): the circle reads MOT; its class letter is B.
+    us: { letter: 'B', draw: (p) => motorSymbol(p, 'MOT') },
     category: 'loads',
     group: 'Motors',
     pins: (p) => [{ x: -40, y: 0 }, { x: 40, y: 0 }, ...(p.supply === 'AC 3~' ? [{ x: 0, y: 40 }] : [])],
@@ -167,18 +169,20 @@ export const defs: PartDefs<'motor'> = {
     },
     tag: (p) => `${formatSI(p.ratedVoltage, 'V')} ${formatSI(p.ratedPower, 'W')}`,
     labelAt: (vertical) => (vertical ? [30, 4, 'start'] : [0, -30, 'middle']),
-    draw: (p) => `
+    draw: (p) => motorSymbol(p, 'M'),
+  },
+};
+
+const motorSymbol = (p: PropsByType['motor'], letters: string) => `
       <path d="M -40 0 H -18 M 18 0 H 40${p.supply === 'AC 3~' ? ' M 0 18 V 40' : ''}" />
       <circle r="18" />
-      <text class="meter-letter upright" y="2" text-anchor="middle" data-y="-2">M</text>
+      <text class="meter-letter upright" y="2" text-anchor="middle" data-y="-2"${letters.length > 1 ? ' style="font-size: 11px"' : ''}>${letters}</text>
       <text class="sym-text upright" y="12" text-anchor="middle" data-y="9">${p.supply === 'DC' ? '=' : p.supply === 'AC 1~' ? '1~' : '3~'}</text>
       ${p.supply === 'DC' ? '<text class="sym-text" x="-30" y="-6" text-anchor="middle">+</text>' : ''}
       <g class="when-on">
         <path class="rotor" d="M 0 -23 A 23 23 0 0 1 20 -11.5 M 20 -11.5 l -1 -5 M 20 -11.5 l -5 1" />
         <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="0.8s" repeatCount="indefinite" />
-      </g>`,
-  },
-};
+      </g>`;
 
 export const models: ModelDefs<'motor'> = {
   motor: motorModel,

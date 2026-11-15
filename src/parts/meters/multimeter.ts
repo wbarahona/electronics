@@ -25,6 +25,7 @@ export const defs: PartDefs<'voltmeter' | 'ammeter'> = {
   voltmeter: {
     name: 'Voltmeter',
     letter: 'P',
+    us: { letter: 'M' },
     category: 'meters',
     group: 'Multimeter',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],
@@ -42,6 +43,7 @@ export const defs: PartDefs<'voltmeter' | 'ammeter'> = {
   ammeter: {
     name: 'Ammeter',
     letter: 'P',
+    us: { letter: 'M' },
     category: 'meters',
     group: 'Multimeter',
     pins: [{ x: -40, y: 0 }, { x: 40, y: 0 }],

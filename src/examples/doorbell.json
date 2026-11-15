@@ -77,7 +77,7 @@
       "y": 114,
       "rotation": 0,
       "props": {
-        "text": "Bell transformer T1 steps the 230 V mains down 14.4 : 1, to about 16 V, safe to run to the door. Push button S1 closes the secondary circuit through chime P1.",
+        "text": "Bell transformer {T1} steps the 230 V mains down 14.4 : 1, to about 16 V, safe to run to the door. Push button {S1} closes the secondary circuit through chime {P1}.",
         "color": "blue"
       },
       "broken": false
@@ -90,7 +90,7 @@
       "y": 224,
       "rotation": 0,
       "props": {
-        "text": "Try: press Run (Space), then press and hold S1. Click the transformer or the chime to read its voltages and currents.",
+        "text": "Try: press Run (Space), then press and hold {S1}. Click the transformer or the chime to read its voltages and currents.",
         "color": "amber"
       },
       "broken": false

@@ -76,6 +76,33 @@ const coilMarkup = (c: number, coil: CoilType) => `
   ${coil === 'AC' ? `<text class="sym-text upright" x="${c + 20}" y="-12" text-anchor="middle" data-x="${c + 20}" data-y="-15">~</text>` : ''}
   ${pinText('A1', c + 4, -30)}${pinText('A2', c + 4, 36)}`;
 
+// The same the US way (NEMA ladder diagrams): the coil is a circle, and a
+// contact is two bars with a gap between a lead from above (`top`) and one
+// from below. A make contact (NO) bridges its gap while the coil is
+// energized; a break contact (NC) carries a slash until then. Same pins,
+// same terminal numbers; no line of action (a ladder diagram has none, and it
+// would run through the contacts' gaps).
+const usCoil = (c: number, coil: CoilType) => `
+  <path d="M ${c} -40 V -12 M ${c} 12 V 40" />
+  <circle cx="${c}" r="12" />
+  ${coil === 'AC' ? `<text class="sym-text upright" x="${c + 20}" y="-12" text-anchor="middle" data-x="${c + 20}" data-y="-15">~</text>` : ''}
+  ${pinText('A1', c + 4, -30)}${pinText('A2', c + 4, 36)}`;
+
+const usContact = (x: number, kind: 'NO' | 'NC', bottom = 40) => `
+  <path d="M ${x} -40 V -4 M ${x - 8} -4 H ${x + 8} M ${x - 8} 4 H ${x + 8} M ${x} 4 V ${bottom}" />
+  ${kind === 'NO' ? `<path class="when-on" d="M ${x} -4 V 4" />` : `<path class="when-off" d="M ${x - 9} 8 L ${x + 9} -8" />`}`;
+
+// A changeover the ladder way: its break and make contacts side by side,
+// joined below at the common.
+const usChangeover = (x: number, k: number) => `
+  <path d="M ${x} 40 V 24 M ${x - 20} 24 H ${x + 20}" />
+  ${usContact(x - 20, 'NC', 24)}${usContact(x + 20, 'NO', 24)}
+  ${pinText(`${k}1`, x + 4, 36)}${pinText(`${k}2`, x - 17, -30)}${pinText(`${k}4`, x + 23, -30)}`;
+
+const usMakeContact = (x: number, k: number) => `
+  ${usContact(x, 'NO')}
+  ${pinText(`${k}3`, x + 4, 36)}${pinText(`${k}4`, x + 4, -30)}`;
+
 // The coil setting: DC or AC.
 const COIL = (value: CoilType) => ({ label: 'Coil', value, options: ['DC', 'AC'] as CoilType[] });
 
@@ -298,12 +325,30 @@ export const defs: PartDefs<'relay' | 'contactor'> = {
         ${contacts.map((x, k) => (p.contactType === 'SPDT' ? changeover : makeContact)(x, k + 1)).join('')}
         <path class="link" d="M ${coil + 14} 0 H ${contacts[contacts.length - 1] - 4}" />`;
     },
+    us: {
+      draw: (p) => {
+        const { coil, contacts } = relayLayout(p);
+        const spdt = p.contactType === 'SPDT';
+        return `
+        ${usCoil(coil, p.coil)}
+        ${contacts.map((x, k) => (spdt ? usChangeover : usMakeContact)(x, k + 1)).join('')}`;
+      },
+    },
   },
   // Pins: see contactorPins. The main poles' 1–2, 3–4, 5–6 are L1–T1,
   // L2–T2, L3–T3.
   contactor: {
     name: 'Contactor',
     letter: 'Q',
+    us: {
+      letter: 'K',
+      draw: (p) => {
+        const contacts = contactorPins(p).filter((pin) => pin.name !== 'A1' && pin.y < 0);
+        return `
+        ${usCoil(-60, p.coil)}
+        ${contacts.map((pin) => `${usContact(pin.x, pin.kind ?? 'NO')}${pinText(pin.name, pin.x + 4, -30)}${pinText(String(Number(pin.name) + 1), pin.x + 4, 36)}`).join('')}`;
+      },
+    },
     category: 'switches',
     group: 'Relays',
     pins: (p) => contactorPins(p).map(({ x, y }) => ({ x, y })),
