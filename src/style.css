@@ -392,10 +392,11 @@ md-icon svg {
   }
 }
 
-/* M3 search bar: a full-pill field on surface-container-high, leading
-   search icon, body-large text. 48px tall (spec: 56) to sit in the 56px bar.
-   While results show it becomes a docked search view: the bar and the list
-   below it form one container. */
+/* M3 search bar, Expressive: a full-pill field on surface-container-high,
+   leading search icon, body-large text, the ⌘K shortcut at its end while
+   it's empty. 48px tall (spec: 56) to sit in the 56px bar. While results
+   show it becomes a docked search view: the bar and the list below it form
+   one extra-large-shape container that opens with a slight spring. */
 .search {
   position: relative;
   flex: 1;
@@ -412,6 +413,7 @@ md-icon svg {
   background: var(--md-sys-color-surface-container-high);
   color: var(--md-sys-color-on-surface);
   cursor: text;
+  transition: border-radius 200ms cubic-bezier(0.2, 0, 0, 1);
   --md-icon-size: 24px;
 }
 
@@ -423,8 +425,53 @@ md-icon svg {
   );
 }
 
-.search-bar md-icon {
+/* The leading icon: the search icon, which turns into a back button while
+   the search view is open, the one turning out as the other turns in. */
+.search-lead {
+  position: relative;
   flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+.search-icon,
+.search-back {
+  position: absolute;
+  transition:
+    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+    transform 350ms cubic-bezier(0.34, 1.3, 0.64, 1),
+    visibility 200ms;
+}
+
+.search-icon {
+  inset: 0;
+}
+
+/* The 40px icon button, centred on the 24px icon's spot. */
+.search-back {
+  top: -8px;
+  left: -8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: rotate(90deg) scale(0.6);
+}
+
+.search.open .search-icon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.6);
+}
+
+.search.open .search-back {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-icon,
+  .search-back {
+    transition: none;
+  }
 }
 
 .search-bar input {
@@ -439,20 +486,49 @@ md-icon svg {
   font-size: 16px;
   line-height: 24px;
   letter-spacing: 0.5px;
-  caret-color: var(--md-sys-color-tertiary);
+  caret-color: var(--md-sys-color-primary);
 }
 
 .search-bar input::placeholder {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* The native clear button doesn't match; Esc clears the field. */
+/* The native clear button doesn't match; ours (an M3 icon button) does. */
 .search-bar input::-webkit-search-cancel-button {
   appearance: none;
 }
 
+/* M3 label-medium in a small outlined key, shown only while the bar is idle. */
+.search-key {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.search:focus-within .search-key,
+.search-bar:has(input:not(:placeholder-shown)) .search-key {
+  display: none;
+}
+
+.search-clear {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.search-clear[hidden] {
+  display: none;
+}
+
 .search.open .search-bar {
-  border-radius: 24px 24px 0 0;
+  border-radius: 28px 28px 0 0;
   background: var(--md-sys-color-surface-container-high);
 }
 
@@ -462,17 +538,26 @@ md-icon svg {
   top: 100%;
   left: 0;
   right: 0;
-  max-height: min(480px, 70vh);
+  max-height: min(520px, 70vh);
   overflow-y: auto;
-  padding-bottom: 8px;
+  padding: 4px 8px 12px;
   border-top: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 0 0 24px 24px;
+  border-radius: 0 0 28px 28px;
   background: var(--md-sys-color-surface-container-high);
   color: var(--md-sys-color-on-surface);
+  transform-origin: top;
+  animation: search-open 300ms cubic-bezier(0.34, 1.2, 0.64, 1);
   /* M3 elevation level 3 */
   box-shadow:
     0 4px 8px 3px rgb(0 0 0 / 0.15),
     0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+@keyframes search-open {
+  from {
+    opacity: 0;
+    transform: scaleY(0.92);
+  }
 }
 
 .search-results[hidden] {
@@ -484,30 +569,36 @@ body.dragging .search-results {
   opacity: 0;
 }
 
+/* M3 title-small, with the category's icon in the primary colour. */
 .search-category-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px 4px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
+  padding: 12px 8px 6px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
   color: var(--md-sys-color-on-surface-variant);
   --md-icon-size: 18px;
 }
 
 .search-category-label md-icon {
-  color: var(--md-sys-color-tertiary);
+  color: var(--md-sys-color-primary);
 }
 
+/* Each result a rounded item of its own (Expressive lists); the one Enter
+   places in the secondary container. */
 .search-option {
   display: flex;
   align-items: center;
   gap: 16px;
   min-height: 56px;
-  padding: 4px 16px;
+  margin-bottom: 2px;
+  padding: 4px 8px;
+  border-radius: 16px;
   cursor: grab;
+  transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1), border-radius 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .search-option:hover {
@@ -515,19 +606,26 @@ body.dragging .search-results {
 }
 
 .search-option.active {
-  background: color-mix(
-    in srgb,
-    var(--md-sys-color-on-surface) 12%,
-    transparent
-  );
+  border-radius: 28px;
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
 }
 
+/* The symbol on a tile of its own. */
 .search-option-icon {
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
+  width: 64px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+.search-option.active .search-option-icon {
+  border-radius: 24px;
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 .search-option-text {
@@ -536,6 +634,7 @@ body.dragging .search-results {
   min-width: 0;
 }
 
+/* M3 body-large */
 .search-option-name {
   font-size: 16px;
   line-height: 24px;
@@ -543,21 +642,39 @@ body.dragging .search-results {
 }
 
 .search-option mark {
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--md-sys-color-tertiary) 22%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--md-sys-color-primary) 22%, transparent);
   color: inherit;
   font-weight: 700;
 }
 
+/* M3 body-medium */
 .search-option-group {
   font-size: 14px;
   line-height: 20px;
   color: var(--md-sys-color-on-surface-variant);
 }
 
+.search-option.active .search-option-group {
+  color: inherit;
+}
+
+.search-chips {
+  padding: 0 8px 4px;
+}
+
 .search-empty {
-  padding: 16px 16px 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px 8px;
   color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-results {
+    animation: none;
+  }
 }
 
 /* Too narrow to share the row: the search bar gets its own line below

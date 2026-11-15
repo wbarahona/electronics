@@ -4,6 +4,7 @@ import { CATEGORIES, PARTS, defaults, keepUpright, symbolMarkup, type CategoryId
 import type { Editor } from './editor.ts';
 import { onLanguage, t } from './i18n/index.ts';
 import { onNorm } from './norm.ts';
+import { rememberPart } from './recent.ts';
 import { fromControl } from './keys.ts';
 import type { PartType } from './types.ts';
 
@@ -264,6 +265,7 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     const r = svg.getBoundingClientRect();
     const p = board.screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
     editor.add(type, p.x, p.y, rotation);
+    rememberPart(type);
   }
 
   function startDrag(e: PointerEvent, type: PartType, btn: HTMLElement) {
@@ -314,6 +316,8 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
       } else if (overBoard(ev)) {
         const p = board.screenToWorld(ev.clientX, ev.clientY);
         editor.add(type, p.x, p.y, rotation);
+        rememberPart(type);
+    rememberPart(type);
       }
     };
 
@@ -339,5 +343,11 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     window.addEventListener('keydown', key, true);
   }
 
-  return { addToView, startDrag };
+  // Open a category's tray from elsewhere (the search view's category chips).
+  function openCategoryTray(id: CategoryId) {
+    const k = CATEGORIES.findIndex((c) => c.id === id);
+    if (k >= 0) openTray(buttons[k], CATEGORIES[k]);
+  }
+
+  return { addToView, startDrag, openCategory: openCategoryTray };
 }

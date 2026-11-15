@@ -165,7 +165,10 @@
         </div>
         <div id="search" class="search" role="search">
           <label class="search-bar">
-            <md-icon aria-hidden="true">search</md-icon>
+            <span class="search-lead">
+              <md-icon class="search-icon" aria-hidden="true">search</md-icon>
+              <md-icon-button class="search-back" aria-label="Back" title="Back"><md-icon>arrow_back</md-icon></md-icon-button>
+            </span>
             <input
               id="search-input"
               type="search"
@@ -180,7 +183,9 @@
               autocomplete="off"
               spellcheck="false"
             />
+            <kbd class="search-key" aria-hidden="true"></kbd>
           </label>
+          <md-icon-button class="search-clear" aria-label="Clear search" title="Clear search" hidden><md-icon>close</md-icon></md-icon-button>
           <div
             id="search-results"
             class="search-results"

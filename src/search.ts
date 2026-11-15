@@ -1,6 +1,7 @@
 import { CATEGORIES, PARTS, defaults, symbolMarkup } from './components.ts';
 import { t } from './i18n/index.ts';
 import { icon, type Palette } from './palette.ts';
+import { recentParts } from './recent.ts';
 import type { PartType } from './types.ts';
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -13,17 +14,22 @@ function highlight(text: string, query: string): string {
   return `${escape(text.slice(0, at))}<mark>${escape(text.slice(at, end))}</mark>${escape(text.slice(end))}`;
 }
 
-// "Search parts" in the top bar (an M3 docked search view): as you type, a
-// list under the field shows every part whose name, subcategory or a part
-// number contains the text ("gate" finds the gates, "1N4148" the diode), by
-// category, with its symbol and the matching piece highlighted.
-// Click a result to drop the part in the middle of the view, or drag it onto
-// the board, as in the tray. From the keyboard: ⌘K focuses the field, ↑/↓
-// choose, Enter places, Esc closes the list (or clears the field when the
-// list is already closed).
+// "Search parts" in the top bar (an M3 docked search view, Expressive): as
+// you type, a list under the field shows every part whose name, subcategory
+// or a part number contains the text ("gate" finds the gates, "1N4148" the
+// diode), by category, with its symbol and the matching piece highlighted.
+// Before anything is typed it shows the parts placed most recently and a
+// chip per category that opens its tray. Click a result to drop the part in
+// the middle of the view, or drag it onto the board, as in the tray. From the
+// keyboard: ⌘K focuses the field, ↑/↓ choose, Enter places, Esc closes the
+// list (or clears the field when the list is already closed). While the list
+// is open the leading search icon turns into a back button (M3 search view):
+// it leaves the search, clearing the field so it opens fresh next time; the
+// ✕ at the end only clears it.
 export function createSearch(root: HTMLElement, palette: Palette) {
   const input = root.querySelector<HTMLInputElement>('#search-input')!;
   const results = root.querySelector<HTMLElement>('#search-results')!;
+  const clear = root.querySelector<HTMLElement>('.search-clear')!;
   let options: { el: HTMLElement; type: PartType }[] = [];
   let active = -1; // index into options of the one Enter places
 
@@ -46,14 +52,79 @@ export function createSearch(root: HTMLElement, palette: Palette) {
     input.setAttribute('aria-expanded', String(open));
   }
 
+  // A section of the list: its heading (an icon and a name) and its rows.
+  function section(iconName: string, label: string, rows: HTMLElement[]): HTMLElement {
+    const group = document.createElement('div');
+    group.className = 'search-category';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', label);
+    group.innerHTML = `<div class="search-category-label" aria-hidden="true"><md-icon>${iconName}</md-icon>${escape(label)}</div>`;
+    group.append(...rows);
+    return group;
+  }
+
+  // One part's row: its symbol on a tile, its name, and under it its
+  // subcategory and any part numbers that match.
+  function option(type: PartType, query: string, codes: string[] = []): HTMLElement {
+    const part = PARTS[type];
+    const { box, width, height } = icon(type);
+    const el = document.createElement('div');
+    el.className = 'search-option';
+    el.id = `search-option-${type}`;
+    el.setAttribute('role', 'option');
+    const name = t(part.name);
+    const subgroup = part.group && t(part.group);
+    const mark = (text: string) => (query ? highlight(text, query) : escape(text));
+    el.title = t('Drag {part} onto the board', { part: name });
+    el.innerHTML = `
+      <span class="search-option-icon"><svg class="part" viewBox="${box}" style="width: ${width}px; height: ${height}px" aria-hidden="true">${symbolMarkup(type, defaults(type))}</svg></span>
+      <span class="search-option-text">
+        <span class="search-option-name">${mark(name)}</span>
+        ${subgroup || codes.length ? `<span class="search-option-group">${[subgroup ? mark(subgroup) : '', ...codes.slice(0, 3).map(mark)].filter(Boolean).join(' · ')}</span>` : ''}
+      </span>`;
+    el.addEventListener('pointerdown', (e) => palette.startDrag(e, type, el));
+    // After a click or a drop: done here, back to the board.
+    el.addEventListener('click', () => input.blur());
+    options.push({ el, type });
+    return el;
+  }
+
+  // Nothing typed yet: the recent parts, then a chip per category.
+  function suggestions(): HTMLElement[] {
+    const recent = recentParts();
+    const chips = document.createElement('md-chip-set');
+    chips.className = 'search-chips';
+    for (const category of CATEGORIES) {
+      const chip = document.createElement('md-assist-chip');
+      chip.setAttribute('label', t(category.label));
+      chip.innerHTML = `<md-icon slot="icon">${category.icon}</md-icon>`;
+      chip.addEventListener('click', () => {
+        palette.openCategory(category.id);
+        input.blur();
+      });
+      chips.append(chip);
+    }
+    return [
+      ...(recent.length ? [section('history', t('Recent'), recent.map((type) => option(type, '')))] : []),
+      section('category', t('Browse'), [chips]),
+    ];
+  }
+
   function update() {
+    clear.hidden = !input.value;
     const query = input.value.trim().toLowerCase();
-    if (!query || document.activeElement !== input) {
+    if (document.activeElement !== input) {
       show(false);
       return;
     }
     options = [];
     active = -1;
+    if (!query) {
+      results.replaceChildren(...suggestions());
+      results.scrollTop = 0;
+      show(true);
+      return;
+    }
     const groups = CATEGORIES.flatMap((category) => {
       // A part's part numbers that match, e.g. "1N4148" for the diode.
       const codes = (type: PartType) => (PARTS[type].presets ?? []).map((p) => p.code).filter((c) => c.toLowerCase().includes(query));
@@ -64,47 +135,42 @@ export function createSearch(root: HTMLElement, palette: Palette) {
         return id === category.id && (has(name) || has(group) || codes(type).length > 0);
       });
       if (!matches.length) return [];
-      const group = document.createElement('div');
-      group.className = 'search-category';
-      group.setAttribute('role', 'group');
-      group.setAttribute('aria-label', t(category.label));
-      group.innerHTML = `<div class="search-category-label" aria-hidden="true"><md-icon>${category.icon}</md-icon>${t(category.label)}</div>`;
-      for (const type of matches) {
-        const part = PARTS[type];
-        const { box, width, height } = icon(type);
-        const el = document.createElement('div');
-        el.className = 'search-option';
-        el.id = `search-option-${type}`;
-        el.setAttribute('role', 'option');
-        const name = t(part.name);
-        const subgroup = part.group && t(part.group);
-        el.title = t('Drag {part} onto the board', { part: name });
-        el.innerHTML = `
-          <span class="search-option-icon"><svg class="part" viewBox="${box}" style="width: ${width}px; height: ${height}px" aria-hidden="true">${symbolMarkup(type, defaults(type))}</svg></span>
-          <span class="search-option-text">
-            <span class="search-option-name">${highlight(name, query)}</span>
-            ${subgroup || codes(type).length ? `<span class="search-option-group">${[subgroup ? highlight(subgroup, query) : '', ...codes(type).slice(0, 3).map((c) => highlight(c, query))].filter(Boolean).join(' · ')}</span>` : ''}
-          </span>`;
-        el.addEventListener('pointerdown', (e) => palette.startDrag(e, type, el));
-        // After a click or a drop: done here, back to the board.
-        el.addEventListener('click', () => input.blur());
-        options.push({ el, type });
-        group.append(el);
-      }
-      return [group];
+      return [section(category.icon, t(category.label), matches.map((type) => option(type, query, codes(type))))];
     });
     if (groups.length) {
       results.replaceChildren(...groups);
     } else {
       const none = document.createElement('div');
       none.className = 'search-empty';
-      none.textContent = t('No parts match “{query}”', { query: input.value.trim() });
+      none.innerHTML = `<md-icon>search_off</md-icon><span></span>`;
+      none.querySelector('span')!.textContent = t('No parts match “{query}”', { query: input.value.trim() });
       results.replaceChildren(none);
     }
     results.scrollTop = 0;
     show(true);
     setActive(options.length ? 0 : -1);
   }
+
+  // The shortcut hint at the end of the empty bar, as this keyboard has it.
+  root.querySelector('.search-key')!.textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
+
+  // Back: leave the search, and start afresh next time.
+  const back = root.querySelector<HTMLElement>('.search-back')!;
+  back.addEventListener('pointerdown', (e) => e.preventDefault());
+  back.addEventListener('click', (e) => {
+    e.preventDefault(); // it sits in the field's label: don't focus the field again
+    input.value = '';
+    clear.hidden = true;
+    input.blur();
+  });
+
+  // The clear button: empty the field, keep typing.
+  clear.addEventListener('pointerdown', (e) => e.preventDefault());
+  clear.addEventListener('click', () => {
+    input.value = '';
+    input.focus();
+    update();
+  });
 
   input.addEventListener('input', update);
   input.addEventListener('focus', update);
