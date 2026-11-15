@@ -93,7 +93,9 @@ Windows installers into a draft release to review and publish.
 | ⌘= / ⌘− / ⌘0           | Zoom in / zoom out / zoom to 100 %                                                         |
 | Double-click a wire    | Branch a new wire from it                                                                  |
 | ⌘C / ⌘X / ⌘V / ⌘D      | Copy / cut / paste / duplicate                                                             |
-| ⌘S / ⌘O                | Save / open                                                                                |
+| ⌘Z / ⇧⌘Z (⌘Y)          | Undo / redo                                                                                |
+| ⌘S / ⌘O / ⌘P           | Save / open / print                                                                        |
+| ? or ⌘/                | All keyboard shortcuts (also under Help in the rail)                                       |
 
 On Windows and Linux use Ctrl instead of ⌘.
 

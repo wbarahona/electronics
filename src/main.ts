@@ -21,6 +21,7 @@ import { createSearch } from './search.ts';
 import { createSettings } from './settings.ts';
 import { createTips } from './tips.ts';
 import { createTour, toured } from './tour.ts';
+import { createShortcuts } from './shortcuts.ts';
 import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
 import { onLanguage, t } from './i18n/index.ts';
@@ -225,6 +226,13 @@ if (!fromLink) {
     else if (settings.tips) tips.show();
   });
 }
+// Help in the rail: the keyboard shortcuts, the tour, a tip.
+const shortcuts = createShortcuts(byId('shortcuts-dialog'));
+const helpMenu = byId<MdMenu>('help-menu');
+byId('rail-help').addEventListener('click', () => (helpMenu.open = !helpMenu.open));
+byId('help-shortcuts').addEventListener('click', () => shortcuts.open());
+byId('help-tour').addEventListener('click', () => tour.start());
+byId('help-tip').addEventListener('click', () => tips.show());
 byId('settings-tour').addEventListener('click', async () => {
   await byId<MdDialog>('settings-dialog').close();
   tour.start();

@@ -127,11 +127,20 @@
           <span class="rail-label">Thermal</span>
         </button>
       </div>
+      <button id="rail-help" class="rail-item rail-help" type="button" aria-haspopup="menu" title="Keyboard shortcuts, tour, tips">
+        <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>help</md-icon></span>
+        <span class="rail-label">Help</span>
+      </button>
       <button id="rail-settings" class="rail-item rail-settings" type="button" aria-haspopup="dialog" title="Settings">
         <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>settings</md-icon></span>
         <span class="rail-label">Settings</span>
       </button>
     </nav>
+    <md-menu id="help-menu" anchor="rail-help" positioning="fixed" anchor-corner="end-end" menu-corner="end-start">
+      <md-menu-item id="help-shortcuts"><md-icon slot="start">keyboard</md-icon><div slot="headline">Keyboard shortcuts</div><div slot="end" class="menu-shortcut">?</div></md-menu-item>
+      <md-menu-item id="help-tour"><md-icon slot="start">tour</md-icon><div slot="headline">Take the tour</div></md-menu-item>
+      <md-menu-item id="help-tip"><md-icon slot="start">lightbulb</md-icon><div slot="headline">Show a tip</div></md-menu-item>
+    </md-menu>
     <md-menu id="file-menu" anchor="rail-file" positioning="fixed" anchor-corner="start-end" menu-corner="start-start">
       <md-menu-item id="file-new"><md-icon slot="start">note_add</md-icon><div slot="headline">New circuit</div></md-menu-item>
       <md-menu-item id="file-open"><md-icon slot="start">folder_open</md-icon><div slot="headline">Open…</div><div slot="end" class="menu-shortcut">⌘O</div></md-menu-item>
@@ -516,6 +525,14 @@
       </form>
       <div slot="actions" class="dialog-actions">
         <md-filled-button form="settings-form" value="done">Done</md-filled-button>
+      </div>
+    </md-dialog>
+    <md-dialog id="shortcuts-dialog" class="shortcuts-dialog">
+      <md-icon slot="icon">keyboard</md-icon>
+      <div slot="headline">Keyboard shortcuts</div>
+      <form slot="content" id="shortcuts-form" method="dialog" class="shortcuts-body"></form>
+      <div slot="actions" class="dialog-actions">
+        <md-filled-button form="shortcuts-form" value="close" autofocus>Done</md-filled-button>
       </div>
     </md-dialog>
     <md-dialog id="tip-dialog" class="tip-dialog">

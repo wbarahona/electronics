@@ -8,12 +8,13 @@ const ICONS = [
   '123', 'apps', 'arrow_back', 'arrow_drop_down', 'arrow_selector_tool', 'autorenew', 'avg_pace',
   'battery_charging_full', 'bolt', 'brightness_auto', 'category', 'check', 'check_box_outline_blank', 'close',
   'content_copy', 'content_cut', 'content_paste', 'contrast', 'dark_mode', 'delete', 'developer_board', 'doorbell',
-  'draw', 'edit_note', 'electrical_services', 'fast_forward', 'fast_rewind', 'filter_center_focus', 'fit_screen',
-  'folder', 'folder_open', 'format_color_fill', 'gradient', 'grid_on', 'history', 'image', 'library_add',
-  'light_mode', 'lightbulb', 'linear_scale', 'link', 'memory', 'menu', 'menu_open', 'mode_fan', 'monitoring',
-  'more_horiz', 'note_add', 'palette', 'pause', 'play_arrow', 'play_circle', 'power', 'print', 'redo', 'restart_alt',
-  'save', 'schedule', 'schema', 'school', 'search', 'search_off', 'settings', 'speed', 'stairs', 'swap_horiz',
-  'thermostat', 'timer', 'toggle_on', 'tour', 'translate', 'tune', 'undo', 'wallpaper', 'zoom_in', 'zoom_out',
+  'draw', 'edit', 'edit_note', 'electrical_services', 'fast_forward', 'fast_rewind', 'filter_center_focus',
+  'fit_screen', 'folder', 'folder_open', 'format_color_fill', 'gradient', 'grid_on', 'help', 'history', 'image',
+  'keyboard', 'library_add', 'light_mode', 'lightbulb', 'linear_scale', 'link', 'memory', 'menu', 'menu_open',
+  'mode_fan', 'monitoring', 'more_horiz', 'note_add', 'palette', 'pause', 'play_arrow', 'play_circle', 'power',
+  'print', 'redo', 'restart_alt', 'save', 'schedule', 'schema', 'school', 'search', 'search_off', 'settings',
+  'speed', 'stairs', 'swap_horiz', 'thermostat', 'timer', 'toggle_on', 'tour', 'translate', 'tune', 'undo',
+  'visibility', 'wallpaper', 'zoom_in', 'zoom_out',
 ];
 const OUT = new URL('../src/fonts/material-symbols-outlined.woff2', import.meta.url);
 
