@@ -110,7 +110,7 @@
         <md-icon>menu</md-icon>
       </md-icon-button>
       <div class="rail-items">
-        <button id="rail-examples" class="rail-item" type="button" aria-haspopup="dialog" title="Example circuits">
+        <button id="rail-examples" class="rail-item" type="button" aria-haspopup="dialog" title="Example circuits" data-tip="Working circuits to open, run and change.">
           <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>school</md-icon></span>
           <span class="rail-label">Examples</span>
         </button>
@@ -118,11 +118,11 @@
           <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>folder</md-icon></span>
           <span class="rail-label">File</span>
         </button>
-        <button id="rail-scope" class="rail-item" type="button" aria-pressed="false" title="Oscilloscope">
+        <button id="rail-scope" class="rail-item" type="button" aria-pressed="false" title="Oscilloscope" data-tip="Watch voltages over time. Place a scope probe on the circuit to give it a signal.">
           <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>monitoring</md-icon></span>
           <span class="rail-label">Scope</span>
         </button>
-        <button id="rail-thermal" class="rail-item" type="button" aria-pressed="false" title="Thermal view">
+        <button id="rail-thermal" class="rail-item" type="button" aria-pressed="false" title="Thermal view" data-tip="Colours every part that heats up by how close it runs to failing.">
           <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>thermostat</md-icon></span>
           <span class="rail-label">Thermal</span>
         </button>
@@ -131,7 +131,7 @@
         <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>help</md-icon></span>
         <span class="rail-label">Help</span>
       </button>
-      <button id="rail-settings" class="rail-item rail-settings" type="button" aria-haspopup="dialog" title="Settings">
+      <button id="rail-settings" class="rail-item rail-settings" type="button" aria-haspopup="dialog">
         <span class="rail-indicator"><md-ripple></md-ripple><md-focus-ring></md-focus-ring><md-icon>settings</md-icon></span>
         <span class="rail-label">Settings</span>
       </button>
@@ -204,7 +204,7 @@
           ></div>
         </div>
         <div id="sim-controls" class="sim-controls">
-          <span class="clock" title="Simulated time"
+          <span class="clock" title="Simulated time" data-tip="Time inside the simulation. It runs slower or faster than real time at other speeds."
             ><md-icon aria-hidden="true">schedule</md-icon
             ><span id="clock"></span
           ></span>
@@ -233,7 +233,7 @@
             <md-icon slot="icon">fast_forward</md-icon>
             <span class="speed-step-label">Faster</span>
           </md-filled-tonal-button>
-          <span class="speed" title="Simulation speed"
+          <span class="speed" title="Simulation speed" data-tip="How fast simulated time runs against real time. Slower and Faster change it 10× at a time."
             ><md-icon aria-hidden="true">avg_pace</md-icon
             ><span id="speed"></span
           ></span>

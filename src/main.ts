@@ -22,6 +22,7 @@ import { createSettings } from './settings.ts';
 import { createTips } from './tips.ts';
 import { createTour, toured } from './tour.ts';
 import { createShortcuts } from './shortcuts.ts';
+import { createTooltips } from './tooltip.ts';
 import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
 import { onLanguage, t } from './i18n/index.ts';
@@ -50,6 +51,8 @@ const newcomer = (() => {
     return false;
   }
 })();
+
+createTooltips();
 
 // Settings first: the theme colours everything else, and the language
 // translates index.html before anything is added to it.

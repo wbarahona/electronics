@@ -3103,6 +3103,72 @@ body.dragging * {
   padding: 0 4px;
 }
 
+/* Tooltips (src/tooltip.ts), M3: a plain one is body-small on
+   inverse-surface in an extra-small shape; a rich one a title-small subhead
+   and body-medium text on surface-container, medium shape, level 2. Both
+   come in with a quick Expressive fade and scale from their anchor's side. */
+.tooltip {
+  position: fixed;
+  z-index: 3000;
+  box-sizing: border-box;
+  max-width: 200px;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  pointer-events: none;
+  animation: tooltip-in 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.tooltip[hidden] {
+  display: none;
+}
+
+.tooltip.rich {
+  max-width: 320px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+  box-shadow:
+    0 2px 6px 2px rgb(0 0 0 / 0.15),
+    0 1px 2px rgb(0 0 0 / 0.3);
+}
+
+/* M3 title-small */
+.tooltip-title {
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* M3 body-medium */
+.tooltip-text {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    animation: none;
+  }
+}
+
 /* A confirmation (src/confirm.ts): headline, one sentence, Cancel / action. */
 .confirm-dialog {
   max-width: min(400px, calc(100vw - 48px));

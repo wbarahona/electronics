@@ -50,7 +50,7 @@ export const onLanguage = (redraw: () => void) => listeners.push(redraw);
 
 // index.html's translatable texts (text and the attributes below), noted with
 // their English once, as the page loads, before code adds anything.
-const ATTRS = ['title', 'aria-label', 'placeholder', 'label', 'supporting-text'];
+const ATTRS = ['title', 'aria-label', 'placeholder', 'label', 'supporting-text', 'data-tip'];
 const statics: { node: Node; attr?: string; source: string }[] = [];
 let ready = false;
 
