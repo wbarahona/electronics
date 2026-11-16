@@ -13,6 +13,9 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const PART_W = 80;
 const PART_H = 40;
 const DOUBLE_CLICK_MS = 500;
+// The invisible area around a pin or joint that takes a press: bigger for a
+// finger (a touch screen) than for a mouse.
+const HIT_R = matchMedia('(pointer: coarse)').matches ? 13 : 7;
 const DOT_SPACING = 16; // must match .wire-flow's stroke-dasharray
 const FLOW_MIN = 1e-6; // A; below this a wire shows no flow
 const FLOW_REF = 1e-4; // A
@@ -337,7 +340,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const tag = tagOf(c.type, c.props);
     drawnPins.set(c.id, pinNamesOf(c.type, c.props));
     const pinHits = pinsOf(c.type, c.props).map(
-      (p, i) => `<circle class="pin-hit" data-pin="${i}" cx="${p.x}" cy="${p.y}" r="7" />`,
+      (p, i) => `<circle class="pin-hit" data-pin="${i}" cx="${p.x}" cy="${p.y}" r="${HIT_R}" />`,
     );
     const g = nodes.get(c.id)!;
     g.classList.toggle('broken', c.broken);
@@ -635,7 +638,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const j = circuit.addJoint(x, y);
     const g = svgEl('g', 'joint', jointsLayer);
     g.dataset.id = j.id;
-    g.innerHTML = '<circle class="joint-dot" r="4" /><circle class="joint-hit" r="7" />';
+    g.innerHTML = `<circle class="joint-dot" r="4" /><circle class="joint-hit" r="${HIT_R}" />`;
     nodes.set(j.id, g);
     place(j);
     return j;
@@ -1118,8 +1121,14 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   // Dragging on empty board draws a selection box; parts and joints it touches
   // are selected, along with wires between them. Shift adds to the selection.
+  // A finger pans the board instead (two fingers pinch, see board.ts).
   svg.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || board.spaceHeld) return;
+    if (e.pointerType === 'touch') {
+      setSelected([]);
+      board.startPan(e);
+      return;
+    }
     const keep = e.shiftKey ? new Set(selected) : new Set<string>();
     setSelected(keep);
     const rect = svgEl('rect', 'marquee', world);
@@ -1350,13 +1359,25 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     for (const j of circuit.joints) {
       const g = svgEl('g', 'joint', jointsLayer);
       g.dataset.id = j.id;
-      g.innerHTML = '<circle class="joint-dot" r="4" /><circle class="joint-hit" r="7" />';
+      g.innerHTML = `<circle class="joint-dot" r="4" /><circle class="joint-hit" r="${HIT_R}" />`;
       nodes.set(j.id, g);
       place(j);
     }
     for (const w of circuit.wires) addWire(w);
     tidyJoints();
   }
+
+  // A touch gesture (a second finger, a long press) takes over: whatever the
+  // first finger started is undone, as Esc would.
+  board.onGesture(() => {
+    if (drag) cancelDrag();
+    if (segDrag) cancelSegmentDrag();
+    if (marquee) {
+      setSelected(marquee.keep);
+      endMarquee();
+    }
+    if (wiring) stopWire();
+  });
 
   // Right-click: act on what's under the pointer (keeping the selection if it's
   // already part of it), or on nothing when on empty board.
@@ -1383,6 +1404,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     paste,
     duplicate: duplicateSelected,
     deleteSelected,
+    rotate: rotateSelected,
     canCopy: () => !!snapshot(),
     canPaste: () => !!clipboard,
     hasSelection: () => selected.size > 0,

@@ -381,7 +381,7 @@ md-icon svg {
   letter-spacing: 0.045em;
   color: var(--md-sys-color-on-surface-variant);
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-x; /* a sideways swipe scrolls the tray; a drag down pulls the part out */
   outline: none;
   --md-focus-ring-shape: 8px;
 }
@@ -673,6 +673,21 @@ body.dragging .search-results {
   background: color-mix(in srgb, var(--md-sys-color-primary) 22%, transparent);
   color: inherit;
   font-weight: 700;
+}
+
+/* An action's shortcut, at the end of its row (key caps as in the
+   Keyboard shortcuts dialog). */
+.search-keys {
+  margin-left: auto;
+  max-width: none;
+}
+
+.search-action .search-option-icon md-icon {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.search-option.active.search-action .search-option-icon md-icon {
+  color: inherit;
 }
 
 /* M3 body-medium */
@@ -2070,6 +2085,8 @@ body.dragging * {
   height: 100%;
   touch-action: none;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none; /* no iOS long-press callout: the long press is ours */
 }
 
 #board.space-pan,

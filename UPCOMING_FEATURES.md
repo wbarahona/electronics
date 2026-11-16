@@ -44,8 +44,4 @@ sheet frame and title block for printing):
 - **Logarithmic sliders**: settings that span decades (frequencies, a
   transformer's turns ratio, resistances) still take typed values only; a
   log-scale slider would cover them. Discrete and linear sliders are built.
-- **Command palette (⌘⇧P)**: run any action by typing ("rotate", "fit",
-  "export PNG", "add resistor").
 - **Installable app (PWA)**: works offline and opens like a desktop app.
-- **Touch and tablet support**: pinch zoom, long-press for the context menu,
-  larger targets.

@@ -22,6 +22,7 @@ import { createSettings } from './settings.ts';
 import { createTips } from './tips.ts';
 import { createTour, toured } from './tour.ts';
 import { createShortcuts } from './shortcuts.ts';
+import { registerCommands } from './commands.ts';
 import { createTooltips } from './tooltip.ts';
 import { showVersion } from './version.ts';
 import { createZoom } from './zoom.ts';
@@ -461,7 +462,50 @@ settings.onChange(() => {
 });
 
 // Zoom buttons and shortcuts at the board's bottom-left corner.
-createZoom(byId('zoom'), board);
+const zoom = createZoom(byId('zoom'), board);
+
+// The actions the search finds and runs (the command palette: ⌘K with the
+// parts, ⌘⇧P on their own). See src/commands.ts.
+const press = (id: string) => () => byId(id).click();
+// The middle of the board in view, in world units (where a pasted copy goes).
+const viewCentre = () => {
+  const r = board.svg.getBoundingClientRect();
+  return board.screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+};
+const enabled = (id: string) => () => !byId<HTMLElement & { disabled: boolean }>(id).disabled;
+registerCommands([
+  { label: 'Run or pause the simulation', icon: 'play_arrow', keys: ['Space'], words: 'start stop', run: () => controls.toggle() },
+  { label: 'Slower', icon: 'fast_rewind', keys: ['←'], words: 'speed', run: press('slower') },
+  { label: 'Faster', icon: 'fast_forward', keys: ['→'], words: 'speed', run: press('faster') },
+  { label: 'Undo', icon: 'undo', keys: ['Mod', 'Z'], available: enabled('undo'), run: press('undo') },
+  { label: 'Redo', icon: 'redo', keys: ['Mod', 'Shift', 'Z'], available: enabled('redo'), run: press('redo') },
+  { label: 'Rotate the selection', icon: 'autorenew', keys: ['R'], words: 'turn', available: editor.hasSelection, run: () => editor.rotate() },
+  { label: 'Copy', icon: 'content_copy', keys: ['Mod', 'C'], available: editor.canCopy, run: () => editor.copy() },
+  { label: 'Cut', icon: 'content_cut', keys: ['Mod', 'X'], available: editor.canCopy, run: () => editor.cut() },
+  { label: 'Paste', icon: 'content_paste', keys: ['Mod', 'V'], available: editor.canPaste, run: () => editor.paste(viewCentre()) },
+  { label: 'Duplicate', icon: 'library_add', keys: ['Mod', 'D'], available: editor.canCopy, run: () => editor.duplicate() },
+  { label: 'Delete the selection', icon: 'delete', keys: ['Del'], words: 'remove', available: editor.hasSelection, run: () => editor.deleteSelected() },
+  { label: 'Fit the circuit in view', icon: 'fit_screen', keys: ['F'], words: 'zoom', run: () => zoom.fit() },
+  { label: 'Zoom in', icon: 'zoom_in', keys: ['Mod', '='], run: () => board.zoomStep(1) },
+  { label: 'Zoom out', icon: 'zoom_out', keys: ['Mod', '−'], run: () => board.zoomStep(-1) },
+  { label: 'Zoom to 100 %', icon: 'zoom_in', keys: ['Mod', '0'], run: () => board.zoomTo(1) },
+  { label: 'Thermal view', icon: 'thermostat', words: 'heat temperature ambient', run: toggleThermal },
+  { label: 'Oscilloscope', icon: 'monitoring', words: 'scope probe', run: toggleScope },
+  { label: 'Show or hide values on hover', icon: 'arrow_selector_tool', keys: ['I'], words: 'readout tooltip', run: () => (settings.readout = !settings.readout) },
+  { label: 'New circuit', icon: 'note_add', run: press('file-new') },
+  { label: 'Open…', icon: 'folder_open', keys: ['Mod', 'O'], run: press('file-open') },
+  { label: 'Save', icon: 'save', keys: ['Mod', 'S'], run: press('file-save') },
+  { label: 'Print…', icon: 'print', keys: ['Mod', 'P'], run: () => printer.open() },
+  { label: 'Export as PNG', icon: 'image', words: 'picture', run: () => printer.exportImage('png') },
+  { label: 'Export as SVG', icon: 'draw', words: 'vector', run: () => printer.exportImage('svg') },
+  { label: 'Background image…', icon: 'wallpaper', words: 'trace', run: () => backdrop.open() },
+  { label: 'Examples', icon: 'school', words: 'gallery', run: () => gallery.open() },
+  { label: 'Settings', icon: 'settings', words: 'preferences options', run: () => settings.open() },
+  { label: 'Keyboard shortcuts', icon: 'keyboard', keys: ['?'], words: 'keys help', run: () => shortcuts.open() },
+  { label: 'Take the tour', icon: 'tour', words: 'help', run: () => tour.start() },
+  { label: 'Show a tip', icon: 'lightbulb', words: 'help', run: () => tips.show() },
+  { label: 'About Ampage', icon: 'help', words: 'version', run: () => about.show() },
+]);
 
 // Everything is set up: show the app (index.html kept it hidden behind its
 // loading screen) once its fonts are in, as icons read as words before the

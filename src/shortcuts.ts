@@ -4,8 +4,8 @@ import { fromControl } from './keys.ts';
 
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 
-// One key in a shortcut: a key name, or a lowercase word for something done
-// with the mouse ('drag', 'scroll', 'double-click'), shown as text.
+// One key in a shortcut: a key name, or lowercase words for something done
+// with the mouse or a finger ('drag', 'scroll', 'pinch'), shown as text.
 type Key = string;
 
 // What a shortcut does and its keys: each inner list one way of doing it,
@@ -29,7 +29,7 @@ const GROUPS: { title: string; icon: string; rows: Row[] }[] = [
     title: 'Parts',
     icon: 'search',
     rows: [
-      ['Search parts', [['Mod', 'K']]],
+      ['Search parts and actions', [['Mod', 'K']]],
       ['Choose a search result', [['↑'], ['↓']]],
       ['Place the chosen part', [['Enter']]],
       ['Rotate (also while dragging)', [['R']]],
@@ -62,6 +62,16 @@ const GROUPS: { title: string; icon: string; rows: Row[] }[] = [
     ],
   },
   {
+    title: 'Touch',
+    icon: 'touch_app',
+    rows: [
+      ['Pan the board', [['drag with one finger']]],
+      ['Zoom', [['pinch']]],
+      ['Cut, copy, paste, delete', [['long press']]],
+      ['Place a part', [['drag it down from the tray']]],
+    ],
+  },
+  {
     title: 'Files',
     icon: 'folder',
     rows: [
@@ -73,7 +83,10 @@ const GROUPS: { title: string; icon: string; rows: Row[] }[] = [
   {
     title: 'Help',
     icon: 'help',
-    rows: [['Keyboard shortcuts', [['?'], ['Mod', '/']]]],
+    rows: [
+      ['Keyboard shortcuts', [['?'], ['Mod', '/']]],
+      ['Search actions (command palette)', [['Mod', 'Shift', 'P']]],
+    ],
   },
 ];
 
@@ -82,14 +95,15 @@ const MAC_KEYS: Record<string, string> = { Mod: '⌘', Shift: '⇧', Backspace: 
 const PC_KEYS: Record<string, string> = { Mod: 'Ctrl' };
 const WORDS = new Set(['Space', 'Enter', 'Home', 'Esc', 'Backspace', 'Del', 'Shift']); // key names to translate
 const keyText = (key: Key) => (MAC ? MAC_KEYS[key] : PC_KEYS[key]) ?? (WORDS.has(key) ? t(key) : key);
-const isGesture = (key: Key) => /^[a-z-]+$/.test(key);
+const isGesture = (key: Key) => /^[a-z][a-z -]*$/.test(key);
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // One way of doing it: key caps, with + between them off the Mac (where
 // shortcuts are written ⌘K); a mouse gesture as a word.
-// Kept together on one line.
-function combo(keys: Key[]): string {
+// Kept together on one line. (Also used for the shortcuts shown beside
+// actions in the search.)
+export function combo(keys: Key[]): string {
   const caps = keys
     .map((key) => (isGesture(key) ? `<span class="shortcut-gesture">${escape(t(key))}</span>` : `<kbd>${escape(keyText(key))}</kbd>`))
     .join(MAC ? '' : '<span class="shortcut-plus">+</span>');

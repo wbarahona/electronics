@@ -383,7 +383,7 @@ export function createPrint(dialog: MdDialog, src: PrintSources) {
   window.addEventListener(
     'keydown',
     (e) => {
-      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== 'p') return;
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'p') return;
       e.preventDefault();
       e.stopPropagation();
       open();

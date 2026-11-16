@@ -82,7 +82,8 @@ Windows installers into a draft release to review and publish.
 
 | Key                    | Action                                                                                     |
 | ---------------------- | ------------------------------------------------------------------------------------------ |
-| ⌘K                     | Search parts                                                                               |
+| ⌘K                     | Search parts and actions (rotate, fit, export PNG…)                                         |
+| ⌘⇧P                    | Search actions only (command palette); or type > first in the search                       |
 | Space                  | Run / pause the simulation                                                                 |
 | ← / →                  | Slow down / speed up the simulation (10× steps)                                            |
 | R                      | Rotate (also while dragging)                                                               |
@@ -100,6 +101,10 @@ Windows installers into a draft release to review and publish.
 | ? or ⌘/                | All keyboard shortcuts (also under Help in the rail)                                       |
 
 On Windows and Linux use Ctrl instead of ⌘.
+
+On a touch screen (a tablet, or a touchscreen laptop): drag with one finger
+on empty board to pan, pinch to zoom, long-press a part or the board for cut,
+copy, paste and delete, and drag a part down out of the tray to place it.
 
 ## Project layout
 

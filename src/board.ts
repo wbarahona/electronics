@@ -12,6 +12,8 @@ const MAX_SCALE = 4;
 const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 4];
 const FIT_MARGIN = 40; // world units around a fitted circuit
 const FIT_MAX = 2; // fitting never zooms in past 200 %
+const LONG_PRESS_MS = 500; // a finger held this long without moving is a right-click
+const PRESS_SLOP = 8; // px a finger may wander and still be held
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -127,6 +129,111 @@ export function createBoard(svg: SVGSVGElement) {
   svg.addEventListener('pointerup', endDrag);
   svg.addEventListener('pointercancel', endDrag);
 
+  // A one-finger pan, started by the editor when a finger lands on empty
+  // board (a mouse draws a selection box there instead).
+  function startPan(e: PointerEvent) {
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    svg.setPointerCapture(e.pointerId);
+    svg.classList.add('panning');
+  }
+
+  // --- Touch ----------------------------------------------------------------
+  // Two fingers pinch to zoom and pan together, about the point between them.
+  // A second finger takes over whatever the first had started (a drag, a wire,
+  // a pan): onGesture listeners are told so they can cancel it, and both
+  // fingers are kept from the editor until lifted. Holding one finger still
+  // for LONG_PRESS_MS is a right-click: a contextmenu event at that spot (and
+  // the browser's own long-press menu is kept away).
+  const fingers = new Map<number, { x: number; y: number }>();
+  const swallowed = new Set<number>(); // fingers the editor no longer hears about
+  const gestureListeners: (() => void)[] = [];
+  let pinch: { dist: number; mid: { x: number; y: number } } | null = null;
+  let press: { id: number; x: number; y: number; timer: number } | null = null;
+  let lastTouch = 0;
+
+  const twoFingers = () => {
+    const [a, b] = [...fingers.values()];
+    return { dist: Math.hypot(a.x - b.x, a.y - b.y), mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+  };
+
+  const cancelPress = () => {
+    if (press) clearTimeout(press.timer);
+    press = null;
+  };
+
+  // Something else takes over: the editor cancels what it started, and any
+  // one-finger pan stops.
+  function takeOver(ids: number[]) {
+    for (const id of ids) swallowed.add(id);
+    drag = null;
+    svg.classList.remove('panning');
+    for (const listener of gestureListeners) listener();
+  }
+
+  svg.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    lastTouch = performance.now();
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (fingers.size === 2) {
+      cancelPress();
+      takeOver([...fingers.keys()]);
+      pinch = twoFingers();
+      e.stopImmediatePropagation();
+      return;
+    }
+    if (fingers.size > 2) {
+      swallowed.add(e.pointerId);
+      e.stopImmediatePropagation();
+      return;
+    }
+    cancelPress();
+    const { pointerId: id, clientX: x, clientY: y } = e;
+    press = {
+      id, x, y,
+      timer: window.setTimeout(() => {
+        press = null;
+        takeOver([id]);
+        const target = document.elementFromPoint(x, y) ?? svg;
+        target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 2 }));
+      }, LONG_PRESS_MS),
+    };
+  }, true);
+
+  svg.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'touch' || !fingers.has(e.pointerId)) return;
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (press?.id === e.pointerId && Math.hypot(e.clientX - press.x, e.clientY - press.y) > PRESS_SLOP) cancelPress();
+    if (pinch && fingers.size === 2) {
+      const now = twoFingers();
+      const r = svg.getBoundingClientRect();
+      // Keep the world point under the old midpoint under the new one.
+      const anchor = screenToWorld(pinch.mid.x, pinch.mid.y);
+      view.scale = clamp(view.scale * (now.dist / Math.max(1, pinch.dist)), MIN_SCALE, MAX_SCALE);
+      view.x = anchor.x - (now.mid.x - r.left) / view.scale;
+      view.y = anchor.y - (now.mid.y - r.top) / view.scale;
+      pinch = now;
+      render();
+    }
+    if (swallowed.has(e.pointerId)) e.stopImmediatePropagation();
+  }, true);
+
+  const lift = (e: PointerEvent) => {
+    if (e.pointerType !== 'touch') return;
+    if (press?.id === e.pointerId) cancelPress();
+    fingers.delete(e.pointerId);
+    if (fingers.size < 2) pinch = null;
+    if (swallowed.delete(e.pointerId)) e.stopImmediatePropagation();
+  };
+  svg.addEventListener('pointerup', lift, true);
+  svg.addEventListener('pointercancel', lift, true);
+
+  // The browser's own long-press menu (Android): ours is shown instead.
+  svg.addEventListener('contextmenu', (e) => {
+    if (!e.isTrusted || performance.now() - lastTouch > 1500) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
+
   // When the board's top or left edge moves (the parts tray sliding open or
   // shut above it), shift the view by the same amount so the circuit stays
   // where it is on screen instead of jumping with the edge.
@@ -196,6 +303,12 @@ export function createBoard(svg: SVGSVGElement) {
     // Called after every pan or zoom.
     onView(listener: () => void) {
       viewListeners.push(listener);
+    },
+    startPan,
+    // Called when a touch gesture (a second finger, a long press) takes over
+    // what a finger had started.
+    onGesture(listener: () => void) {
+      gestureListeners.push(listener);
     },
     get spaceHeld() {
       return spaceHeld;
