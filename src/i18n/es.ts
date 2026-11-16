@@ -279,6 +279,7 @@ export default {
   pinch: 'pellizcar',
   'long press': 'mantener pulsado',
   'drag it down from the tray': 'arrastrarlo hacia abajo desde la bandeja',
+  'Ampage – electronics circuit simulator': 'Ampage – simulador de circuitos electrónicos',
   'Opening a circuit': 'Al abrir un circuito',
   'Fit it in view': 'Ajustarlo a la vista',
   'The whole circuit, whatever the window size': 'El circuito entero, sea cual sea el tamaño de la ventana',

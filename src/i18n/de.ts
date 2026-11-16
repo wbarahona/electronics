@@ -279,6 +279,7 @@ export default {
   pinch: 'zwei Finger spreizen',
   'long press': 'lange drücken',
   'drag it down from the tray': 'aus der Leiste nach unten ziehen',
+  'Ampage – electronics circuit simulator': 'Ampage – Simulator für elektronische Schaltungen',
   'Opening a circuit': 'Beim Öffnen einer Schaltung',
   'Fit it in view': 'Ganz einpassen',
   'The whole circuit, whatever the window size': 'Die ganze Schaltung, egal wie groß das Fenster ist',

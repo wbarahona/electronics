@@ -56,8 +56,14 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   let quiet = false; // while loading: the changes loading fires aren't edits
 
   // The window's title: Ampage, the circuit's name (or New circuit) and
-  // [Edited] while it has changes not yet saved.
+  // [Edited] while it has changes not yet saved. On the website, a fresh
+  // untouched circuit keeps the page's descriptive title instead, as search
+  // engines and link previews see it (index.html).
   function showTitle() {
+    if (!isApp && untitled && !edited) {
+      setWindowTitle(t('Ampage – electronics circuit simulator'));
+      return;
+    }
     const shown = untitled ? t('New circuit') : circuitName || title();
     setWindowTitle(`Ampage - ${shown}${edited ? ` [${t('Edited')}]` : ''}`);
   }

@@ -537,15 +537,23 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       .join('');
   }
 
-  function setSelected(ids: Iterable<string>) {
+  // `tell`: report it (the app opens the inspector); a finger's press waits
+  // until it lifts, see inspectOnLift.
+  function setSelected(ids: Iterable<string>, tell = true) {
     for (const id of selected) nodes.get(id)?.classList.remove('selected');
     selected.clear();
     for (const id of ids) {
       selected.add(id);
       nodes.get(id)!.classList.add('selected');
     }
-    onSelect([...selected]);
+    if (tell) onSelect([...selected]);
   }
+
+  // A finger pressing a part or wire selects it at once but tells the app (so
+  // the inspector opens) only when it lifts without having dragged: a tap
+  // inspects, a drag just moves. (A mouse tells at once: its inspector sits
+  // beside the board, not over it.)
+  let inspectOnLift: { id: number; moved: boolean } | null = null;
 
   // Selected parts and joints: the things that have a position of their own.
   const selectedNodes = (): Placed[] =>
@@ -1045,7 +1053,9 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       setSelected(ids);
       return;
     }
-    if (!selected.has(id)) setSelected([id]);
+    const finger = e.pointerType === 'touch';
+    if (!selected.has(id)) setSelected([id], !finger);
+    inspectOnLift = finger ? { id: e.pointerId, moved: false } : null;
     if (g.classList.contains('wire')) {
       startSegmentDrag(circuit.wire(id)!, e, g);
       return;
@@ -1081,6 +1091,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       const d = snap(horiz ? p.y - start.y : p.x - start.x);
       if (d === segDrag.d) return;
       segDrag.d = d;
+      if (inspectOnLift) inspectOnLift.moved = true;
       w.via = simplify(moveSegment(base, i, horiz ? 0 : d, horiz ? d : 0)).slice(1, -1);
       drawWire(w);
       return;
@@ -1093,6 +1104,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     if (dx === d.dx && dy === d.dy) return;
     d.dx = dx;
     d.dy = dy;
+    if (inspectOnLift) inspectOnLift.moved = true;
     for (const n of d.list) {
       const b = d.base.get(n.id)!;
       n.x = b.x + dx;
@@ -1108,6 +1120,10 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   });
 
   const endDrag = (e: PointerEvent) => {
+    if (inspectOnLift?.id === e.pointerId) {
+      if (e.type === 'pointerup' && !inspectOnLift.moved) onSelect([...selected]);
+      inspectOnLift = null;
+    }
     if (segDrag && e.pointerId === segDrag.id) segDrag = null;
     if (!drag || e.pointerId !== drag.id) return;
     const c = drag.free;
@@ -1370,6 +1386,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // A touch gesture (a second finger, a long press) takes over: whatever the
   // first finger started is undone, as Esc would.
   board.onGesture(() => {
+    inspectOnLift = null;
     if (drag) cancelDrag();
     if (segDrag) cancelSegmentDrag();
     if (marquee) {

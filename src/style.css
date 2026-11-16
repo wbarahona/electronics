@@ -544,6 +544,16 @@ md-icon svg {
   display: none;
 }
 
+.search-open {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .search-open {
+    display: inline-flex;
+  }
+}
+
 .search-clear {
   position: absolute;
   top: 4px;
@@ -721,16 +731,76 @@ body.dragging .search-results {
 
 /* Too narrow to share the row: the search bar gets its own line below
    (on phones the run controls wrap onto one of their own too). */
+/* Phones: two rows. The logo, undo / redo and the search, folded to its
+   magnifier at the end of the row, which opens across the row while in use;
+   then the run controls, centred. */
 @media (max-width: 600px) {
   .toolbar-row {
+    position: relative;
     flex-wrap: wrap;
     row-gap: 4px;
   }
 
   .search {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  /* Folded: only the magnifier button; the bar comes back while in use. */
+  .search:not(:has(input:focus), .open, .unfolded) .search-bar,
+  .search:not(:has(input:focus), .open, .unfolded) .search-clear {
+    display: none;
+  }
+
+  .search:is(:has(input:focus), .open, .unfolded) .search-open {
+    display: none;
+  }
+
+  /* Open: across the whole first row, on the toolbar's colour so nothing
+     shows round its corners. */
+  .search:is(:has(input:focus), .open, .unfolded) {
+    position: absolute;
+    z-index: 25;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--md-sys-color-surface-container);
+  }
+
+  .toolbar-row .sim-controls {
     order: 1;
     flex-basis: 100%;
-    margin-bottom: 8px;
+    justify-content: center;
+    margin: 0 0 8px;
+  }
+
+  /* The category buttons centred under the run controls too. */
+  .palette {
+    justify-content: center;
+  }
+
+  /* Even sides, so the centred row is centred on the screen. */
+  #toolbar {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* Touch screens: no ⌘K hint (no keyboard to press it on). Phones: of the
+   zoom buttons only Fit stays; pinch does the rest. */
+@media (hover: none) and (pointer: coarse) {
+  .search-key {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) and (hover: none) and (pointer: coarse) {
+  .zoom-controls > :not(#zoom-fit) {
+    display: none;
   }
 }
 

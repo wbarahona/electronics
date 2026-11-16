@@ -3,8 +3,51 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ampage</title>
+    <title>Ampage – electronics circuit simulator</title>
+    <!-- For search engines and link previews (the web version on GitHub
+         Pages; harmless in the desktop app). The window title above changes
+         to the circuit's name once the app runs. -->
+    <meta name="description" content="Draw circuits with real parts and watch them run: lamps glow, current flows, overloaded parts burn out. A free electronics simulator in your browser, for learning and teaching." />
+    <link rel="canonical" href="https://wbarahona.github.io/electronics/" />
+    <!-- Google Search Console: proves the site is ours (URL-prefix property). -->
+    <meta name="google-site-verification" content="Srz162WhaERQRl8qUi0x8dXi3FOzxVhz75rzjPyd9Wc" />
+    <meta name="theme-color" content="#f5fcea" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f150b" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ampage" />
+    <meta property="og:title" content="Ampage – electronics circuit simulator" />
+    <meta property="og:description" content="Draw circuits with real parts and watch them run: lamps glow, current flows, overloaded parts burn out. A free electronics simulator in your browser, for learning and teaching." />
+    <meta property="og:url" content="https://wbarahona.github.io/electronics/" />
+    <meta property="og:image" content="https://wbarahona.github.io/electronics/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A motor starter circuit running in Ampage, with the oscilloscope and the part inspector open" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="es_ES" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ampage – electronics circuit simulator" />
+    <meta name="twitter:description" content="Draw circuits with real parts and watch them run: lamps glow, current flows, overloaded parts burn out. A free electronics simulator in your browser, for learning and teaching." />
+    <meta name="twitter:image" content="https://wbarahona.github.io/electronics/og-image.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Ampage",
+        "url": "https://wbarahona.github.io/electronics/",
+        "description": "Draw circuits with real parts and watch them run: lamps glow, current flows, overloaded parts burn out. A free electronics simulator in your browser, for learning and teaching.",
+        "image": "https://wbarahona.github.io/electronics/og-image.png",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web browser, macOS, Windows",
+        "inLanguage": ["en", "es", "de"],
+        "license": "https://opensource.org/licenses/MIT",
+        "downloadUrl": "https://github.com/wbarahona/electronics/releases/latest",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "wbarahona" }
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href="/ampage.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Before anything else loads: the page in the theme's background colour
          and an M3 Expressive loading indicator (a shape morphing as it turns,
          in its container), so the window never shows unstyled text. The
@@ -104,6 +147,12 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
+    <!-- Without JavaScript (and for crawlers that don't run it): what Ampage is. -->
+    <noscript>
+      <h1>Ampage – electronics circuit simulator</h1>
+      <p>Draw circuits with real parts and watch them run: lamps glow, current flows, capacitors charge, batteries drain and overloaded parts burn out. Batteries, resistors, capacitors, LEDs, transistors, logic gates, 555 timers, relays, motors, meters and an oscilloscope; IEC (EU) or ANSI (US) symbols; in English, Spanish and German.</p>
+      <p>Ampage needs JavaScript to run. You can also <a href="https://github.com/wbarahona/electronics/releases/latest">download it for macOS and Windows</a>.</p>
+    </noscript>
     <div id="splash" role="progressbar" aria-label="Loading Ampage"><div class="splash-box"><div class="splash-shape"></div></div></div>
     <nav id="rail" class="rail" aria-label="Main">
       <md-icon-button id="rail-toggle" class="rail-toggle" title="Expand navigation" aria-label="Expand navigation" aria-expanded="false">
@@ -174,6 +223,7 @@
           </md-icon-button>
         </div>
         <div id="search" class="search" role="search">
+          <md-icon-button class="search-open" aria-label="Search parts" title="Search parts"><md-icon>search</md-icon></md-icon-button>
           <label class="search-bar">
             <span class="search-lead">
               <md-icon class="search-icon" aria-hidden="true">search</md-icon>

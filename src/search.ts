@@ -231,6 +231,17 @@ export function createSearch(root: HTMLElement, palette: Palette) {
     input.blur();
   });
 
+  // Phones: the search folded to a magnifier, which unfolds it (it folds
+  // again when the field loses focus).
+  const unfold = (e: Event) => {
+    e.preventDefault(); // the field takes the focus, not the button
+    root.classList.add('unfolded');
+    input.focus();
+  };
+  const magnifier = root.querySelector('.search-open')!;
+  magnifier.addEventListener('pointerdown', unfold);
+  magnifier.addEventListener('click', unfold); // from the keyboard
+
   // The clear button: empty the field, keep typing.
   clear.addEventListener('pointerdown', (e) => e.preventDefault());
   clear.addEventListener('click', () => {
@@ -243,6 +254,7 @@ export function createSearch(root: HTMLElement, palette: Palette) {
   input.addEventListener('focus', update);
   input.addEventListener('blur', () => {
     actionsOnly = false;
+    root.classList.remove('unfolded');
     show(false);
   });
   // Pressing in the list (its scrollbar too) mustn't take focus from the field.
