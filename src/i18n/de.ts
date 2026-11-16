@@ -264,6 +264,8 @@ export default {
   'Ambient temperature, hot parts warming their neighbours, fans cooling them. Off: each part heats on its own, at 25 °C': 'Umgebungstemperatur, heiße Bauteile wärmen ihre Nachbarn, Lüfter kühlen sie. Aus: jedes Bauteil erwärmt sich für sich, bei 25 °C',
   'Warm-up time': 'Aufheizzeit',
   Edited: 'Bearbeitet',
+  'Name this circuit': 'Diese Schaltung benennen',
+  'Circuit name': 'Name der Schaltung',
   'Opening a circuit': 'Beim Öffnen einer Schaltung',
   'Fit it in view': 'Ganz einpassen',
   'The whole circuit, whatever the window size': 'Die ganze Schaltung, egal wie groß das Fenster ist',

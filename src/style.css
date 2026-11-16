@@ -3237,6 +3237,12 @@ body.dragging * {
   max-width: min(400px, calc(100vw - 48px));
 }
 
+/* A name asked for (promptDialog): the field across the dialog. */
+.prompt-field {
+  width: min(320px, calc(100vw - 96px));
+  margin-top: 8px;
+}
+
 .confirm-body {
   padding: 0 16px; /* in line with the headline */
 }

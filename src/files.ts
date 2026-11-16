@@ -1,7 +1,7 @@
 import { onLanguage, t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
-import { confirmDialog } from './confirm.ts';
+import { confirmDialog, promptDialog } from './confirm.ts';
 import { isApp, onOpenedFiles, openCircuitFile, saveCircuitFile, saveFile, setWindowTitle, type CircuitFile } from './platform.ts';
 import { circuitInLink, clearLink, linkFor } from './share.ts';
 import type { Circuit } from './model.ts';
@@ -14,6 +14,11 @@ const MIME = 'application/vnd.ampage+json';
 const OPEN_TYPES = [{ description: 'Ampage circuit', accept: { [MIME]: ['.ampage'], 'application/json': ['.json'] } }];
 const SAVE_TYPES = [{ description: 'Ampage circuit', accept: { [MIME]: ['.ampage'] } }];
 const NEW_NAME = 'circuit.ampage';
+// A circuit's name as a file name: spaces become dashes ("My blinker" →
+// My-blinker.ampage), characters files can't have are left out.
+const fileNameFor = (circuitName: string) =>
+  `${circuitName.replace(/[\\/:*?"<>|]+/g, '').trim().replace(/\s+/g, '-') || 'circuit'}.ampage`;
+
 // A name to save under that no file stands behind yet: always .ampage.
 const ampageName = (name: string) => name.replace(/\.(json|ampage)$/i, '') + '.ampage';
 
@@ -47,13 +52,14 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   let path: string | null = null; // the same, in the desktop app
   let name = NEW_NAME;
   let untitled = true; // a new circuit, never saved or opened from a file or example
+  let circuitName = ''; // its name as typed (or an example's title); the file name has dashes
   let edited = false; // changed since it was opened, started or last saved
   let quiet = false; // while loading: the changes loading fires aren't edits
 
   // The window's title: Ampage, the circuit's name (or New circuit) and
   // [Edited] while it has changes not yet saved.
   function showTitle() {
-    const shown = untitled ? t('New circuit') : title();
+    const shown = untitled ? t('New circuit') : circuitName || title();
     setWindowTitle(`Ampage - ${shown}${edited ? ` [${t('Edited')}]` : ''}`);
   }
 
@@ -63,7 +69,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     edited = on;
     showTitle();
     try {
-      localStorage.setItem(AUTOSAVE_NAME_KEY, JSON.stringify({ name, untitled, edited }));
+      localStorage.setItem(AUTOSAVE_NAME_KEY, JSON.stringify({ name, circuitName, untitled, edited }));
     } catch {
       // no storage: the title starts afresh next time
     }
@@ -94,12 +100,13 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     handle = null;
     path = null;
   };
-  const text = () => JSON.stringify(serialize(circuit, getView()), null, 2);
+  const text = () => JSON.stringify(serialize(circuit, getView(), circuitName || undefined), null, 2);
 
   async function newCircuit() {
     if (!(await replaceOk('new'))) return;
     detach();
     name = NEW_NAME;
+    circuitName = '';
     untitled = true;
     quietly(() => load({ format: 'electronics-circuit', version: 1, parts: [], joints: [], wires: [] }));
     setEdited(false);
@@ -115,6 +122,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
     quietly(() => load(data, true));
     name = fileName;
+    circuitName = data.name ?? fileName.replace(/\.(ampage|json)$/i, '');
     untitled = false;
     setEdited(false);
     return true;
@@ -154,7 +162,26 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     input.click();
   }
 
+  // Ask for the circuit's name before it's first saved to a file (a new
+  // circuit, or an example), filled with the name it has so far. False if
+  // cancelled.
+  async function nameIt(): Promise<boolean> {
+    const typed = await promptDialog({
+      headline: t('Name this circuit'),
+      label: t('Circuit name'),
+      value: untitled ? '' : circuitName || title(),
+      action: t('Save'),
+    });
+    if (typed === null) return false;
+    circuitName = typed;
+    name = fileNameFor(typed);
+    return true;
+  }
+
   async function save() {
+    // No file behind it yet: its name first.
+    const fileless = isApp ? !path : picker.showSaveFilePicker ? !handle : untitled;
+    if (fileless && !(await nameIt())) return;
     if (isApp) {
       try {
         const file = await saveCircuitFile(text(), path, ampageName(name));
@@ -246,6 +273,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     try {
       const meta = JSON.parse(localStorage.getItem(AUTOSAVE_NAME_KEY) ?? '{}');
       if (typeof meta.name === 'string' && meta.name) name = meta.name;
+      if (typeof meta.circuitName === 'string') circuitName = meta.circuitName;
       untitled = meta.untitled !== false;
       edited = meta.edited === true;
       const saved = localStorage.getItem(AUTOSAVE_KEY);

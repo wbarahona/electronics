@@ -19,14 +19,16 @@ export interface SavedCircuit {
   parts: Part[];
   joints: Joint[];
   wires: Wire[];
+  name?: string; // the circuit's name as typed (its file name has dashes for spaces)
   ambient?: number; // °C around the circuit; 25 when left out (files from before)
   view?: View;
 }
 
-export function serialize(circuit: Circuit, view?: View): SavedCircuit {
+export function serialize(circuit: Circuit, view?: View, name?: string): SavedCircuit {
   return structuredClone({
     format: FORMAT,
     version: VERSION,
+    ...(name ? { name } : {}),
     parts: circuit.components,
     joints: circuit.joints,
     wires: circuit.wires,
@@ -98,7 +100,8 @@ export function parse(text: string): SavedCircuit {
   // An ambient temperature outside what parts are rated for is a damaged file:
   // the default.
   const ambient = typeof d.ambient === 'number' && d.ambient >= -40 && d.ambient <= 150 ? d.ambient : AMBIENT;
-  return { format: FORMAT, version: VERSION, parts, joints, wires, ambient, view };
+  const name = typeof d.name === 'string' && d.name.trim() ? d.name.trim().slice(0, 80) : undefined;
+  return { format: FORMAT, version: VERSION, ...(name ? { name } : {}), parts, joints, wires, ambient, view };
 }
 
 function readPart(o: Record<string, unknown>): Part {
