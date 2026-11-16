@@ -1,0 +1,29 @@
+<!doctype html>
+<!-- The link-preview image (public/og-image.png, 1200 × 630): the logo, the
+     headline and a call to action. Edit here, then run `npm run og-image`. -->
+<html><head><meta charset="utf-8"><style>
+@font-face{font-family:GS;font-weight:400;src:url(../node_modules/@fontsource/google-sans/files/google-sans-latin-400-normal.woff2)}
+@font-face{font-family:GS;font-weight:500;src:url(../node_modules/@fontsource/google-sans/files/google-sans-latin-500-normal.woff2)}
+@font-face{font-family:GS;font-weight:700;src:url(../node_modules/@fontsource/google-sans/files/google-sans-latin-700-normal.woff2)}
+html,body{margin:0}
+.card{position:relative;width:1200px;height:630px;overflow:hidden;font-family:GS;color:#e2ead8;
+  background:
+    linear-gradient(rgba(102,204,51,.07) 1px,transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg,rgba(102,204,51,.07) 1px,transparent 1px) 0 0/40px 40px,
+    radial-gradient(circle at 26% 50%, #1d3312 0%, #0f150b 62%);
+  display:flex;align-items:center;gap:64px;padding:0 88px;box-sizing:border-box}
+.logo{width:300px;height:300px;flex:none;filter:drop-shadow(0 0 40px rgba(102,204,51,.35))}
+.name{font-size:84px;font-weight:700;letter-spacing:-1px;line-height:1;color:#fff}
+.head{margin-top:14px;font-size:44px;font-weight:500;line-height:1.15;color:#81e94e}
+.text{margin-top:22px;font-size:27px;line-height:1.35;color:#c2cdb8;max-width:640px}
+.cta{display:inline-flex;align-items:center;gap:14px;margin-top:36px;padding:18px 34px;border-radius:999px;background:#66cc33;color:#0f2005;font-size:30px;font-weight:700}
+.url{margin-top:22px;font-size:22px;color:#8fa083;letter-spacing:.3px}
+</style></head><body><div class="card">
+<img class="logo" src="../public/ampage.svg">
+<div>
+  <div class="name">Ampage</div>
+  <div class="head">Electronics circuit simulator</div>
+  <div class="text">Draw a circuit, press Run, watch it come alive.</div>
+  <div class="cta">Try it free in your browser&nbsp;→</div>
+  <div class="url">wbarahona.github.io/electronics</div>
+</div></div></body></html>
