@@ -462,9 +462,10 @@ export function createEngine(circuit: Circuit) {
       const r = engine.results.get(el.id);
       const at = circuit.part(el.id);
       if (!thermal?.rise || el.broken || !r || !at) continue;
-      const watts = Math.abs(r.ac ? r.pavg : r.p) * (thermal.heatShare ?? 1);
-      const cooling = coolings.get(el.id) ?? 1;
-      const warmth = cooling * Math.min(watts * WARMTH_PER_WATT, (el.state.heat ?? 0) * thermal.rise);
+      // The heat it gives off (watts, following its power at the pace of its
+      // thermal mass, so a heater just switched off still warms what's
+      // around it), but never more than its own temperature rise.
+      const warmth = Math.min((el.state.watts ?? 0) * WARMTH_PER_WATT, (el.state.heat ?? 0) * thermal.rise);
       if (warmth > 0.01) sources.push({ x: at.x, y: at.y, warmth, id: el.id });
     }
     for (const el of elements) {
@@ -493,9 +494,8 @@ export function createEngine(circuit: Circuit) {
     const { rise } = el.model.thermal!;
     if (!rise) return { stress: h };
     const local = around(el);
-    const cooling = coolings.get(el.id) ?? 1; // under a fan's air it runs this much of its rise
-    if (local === AMBIENT && cooling === 1) return { celsius: local + h * rise, stress: h };
-    return { celsius: local + h * rise * cooling, stress: h * cooling + (local - AMBIENT) / rise };
+    if (local === AMBIENT) return { celsius: local + h * rise, stress: h };
+    return { celsius: local + h * rise, stress: h + (local - AMBIENT) / rise };
   }
 
   // Let every part's heat follow its load for `dt` seconds. Returns the ids of
@@ -507,7 +507,17 @@ export function createEngine(circuit: Circuit) {
       const r = engine.results.get(el.id);
       if (!thermal || el.broken || !r) continue;
       const h = el.state.heat ?? 0;
-      el.state.heat = r.load + (h - r.load) * Math.exp(-dt / thermal.tau);
+      const tau = typeof thermal.tau === 'function' ? thermal.tau(el.props) : thermal.tau;
+      // Under a fan's air it settles at only part of its rise; it gets
+      // there (or back) at the pace of its own thermal mass.
+      const cooling = thermal.rise ? (coolings.get(el.id) ?? 1) : 1;
+      const ease = Math.exp(-dt / tau);
+      const target = r.load * cooling;
+      el.state.heat = target + (h - target) * ease;
+      // The watts it gives off to its neighbours follow at the same pace;
+      // under a fan's air, part of them leave with the air.
+      const watts = Math.abs(r.ac ? r.pavg : r.p) * (thermal.heatShare ?? 1) * cooling;
+      el.state.watts = watts + ((el.state.watts ?? 0) - watts) * ease;
       r.heat = el.state.heat;
       const { celsius, stress } = thermalState(el, el.state.heat);
       r.celsius = celsius;

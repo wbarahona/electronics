@@ -44,7 +44,7 @@
         "position": 47,
         "powerRating": 0.5,
         "tolerance": 20,
-        "deviation": 0.094
+        "deviation": -0.262
       },
       "broken": false
     },
@@ -69,7 +69,8 @@
       "rotation": 0,
       "props": {
         "ratedVoltage": 12,
-        "ratedPower": 10
+        "ratedPower": 10,
+        "warmUp": 30
       },
       "broken": false
     },
@@ -122,7 +123,7 @@
         "resistance": 1000,
         "powerRating": 0.25,
         "tolerance": 5,
-        "deviation": 0.432
+        "deviation": 0.021
       },
       "broken": false
     },
@@ -218,28 +219,44 @@
     },
     {
       "id": "c16",
-      "ref": "N1",
-      "usRef": "N1",
-      "type": "note",
-      "x": 760,
-      "y": 40,
-      "rotation": 0,
+      "ref": "R5",
+      "usRef": "R3",
+      "type": "resistor",
+      "x": 560,
+      "y": 120,
+      "rotation": 90,
       "props": {
-        "text": "A thermostat. The NTC {R1} and {R2} divide 12 V: as the NTC warms, its resistance falls and the voltage between them rises, until it turns transistor {K1} on through {R3}. That pulls in relay {K2}, whose changeover moves from heater {E1} to fan {M1}.\nA relay pulls in at a higher coil voltage than it lets go, so it switches a few degrees apart each way. {R4} catches the coil’s kick.",
-        "color": "blue"
+        "resistance": 47000,
+        "powerRating": 0.25,
+        "tolerance": 5,
+        "deviation": -0.223
       },
       "broken": false
     },
     {
       "id": "c17",
+      "ref": "N1",
+      "usRef": "N1",
+      "type": "note",
+      "x": 860,
+      "y": 40,
+      "rotation": 0,
+      "props": {
+        "text": "A thermostat. The NTC {R1} and {R2} divide 12 V: as the NTC warms, its resistance falls and the voltage between them rises, until it turns transistor {K1} on through {R3}. That pulls in relay {K2}, whose changeover moves from heater {E1} (contact 12) to fan {M1} (14).\nOnce on, contact 14 feeds a little back through {R5}, so it holds until the NTC is several degrees cooler (hysteresis): a few clicks a minute, not a chatter. {E1} has a 30 s warm-up time, the thermal mass that sets the pace. {R4} catches the coil’s kick.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "c18",
       "ref": "N2",
       "usRef": "N2",
       "type": "note",
-      "x": 760,
-      "y": 260,
+      "x": 860,
+      "y": 300,
       "rotation": 0,
       "props": {
-        "text": "Try: press Run and open the Thermal view. The heater warms the NTC, the relay clicks over and the fan cools it, then back again. Change {R2} to set the temperature (higher, cooler), raise the ambient, or turn the fan away.",
+        "text": "Try: press Run (speed it up with Faster) and open the Thermal view. The heater warms the NTC, the relay clicks over and the fan cools it, then back again. Change {R2} to set the temperature (higher, cooler), {R5} for a wider or narrower band, or the heater’s warm-up time.",
         "color": "amber"
       },
       "broken": false
@@ -446,6 +463,44 @@
         {
           "x": -80,
           "y": 80
+        }
+      ]
+    },
+    {
+      "id": "w16",
+      "from": {
+        "part": "c12",
+        "pin": 4
+      },
+      "to": {
+        "part": "c16",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 560,
+          "y": 40
+        }
+      ]
+    },
+    {
+      "id": "w17",
+      "from": {
+        "part": "c16",
+        "pin": 1
+      },
+      "to": {
+        "part": "c9",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 560,
+          "y": 280
+        },
+        {
+          "x": 260,
+          "y": 280
         }
       ]
     }

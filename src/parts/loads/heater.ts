@@ -10,8 +10,10 @@ import type { PropsByType } from '../../types.ts';
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
   // A heating element: its rated voltage and power fix its resistance; it
-  // warms up over several seconds and glows when hot.
-  heater: { ratedVoltage: number; ratedPower: number };
+  // warms up and cools down over `warmUp` seconds (its thermal mass: a bare
+  // element takes a few seconds, a cartridge heater or a heated block much
+  // longer) and glows when hot.
+  heater: { ratedVoltage: number; ratedPower: number; warmUp: number };
 }
 
 // --- Heater ------------------------------------------------------------------
@@ -36,7 +38,7 @@ const heaterModel: ModelDef<PropsByType['heater']> = {
   },
   dynamic: true,
   brightness: (r) => Math.max(0, ((r.state.temp ?? 0) - 0.3) / 0.7),
-  thermal: { load: (r, p) => heaterPower(r) / p.ratedPower, tau: 5, limit: 1.5, rise: 300 }, // °C at its rating: the element runs hot by design
+  thermal: { load: (r, p) => heaterPower(r) / p.ratedPower, tau: (p) => p.warmUp, limit: 1.5, rise: 300 }, // °C at its rating: the element runs hot by design
   failure: { label: 'burnt out', open: true },
 };
 
@@ -57,6 +59,7 @@ export const defs: PartDefs<'heater'> = {
     props: {
       ratedVoltage: { label: 'Rated voltage', unit: 'V', value: 120, min: 0.1 },
       ratedPower: { label: 'Rated power', unit: 'W', value: 1000, min: 0.01 },
+      warmUp: { label: 'Warm-up time', unit: 's', value: 5, min: 0.1, max: 600 },
     },
     tag: (p) => `${formatSI(p.ratedVoltage, 'V')} ${formatSI(p.ratedPower, 'W')}`,
     glow: { color: () => 'red', radius: 36 },

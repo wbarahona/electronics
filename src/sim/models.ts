@@ -37,6 +37,7 @@ export interface PartState {
   light?: number; // light an LDR is getting, 0..1
   rise?: number; // a thermistor's self-heating above what's around it, K
   around?: number; // the temperature around a sensing part (the NTC), °C
+  watts?: number; // heat a part gives off to its neighbours, following its power at the pace of its thermal mass
   ins?: boolean[]; // a logic part's input levels and output(s)
   outs?: boolean[];
   count?: number; // a counter's count; a decoder's latched value
@@ -122,7 +123,7 @@ export interface Env {
 
 // How a part heats up: `load` is how hard it's driven against its rating now
 // (1 = at its rating), which its heat follows with time constant `tau`
-// seconds; it fails past `limit`. `rise` is how many °C above its
+// seconds (fixed, or from its values); it fails past `limit`. `rise` is how many °C above its
 // surroundings it runs at its rating (a datasheet-like constant), so its
 // temperature is local temperature + heat × rise, and it fails above
 // 25 °C + limit × rise: at 25 °C ambient, exactly where heat passes the limit.
@@ -132,7 +133,7 @@ export interface Env {
 // motor's goes mostly into motion, only its losses warm its neighbours).
 export interface Thermal<P> {
   load(r: Result, p: P): number;
-  tau: number;
+  tau: number | ((p: P) => number); // a part's own setting where it has one (a heater's warm-up time)
   limit: number;
   rise: number;
   heatShare?: number;

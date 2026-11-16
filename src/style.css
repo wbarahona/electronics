@@ -1431,22 +1431,10 @@ body.dragging * {
   display: inline;
 }
 
-/* A fan's blades turn while it runs. */
+/* A fan's blades (still, or turning about the hub while it runs). */
 .part .fan-blades {
   fill: var(--ink);
   stroke: none;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.part.active .fan-blades {
-  animation: fan-spin 0.4s linear infinite;
-}
-
-@keyframes fan-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* The air a running fan moves: a faint cone, while it's selected or the
@@ -1462,12 +1450,6 @@ body.dragging * {
 #board .part.active.selected .airflow,
 #board.thermal .part.active .airflow {
   display: inline;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .part.active .fan-blades {
-    animation-duration: 2s;
-  }
 }
 
 /* A running motor's spinning rotor mark; a sounder's sound arcs. */
