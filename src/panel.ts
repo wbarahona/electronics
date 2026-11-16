@@ -8,7 +8,8 @@ import type { Part, PropValue } from './types.ts';
 import './slider.ts';
 import { formatNumber, fromShown, parseSI, shownTemps, shownUnit, toShown } from './units.ts';
 
-// Parts with nothing to fail: references and probes.
+// Parts with nothing to fail: references and probes (and annotations, the
+// whole Annotate category, left out where the panel is built).
 const NO_FAULTS = new Set(['ground', 'netLabel', 'scopeProbe']);
 
 // Side sheet for editing the selected part's values, built from M3 fields.
@@ -293,7 +294,7 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
           wrap.append(field(c, key, spec));
           return wrap;
         }),
-      ...(NO_FAULTS.has(c.type) ? [] : [faultField(c)]),
+      ...(NO_FAULTS.has(c.type) || PARTS[c.type].category === 'annotate' ? [] : [faultField(c)]),
     );
     const actions = document.createElement('div');
     actions.className = 'props-actions';

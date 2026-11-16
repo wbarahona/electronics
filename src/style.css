@@ -1297,6 +1297,10 @@ body.dragging * {
   cursor: pointer;
 }
 
+.field.check[hidden] {
+  display: none;
+}
+
 /* Open pins are hollow; pins connected to anything are filled. */
 .part .pin {
   fill: var(--bg);
