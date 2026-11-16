@@ -5,6 +5,10 @@ export type Circuit = ReturnType<typeof createCircuit>;
 
 const endId = (end: End): string => end.part ?? end.joint;
 
+// The ambient temperature a circuit starts with, °C; the temperature parts'
+// ratings are given at.
+export const AMBIENT = 25;
+
 // `letter` with the lowest number that makes a reference not in `taken`.
 export function freeRef(letter: string, taken: Iterable<string>, from = 1): string {
   const used = new Set(taken);
@@ -26,6 +30,10 @@ export function createCircuit() {
     components,
     wires,
     joints,
+    // The temperature around the circuit, °C (25 unless set): every part that
+    // heats up runs this much plus its own rise, and sensors like the NTC
+    // feel it. Saved with the circuit.
+    ambient: AMBIENT,
 
     // Each part gets a reference designation for each standard (see
     // src/norm.ts), from its class letter there and the lowest number not yet
@@ -90,7 +98,8 @@ export function createCircuit() {
 
     // Replace everything with the given items (e.g. a loaded file). New ids
     // carry on after the highest one loaded.
-    load(parts: Part[], newJoints: Joint[], newWires: Wire[]): void {
+    load(parts: Part[], newJoints: Joint[], newWires: Wire[], ambient = AMBIENT): void {
+      this.ambient = ambient;
       components.splice(0, components.length, ...parts);
       joints.splice(0, joints.length, ...newJoints);
       wires.splice(0, wires.length, ...newWires);

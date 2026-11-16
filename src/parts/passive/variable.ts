@@ -109,7 +109,7 @@ export const models: ModelDefs<'potentiometer' | 'rheostat'> = {
       ['Power', fmt(Math.abs(r.p), 'W')],
       ['Position', pct(p.position / 100)],
     ],
-    thermal: powerThermal(2, 2),
+    thermal: powerThermal(2, 2, 60),
     failure: { label: 'burnt out', open: true },
   },
   rheostat: {
@@ -118,7 +118,7 @@ export const models: ModelDefs<'potentiometer' | 'rheostat'> = {
       (p) => Math.max(R_MIN, (p.resistance * p.position) / 100),
       (r, p) => [...basicReadout(r), ['Resistance', fmt(Math.max(R_MIN, (p.resistance * p.position) / 100), 'Ω')]],
     ),
-    thermal: powerThermal(2, 2),
+    thermal: powerThermal(2, 2, 60),
     failure: { label: 'burnt out', open: true },
   },
 };

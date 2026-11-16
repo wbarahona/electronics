@@ -24,8 +24,11 @@ export function ohmic<P>(
   };
 }
 
-export const powerThermal = <P extends { powerRating: number }>(tau: number, limit: number): Thermal<P> => ({
+// Heat from the power it dissipates against its power rating, running `rise`
+// °C above its surroundings at that rating.
+export const powerThermal = <P extends { powerRating: number }>(tau: number, limit: number, rise: number): Thermal<P> => ({
   load: (r, p) => Math.abs(r.p) / p.powerRating,
   tau,
   limit,
+  rise,
 });

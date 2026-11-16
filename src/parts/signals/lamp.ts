@@ -23,7 +23,7 @@ const lampModel: ModelDef<PropsByType['lamp']> = {
     (r, p) => [...basicReadout(r), ['Brightness', `${Math.round(lampLight(r, p) * 100)} %`]],
   ),
   brightness: (r, p) => lampLight(r, p),
-  thermal: { load: (r, p) => Math.abs(r.p) / p.ratedPower, tau: 0.3, limit: 1.5 },
+  thermal: { load: (r, p) => Math.abs(r.p) / p.ratedPower, tau: 0.3, limit: 1.5, rise: 120 }, // °C at its rating: the bulb
   failure: { label: 'filament blown', open: true },
 };
 

@@ -31,7 +31,7 @@ const changeoverModel: ModelDef<PropsByType['changeover']> = {
     ['Position', p.thrown ? '2' : '1'],
     ['Current', `${fmt(r.ac ? r.irms : Math.abs(r.i), 'A')}${r.ac ? ' rms' : ''}`],
   ],
-  thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.2, limit: 1.5 },
+  thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.2, limit: 1.5, rise: 40 }, // °C at its rating: contacts
   failure: { label: 'burnt out', open: true },
 };
 

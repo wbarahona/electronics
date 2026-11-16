@@ -29,7 +29,7 @@ function logicSource<P extends LogicProps>(
     },
     current: out,
     pinCurrents: (el, s) => [out(el, s)],
-    thermal: { load: (r) => Math.abs(r.pins[0]) / LOGIC_SOURCE_MAX, tau: 0.2, limit: 1.5 },
+    thermal: { load: (r) => Math.abs(r.pins[0]) / LOGIC_SOURCE_MAX, tau: 0.2, limit: 1.5, rise: 30 }, // °C at its rating: logic output
     failure: { label: 'burnt out', open: true },
   };
 }

@@ -64,14 +64,14 @@ export const models: ModelDefs<'voltmeter' | 'ammeter'> = {
     ...ohmic((p) => p.resistance, (r, p) => [['Reading', `${meterReading(r, p, 'V')} ${p.mode}`]]),
     reading: (r, p) => meterReading(r, p, 'V'),
     // Past its rating the input is destroyed almost at once.
-    thermal: { load: (r, p) => Math.abs(r.v) / p.maxVoltage, tau: 0.05, limit: 1.2 },
+    thermal: { load: (r, p) => Math.abs(r.v) / p.maxVoltage, tau: 0.05, limit: 1.2, rise: 0 }, // °C at its rating: over-voltage, not heat
     failure: { label: 'destroyed', open: true, display: 'ERR' },
   },
   ammeter: {
     ...ohmic((p) => p.resistance, (r, p) => [['Reading', `${meterReading(r, p, 'A')} ${p.mode}`]]),
     reading: (r, p) => meterReading(r, p, 'A'),
     // Its internal fuse.
-    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.05, limit: 1.5 },
+    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.05, limit: 1.5, rise: 40 }, // °C at its rating: its internal fuse
     failure: { label: 'fuse blown', open: true, display: 'FUSE' },
   },
 };

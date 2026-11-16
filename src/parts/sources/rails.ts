@@ -37,7 +37,7 @@ function rail<P extends { maxCurrent: number }>(
     current: out,
     pinCurrents: (el, s) => [-out(el, s)],
     // Its breaker trips on a sustained overload.
-    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.1, limit: 1.5 },
+    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.1, limit: 1.5, rise: 30 }, // °C at its rating: the supply behind the breaker
     failure: { label: 'tripped', open: true },
   };
 }

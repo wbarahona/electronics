@@ -34,7 +34,7 @@ function lampGroup<P extends { ratedVoltage: number; ratedPower: number }>(names
     segments: levels,
     brightness: (res, p) => Math.max(...levels(res, p)),
     readout: (res, p) => [['Lit', levels(res, p).flatMap((l, k) => (l > 0.05 ? [names[k]] : [])).join(', ') || 'none']],
-    thermal: { load: (res, p) => Math.max(...levels(res, p)), tau: 0.3, limit: 1.5 },
+    thermal: { load: (res, p) => Math.max(...levels(res, p)), tau: 0.3, limit: 1.5, rise: 60 }, // °C at its rating: its lamps
     failure: { label: 'filament blown', open: true },
   };
 }

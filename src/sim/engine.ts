@@ -1,5 +1,5 @@
 import { pinsOf } from '../components.ts';
-import type { Circuit } from '../model.ts';
+import { AMBIENT, type Circuit } from '../model.ts';
 import { pinKey, type Nets } from '../nets.ts';
 import { solve } from './linear.ts';
 import { actualProps } from './shared/tolerance.ts';
@@ -59,12 +59,32 @@ const HOLD_STEP = 1e-9; // s
 const MAX_TIME_STEP = 0.01; // s
 const GMIN = 1e-12;
 const MAX_ITERATIONS = 100;
+
+// The fallback for a step that didn't converge (see step): more, smaller
+// Newton steps, no node voltage moving more than DAMPED_STEP each.
+const DAMPED_ITERATIONS = 400;
+const DAMPED_STEP = 0.5; // V
 const STEPS_PER_ADVANCE = 2000;
 const BUDGET_MS = 10;
 const AVERAGE_TAU = 0.1; // s
 // Light from a glowing part falls off with distance (world units, a grid
 // square is 20): at LIGHT_REACH it's half as strong as right next to it.
 const LIGHT_REACH = 60;
+
+// Heat reaches nearby parts the same way: at HEAT_REACH a part feels half the
+// warmth it would right next to the source. WARMTH_PER_WATT is how much a
+// part next to a source warms per watt it gives off (a hot 1 W resistor
+// warms its neighbour by about 15 °C).
+const HEAT_REACH = 60;
+const WARMTH_PER_WATT = 15; // °C/W
+
+// A fan's air: a cone FAN_SPREAD either side of its axis and FAN_LENGTH long
+// (ten grid squares), half as strong FAN_REACH away; full air takes
+// MAX_COOLING of a part's rise away (forced air cools much better than still).
+const FAN_SPREAD = (35 * Math.PI) / 180;
+const FAN_LENGTH = 200;
+const FAN_REACH = 120;
+const MAX_COOLING = 0.6;
 const G_GROUND = 1e6; // S; how firmly Ground holds its net at 0 V
 const G_TIE = 1; // S; the tie for a circuit that has no Ground
 const G_SHORT = 1e3; // S; a short-circuit fault (1 mΩ)
@@ -99,6 +119,7 @@ export function createEngine(circuit: Circuit) {
     ac: false, // driven by an alternating source: readouts show RMS
     tolerances: false, // simulate parts as built (within their tolerance), not as marked
     burnOut: true, // overloaded parts fail (else they only get hot)
+    temperatures: true, // ambient, heat between parts and fans (else every part on its own at 25 °C)
     heating: false,
     draining: false,
     // Called after every time step (with the time reached), for instruments
@@ -198,6 +219,7 @@ export function createEngine(circuit: Circuit) {
     engine.ac = elements.some((el) => el.model.alternating && !el.open);
     x = new Float64Array(size);
     step(HOLD_STEP, false);
+    feelSurroundings();
     // Let sensing parts settle on what they now see, then solve with that.
     // Let sensing and logic parts settle on what they now see, solving again
     // after each round, until nothing changes (a logic loop that never
@@ -229,6 +251,7 @@ export function createEngine(circuit: Circuit) {
       }
       return light;
     },
+    temperature: around,
   };
 
   // Let parts react to their surroundings: over dt seconds, or at once (null).
@@ -275,9 +298,27 @@ export function createEngine(circuit: Circuit) {
 
   // Solve the circuit at time t, the end of a step of length dt. With `commit`
   // the step really happened, so energy stores take on their new values.
+  // Solve one step by Newton's method from the last solution. If that doesn't
+  // converge (a steep, high-gain transition, like a comparator flipping with
+  // positive feedback), try again from the last good solution with damped
+  // steps: no node moves more than DAMPED_STEP volts per iteration, so the
+  // iteration creeps through the steep part instead of overshooting it. A
+  // failed step leaves the last good solution in place, so the next step
+  // starts from sense rather than from where it diverged.
   function step(dt: number, commit = true): boolean {
     const nonlinear = elements.some((el) => el.model.nonlinear);
-    for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
+    const good = x.slice();
+    const result = iterate(dt, nonlinear, MAX_ITERATIONS, Infinity);
+    if (result === 'converged') return finish(dt, commit);
+    if (result === 'singular') return fail('The circuit has no single solution (check for loops of ideal sources).');
+    x = good.slice();
+    if (iterate(dt, nonlinear, DAMPED_ITERATIONS, DAMPED_STEP) === 'converged') return finish(dt, commit);
+    x = good;
+    return fail('The simulation did not converge.');
+  }
+
+  function iterate(dt: number, nonlinear: boolean, iterations: number, maxStep: number): 'converged' | 'singular' | 'diverged' {
+    for (let iter = 0; iter < iterations; iter++) {
       const A = Array.from({ length: size }, () => new Float64Array(size));
       const b = new Float64Array(size);
       const s = stamper(A, b, x, dt);
@@ -290,13 +331,23 @@ export function createEngine(circuit: Circuit) {
           if (el.branch >= 0) s.idle(el.branch);
         }
       }
-      const next = solve(A, b);
-      if (!next) return fail('The circuit has no single solution (check for loops of ideal sources).');
+      let next = solve(A, b);
+      if (!next) return 'singular';
+      if (maxStep < Infinity) {
+        // Damped: scale the whole update down so no node voltage moves more
+        // than maxStep (branch currents follow along).
+        let biggest = 0;
+        for (let n = 0; n < nodeCount; n++) biggest = Math.max(biggest, Math.abs(next[n] - x[n]));
+        if (biggest > maxStep) {
+          const k = maxStep / biggest;
+          next = next.map((v, i) => x[i] + k * (v - x[i]));
+        }
+      }
       const done = !nonlinear || (iter > 0 && s.converged && settled(x, next));
       x = next;
-      if (done) return finish(dt, commit);
+      if (done) return 'converged';
     }
-    return fail('The simulation did not converge.');
+    return 'diverged';
   }
 
   function finish(dt: number, commit: boolean): boolean {
@@ -316,6 +367,7 @@ export function createEngine(circuit: Circuit) {
         pins, pinV, state: el.state, extraRms: [],
       };
       r.load = el.model.thermal && !el.broken ? el.model.thermal.load(r, el.props) : 0;
+      if (el.model.thermal && !el.broken) r.celsius = thermalState(el, r.heat).celsius;
       r.level = el.model.level?.(r, el.props);
       average(el, r, dt);
       engine.results.set(el.id, r);
@@ -349,6 +401,103 @@ export function createEngine(circuit: Circuit) {
     r.extraRms = m.x2.map(Math.sqrt);
   }
 
+  // --- Temperature ---------------------------------------------------------
+  // The temperature around each part: the circuit's ambient plus warmth from
+  // hot parts nearby. A part warms a neighbour by the heat it gives off (the
+  // watts it dissipates now, WARMTH_PER_WATT °C each, but never more than its
+  // own rise above its surroundings), fading with distance as light does. So
+  // a small LED barely warms anything, a hot resistor warms what's next to
+  // it, and a heater no more than its own element. Worked out once per
+  // advance, not every step: heat moves slowly.
+  const surroundings = new Map<string, number>(); // part id -> °C around it
+  const coolings = new Map<string, number>(); // part id -> how much of its rise is left under forced air, 1 = none
+
+  // How much a part's rise is left under the air of running fans: air reaches
+  // parts in a cone in front of a fan (FAN_SPREAD either side of its axis,
+  // FAN_LENGTH long), more strongly near the fan and the axis, in proportion
+  // to the fan's speed. Several fans add up; full air takes MAX_COOLING of a
+  // part's rise away.
+  function coolingAt(el: Element, at: { x: number; y: number }, fans: { x: number; y: number; dx: number; dy: number; strength: number; id: string }[]) {
+    let still = 1; // share of air that doesn't reach it
+    for (const f of fans) {
+      if (f.id === el.id) continue;
+      const [vx, vy] = [at.x - f.x, at.y - f.y];
+      const along = vx * f.dx + vy * f.dy;
+      const d = Math.hypot(vx, vy);
+      if (along <= 0 || d > FAN_LENGTH) continue;
+      const off = Math.acos(Math.min(1, along / d)); // angle off the axis
+      if (off > FAN_SPREAD) continue;
+      const air = f.strength * (1 - off / FAN_SPREAD) / (1 + (d / FAN_REACH) ** 2);
+      still *= 1 - Math.min(1, air);
+    }
+    return 1 - MAX_COOLING * (1 - still);
+  }
+
+  function feelSurroundings() {
+    surroundings.clear();
+    coolings.clear();
+    // Temperature effects off (Settings): nothing around any part but 25 °C.
+    if (!engine.temperatures) return;
+    const fans: { x: number; y: number; dx: number; dy: number; strength: number; id: string }[] = [];
+    for (const el of elements) {
+      const r = engine.results.get(el.id);
+      const at = circuit.part(el.id);
+      if (!el.model.airflow || el.broken || !r || !at) continue;
+      const strength = el.model.airflow(r, el.props);
+      // Its local up (−y), turned clockwise with the part.
+      const turn = (at.rotation * Math.PI) / 180;
+      if (strength > 0.01) fans.push({ x: at.x, y: at.y, dx: Math.sin(turn), dy: -Math.cos(turn), strength, id: el.id });
+    }
+    // Air first: a part under a fan's air runs cooler, and so gives off less
+    // warmth to its neighbours (the air carries it away) and takes in less.
+    if (fans.length) {
+      for (const el of elements) {
+        const at = circuit.part(el.id);
+        if (at) coolings.set(el.id, coolingAt(el, at, fans));
+      }
+    }
+    const sources: { x: number; y: number; warmth: number; id: string }[] = [];
+    for (const el of elements) {
+      const thermal = el.model.thermal;
+      const r = engine.results.get(el.id);
+      const at = circuit.part(el.id);
+      if (!thermal?.rise || el.broken || !r || !at) continue;
+      const watts = Math.abs(r.ac ? r.pavg : r.p) * (thermal.heatShare ?? 1);
+      const cooling = coolings.get(el.id) ?? 1;
+      const warmth = cooling * Math.min(watts * WARMTH_PER_WATT, (el.state.heat ?? 0) * thermal.rise);
+      if (warmth > 0.01) sources.push({ x: at.x, y: at.y, warmth, id: el.id });
+    }
+    for (const el of elements) {
+      const at = circuit.part(el.id);
+      if (!at) continue;
+      const cooling = coolings.get(el.id) ?? 1;
+      let around = circuit.ambient;
+      for (const s of sources) {
+        if (s.id === el.id) continue;
+        around += (cooling * s.warmth) / (1 + (Math.hypot(s.x - at.x, s.y - at.y) / HEAT_REACH) ** 2);
+      }
+      surroundings.set(el.id, around);
+    }
+  }
+
+  function around(el: Element): number {
+    return surroundings.get(el.id) ?? (engine.temperatures ? circuit.ambient : AMBIENT);
+  }
+
+  // A part's temperature with heat `h`, and how close that is to failing on
+  // the scale of its heat (its limit is where it fails). At the ambient its
+  // ratings are given at (25 °C), exactly its heat; warmer surroundings bring
+  // the failing point closer, cooler ones push it away. Stress that isn't
+  // heat (rise 0) is just the heat.
+  function thermalState(el: Element, h: number): { celsius?: number; stress: number } {
+    const { rise } = el.model.thermal!;
+    if (!rise) return { stress: h };
+    const local = around(el);
+    const cooling = coolings.get(el.id) ?? 1; // under a fan's air it runs this much of its rise
+    if (local === AMBIENT && cooling === 1) return { celsius: local + h * rise, stress: h };
+    return { celsius: local + h * rise * cooling, stress: h * cooling + (local - AMBIENT) / rise };
+  }
+
   // Let every part's heat follow its load for `dt` seconds. Returns the ids of
   // parts that failed.
   function heatUp(dt: number): string[] {
@@ -360,7 +509,9 @@ export function createEngine(circuit: Circuit) {
       const h = el.state.heat ?? 0;
       el.state.heat = r.load + (h - r.load) * Math.exp(-dt / thermal.tau);
       r.heat = el.state.heat;
-      if (engine.burnOut && el.state.heat > thermal.limit) failed.push(el.id);
+      const { celsius, stress } = thermalState(el, el.state.heat);
+      r.celsius = celsius;
+      if (engine.burnOut && stress > thermal.limit) failed.push(el.id);
     }
     checkHeating();
     return failed;
@@ -398,6 +549,7 @@ export function createEngine(circuit: Circuit) {
   // Otherwise time goes in whole steps: in slow motion one call can be shorter
   // than a step, so the remainder carries over to the next call.
   function advance(seconds: number): string[] {
+    feelSurroundings();
     if (!engine.dynamic) {
       t += seconds;
       if (engine.error) return [];

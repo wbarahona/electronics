@@ -144,19 +144,19 @@ export const models: ModelDefs<'diode' | 'schottky' | 'zener'> = {
     ...diodeModel((p) => junction(p.forwardVoltage, DIODE_N)),
     readout: (r) => [...basicReadout(r), ['State', diodeState(r, 'conducting')]],
     // Over-current, or reverse voltage past its rating.
-    thermal: { load: (r, p) => Math.max(Math.abs(r.i) / p.maxCurrent, reverseStress(r, p)), tau: 0.3, limit: 1.5 },
+    thermal: { load: (r, p) => Math.max(Math.abs(r.i) / p.maxCurrent, reverseStress(r, p)), tau: 0.3, limit: 1.5, rise: 60 }, // °C at its rating: junction
     failure: { label: 'burnt out', open: true },
   },
   schottky: {
     ...diodeModel((p) => junction(p.forwardVoltage, DIODE_N)),
     readout: (r) => [...basicReadout(r), ['State', diodeState(r, 'conducting')]],
-    thermal: { load: (r, p) => Math.max(Math.abs(r.i) / p.maxCurrent, reverseStress(r, p)), tau: 0.3, limit: 1.5 },
+    thermal: { load: (r, p) => Math.max(Math.abs(r.i) / p.maxCurrent, reverseStress(r, p)), tau: 0.3, limit: 1.5, rise: 60 }, // °C at its rating: junction
     failure: { label: 'burnt out', open: true },
   },
   zener: {
     ...diodeModel((p) => junction(p.forwardVoltage, DIODE_N, p.zenerVoltage)),
     readout: (r) => [...basicReadout(r), ['State', diodeState(r, 'forward')]],
-    thermal: powerThermal(0.5, 1.5),
+    thermal: powerThermal(0.5, 1.5, 70),
     failure: { label: 'burnt out', open: true },
   },
 };

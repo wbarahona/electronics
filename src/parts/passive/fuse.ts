@@ -37,7 +37,7 @@ export const models: ModelDefs<'fuse'> = {
   // Nearly a wire until it carries well over its rating, then it blows fast.
   fuse: {
     ...ohmic(() => R_FUSE),
-    thermal: { load: (r, p) => Math.abs(r.i) / p.ratedCurrent, tau: 0.1, limit: 1.5 },
+    thermal: { load: (r, p) => Math.abs(r.i) / p.ratedCurrent, tau: 0.1, limit: 1.5, rise: 40 }, // °C at its rating: the fuse element
     failure: { label: 'blown', open: true },
   },
 };

@@ -36,7 +36,7 @@ const heaterModel: ModelDef<PropsByType['heater']> = {
   },
   dynamic: true,
   brightness: (r) => Math.max(0, ((r.state.temp ?? 0) - 0.3) / 0.7),
-  thermal: { load: (r, p) => heaterPower(r) / p.ratedPower, tau: 5, limit: 1.5 },
+  thermal: { load: (r, p) => heaterPower(r) / p.ratedPower, tau: 5, limit: 1.5, rise: 300 }, // °C at its rating: the element runs hot by design
   failure: { label: 'burnt out', open: true },
 };
 

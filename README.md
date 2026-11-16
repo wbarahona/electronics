@@ -33,7 +33,9 @@ The builds aren't code-signed yet, so your system warns you once:
 - **Live simulation**: DC and AC transient analysis (nodal analysis with
   Newton–Raphson for diodes and transistors), from 1/1000× to 1000× speed
 - **Realistic behaviour**: capacitors charge, batteries drain, parts heat
-  up and fail when overloaded
+  up and fail when overloaded; temperatures in °C from the power each part
+  dissipates, an ambient temperature per circuit (Thermal view), and hot
+  parts warming their neighbours (an NTC next to a heater feels it)
 - **Parts**: batteries, AC generator, +V rails and AC phase, resistors,
   capacitors, inductors, potentiometers, LDR, NTC, transformer, fuse,
   coloured lamps and LEDs, 7-segment display, switches (on/off, changeover)

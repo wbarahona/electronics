@@ -37,6 +37,7 @@ interface Settings {
   flowDots: boolean; // animate current along the wires
   sound: boolean; // sounders are heard while running
   burnOut: boolean; // overloaded parts fail
+  temperatures: boolean; // ambient temperature, heat between parts, fans cooling
   autoRun: boolean; // start running when a circuit is opened
 }
 
@@ -50,7 +51,7 @@ const CHOICES: Partial<Record<keyof Settings, readonly string[]>> = {
   flow: ['conventional', 'electron'],
 };
 const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu', openView: 'fit', tolerances: false, readout: true, tips: true,
-  decimal: 'auto', grid: 'lines', flow: 'conventional', flowDots: true, sound: true, burnOut: true, autoRun: false,
+  decimal: 'auto', grid: 'lines', flow: 'conventional', flowDots: true, sound: true, burnOut: true, temperatures: true, autoRun: false,
 };
 
 function load(): Settings {
@@ -316,6 +317,9 @@ export function createSettings(dialog: MdDialog) {
     },
     get burnOut() {
       return settings.burnOut;
+    },
+    get temperatures() {
+      return settings.temperatures;
     },
     get autoRun() {
       return settings.autoRun;

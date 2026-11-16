@@ -30,7 +30,6 @@ order they'd be most useful. Move an entry out when it's done. App features
 ## Loads
 
 - **Solenoid valve**: the solenoid model with a valve symbol.
-- **Fan**: a motor preset with a fan symbol and load curve.
 - **Stepper motor**: steps per coil pulse; pairs with counters and flip-flops.
 - **Servo**: angle from a PWM signal.
 - **Socket outlet**: endpoint of a house-wiring circuit, with a chosen

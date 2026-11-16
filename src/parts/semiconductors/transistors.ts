@@ -95,6 +95,7 @@ function bjt(sign: 1 | -1): ModelDef<PropsByType['npn']> {
       load: (r, p) => Math.max(Math.abs(r.p) / p.powerRating, Math.abs(r.pins[1]) / p.maxCurrent),
       tau: 0.5,
       limit: 1.5,
+      rise: 75, // °C at its rating: junction
     },
     failure: { label: 'burnt out', open: true },
   };
@@ -173,6 +174,7 @@ function mosfet(): ModelDef<PropsByType['nmos']> {
       load: (r, p) => Math.max(Math.abs(r.p) / p.powerRating, Math.abs(r.pins[1]) / p.maxCurrent),
       tau: 0.5,
       limit: 1.5,
+      rise: 75, // °C at its rating: junction
     },
     failure: { label: 'burnt out', open: true },
   };

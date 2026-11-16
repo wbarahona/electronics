@@ -46,7 +46,7 @@ const speakerModel: ModelDef<PropsByType['speaker']> = {
     const tone = this.sound!(r, p);
     return [...basicReadout(r), ['Tone', tone ? fmt(tone.frequency, 'Hz') : 'silent']];
   },
-  thermal: { load: (r, p) => Math.abs(r.ac ? r.pavg : r.p) / p.ratedPower, tau: 0.5, limit: 2 },
+  thermal: { load: (r, p) => Math.abs(r.ac ? r.pavg : r.p) / p.ratedPower, tau: 0.5, limit: 2, rise: 60 }, // °C at its rating: voice coil
   failure: { label: 'burnt out', open: true },
 };
 

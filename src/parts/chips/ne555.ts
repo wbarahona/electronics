@@ -108,6 +108,7 @@ function timer555(): ModelDef<PropsByType['ne555']> {
       load: (r, p) => Math.max(Math.abs(r.pins[OUT]) / p.maxCurrent, ((r.pinV[VCC] - r.pinV[GND]) / p.maxSupply) ** 4),
       tau: 0.3,
       limit: 1.5,
+      rise: 40, // °C at its rating: a small IC package
     },
     failure: { label: 'destroyed', open: true },
   };

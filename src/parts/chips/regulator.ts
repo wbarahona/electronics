@@ -59,7 +59,7 @@ function regulator(): ModelDef<PropsByType['regulator']> {
       ['Current', fmt(Math.abs(r.pins[OUT]), 'A')],
       ['Power', fmt(Math.abs(r.p), 'W')],
     ],
-    thermal: { load: (r, p) => Math.max(Math.abs(r.pins[OUT]) / p.maxCurrent, Math.abs(r.p) / p.powerRating), tau: 3, limit: 1.5 },
+    thermal: { load: (r, p) => Math.max(Math.abs(r.pins[OUT]) / p.maxCurrent, Math.abs(r.p) / p.powerRating), tau: 3, limit: 1.5, rise: 75 }, // °C at its rating: a power package (TO-220)
     failure: { label: 'burnt out', open: true },
   };
 }

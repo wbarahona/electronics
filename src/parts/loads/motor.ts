@@ -94,7 +94,7 @@ const motorRatedCurrent = (p: PropsByType['motor']) =>
     ? dcRated(p).current
     : p.ratedPower / (MOTOR_EFFICIENCY * MOTOR_PF * p.ratedVoltage * (p.supply === 'AC 3~' ? Math.sqrt(3) : 1));
 
-const motorModel: ModelDef<PropsByType['motor']> = {
+export const motorModel: ModelDef<PropsByType['motor']> = {
   dynamic: true,
   stamp(el, s) {
     if (el.props.supply === 'DC') {
@@ -146,7 +146,14 @@ const motorModel: ModelDef<PropsByType['motor']> = {
     ];
   },
   // Its windings overheat from sustained overcurrent, such as a stalled rotor.
-  thermal: { load: (r, p) => (p.supply === 'DC' ? Math.abs(r.i) : r.irms) / motorRatedCurrent(p), tau: 8, limit: 2 },
+  // Only its losses (1 − efficiency) warm what's around it; the rest is motion.
+  thermal: {
+    load: (r, p) => (p.supply === 'DC' ? Math.abs(r.i) : r.irms) / motorRatedCurrent(p),
+    tau: 8,
+    limit: 2,
+    rise: 60, // °C at its rating: windings
+    heatShare: 1 - MOTOR_EFFICIENCY,
+  },
   failure: { label: 'burnt out', open: true },
 };
 

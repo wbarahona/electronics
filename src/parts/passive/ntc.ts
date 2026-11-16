@@ -9,7 +9,9 @@ import type { PropsByType } from '../../types.ts';
 // The values each of these parts carries: what the properties panel edits
 // and the simulator reads (gathered into PropsByType in src/types.ts).
 export interface PartProps {
-  ntc: { resistance: number; beta: number; ambient: number; powerRating: number }; // resistance at 25 °C, ambient in °C
+  // Resistance at 25 °C. It feels the temperature around it (the circuit's
+  // ambient plus warmth from hot parts nearby) and its own self-heating.
+  ntc: { resistance: number; beta: number; powerRating: number };
 }
 
 // s; LDRs follow light with a short lag
@@ -23,9 +25,12 @@ const NTC_TAU = 3; // s to warm up or cool down
 // equation from running off to nonsense during thermal runaway.
 const NTC_MAX_RISE = 300; // K
 
-// B-parameter thermistor equation, from its resistance at 25 °C.
-const ntcResistance = (p: PropsByType['ntc'], rise: number) =>
-  p.resistance * Math.exp(p.beta * (1 / (p.ambient + rise + KELVIN) - 1 / (25 + KELVIN)));
+// B-parameter thermistor equation, from its resistance at 25 °C, at `celsius`.
+const ntcResistance = (p: PropsByType['ntc'], celsius: number) =>
+  p.resistance * Math.exp(p.beta * (1 / (celsius + KELVIN) - 1 / (25 + KELVIN)));
+
+// Its temperature: what's around it plus its self-heating.
+const ntcCelsius = (state: { around?: number; rise?: number }) => (state.around ?? 25) + (state.rise ?? 0);
 
 export const defs: PartDefs<'ntc'> = {
   // NTC thermistor: resistance falls as it warms (B-parameter model).
@@ -44,7 +49,6 @@ export const defs: PartDefs<'ntc'> = {
     props: {
       resistance: { label: 'Resistance at 25 °C', unit: 'Ω', value: 10e3, min: 1 },
       beta: { label: 'B constant', unit: 'K', value: 3950, min: 100 },
-      ambient: { label: 'Ambient temperature', unit: '°C', value: 25, min: -40, max: 150, slider: true },
       powerRating: { label: 'Power rating', unit: 'W', value: 0.5, min: 0.001 },
     },
     tag: (p) => formatSI(p.resistance, 'Ω'),
@@ -56,24 +60,36 @@ export const defs: PartDefs<'ntc'> = {
 };
 
 export const models: ModelDefs<'ntc'> = {
-  // Warms above ambient by the power it dissipates, over a few seconds.
+  // Feels the temperature around it, and warms above that by the power it
+  // dissipates, over a few seconds.
   ntc: {
     ...ohmic(
-      (p, el) => ntcResistance(p, el.state.rise ?? 0),
+      (p, el) => ntcResistance(p, ntcCelsius(el.state)),
       (r, p) => [
         ...basicReadout(r),
-        ['Temperature', formatTemp(p.ambient + (r.state.rise ?? 0))],
-        ['Resistance', fmt(ntcResistance(p, r.state.rise ?? 0), 'Ω')],
+        ['Temperature', formatTemp(ntcCelsius(r.state))],
+        ['Resistance', fmt(ntcResistance(p, ntcCelsius(r.state)), 'Ω')],
       ],
     ),
     dynamic: true,
-    respond(el, _env, r, dt) {
-      if (dt === null) return; // temperature only changes with time
+    respond(el, env, r, dt) {
+      // It has thermal mass: it follows the temperature around it, and its
+      // own warming, over NTC_TAU, not at once (so a thermostat cycles
+      // instead of chattering). Placed or loaded, it starts at its
+      // surroundings' temperature.
+      const around = env.temperature(el);
+      if (el.state.around === undefined) {
+        el.state.around = around;
+        return true;
+      }
+      if (dt === null) return false; // temperature only changes with time
+      const ease = Math.exp(-dt / NTC_TAU);
+      el.state.around = around + (el.state.around - around) * ease;
       const target = Math.min(NTC_MAX_RISE, Math.abs(r.p) * NTC_RTH);
-      const now = el.state.rise ?? 0;
-      el.state.rise = target + (now - target) * Math.exp(-dt / NTC_TAU);
+      el.state.rise = target + ((el.state.rise ?? 0) - target) * ease;
+      return false;
     },
-    thermal: powerThermal(2, 2),
+    thermal: powerThermal(2, 2, 60),
     failure: { label: 'burnt out', open: true },
   },
 };

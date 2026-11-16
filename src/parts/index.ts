@@ -22,6 +22,7 @@ import * as sevenSeg from './signals/seven-seg.ts';
 import * as switches from './switches/switches.ts';
 import * as changeover from './switches/changeover.ts';
 import * as motor from './loads/motor.ts';
+import * as fan from './loads/fan.ts';
 import * as heater from './loads/heater.ts';
 import * as solenoid from './loads/solenoid.ts';
 import * as fluorescent from './loads/fluorescent.ts';
@@ -78,6 +79,7 @@ export const DEFS: PartDefs<PartType> = {
   ...switches.defs,
   ...changeover.defs,
   ...motor.defs,
+  ...fan.defs,
   ...heater.defs,
   ...solenoid.defs,
   ...fluorescent.defs,
@@ -127,6 +129,7 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...switches.models,
   ...changeover.models,
   ...motor.models,
+  ...fan.models,
   ...heater.models,
   ...solenoid.models,
   ...fluorescent.models,

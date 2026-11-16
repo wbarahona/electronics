@@ -1,5 +1,5 @@
 import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, isTextSpec, pinsOf, usLetterOf } from './components.ts';
-import { freeRef, type Circuit } from './model.ts';
+import { AMBIENT, freeRef, type Circuit } from './model.ts';
 import type { End, Fault, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
 // A circuit as stored in a file (and in the browser's autosave): what was
@@ -19,6 +19,7 @@ export interface SavedCircuit {
   parts: Part[];
   joints: Joint[];
   wires: Wire[];
+  ambient?: number; // °C around the circuit; 25 when left out (files from before)
   view?: View;
 }
 
@@ -29,6 +30,7 @@ export function serialize(circuit: Circuit, view?: View): SavedCircuit {
     parts: circuit.components,
     joints: circuit.joints,
     wires: circuit.wires,
+    ...(circuit.ambient !== AMBIENT ? { ambient: circuit.ambient } : {}),
     view,
   });
 }
@@ -93,7 +95,10 @@ export function parse(text: string): SavedCircuit {
     const v = obj(d.view, 'view');
     view = { x: num(v.x, 'view x'), y: num(v.y, 'view y'), scale: num(v.scale, 'view scale') };
   }
-  return { format: FORMAT, version: VERSION, parts, joints, wires, view };
+  // An ambient temperature outside what parts are rated for is a damaged file:
+  // the default.
+  const ambient = typeof d.ambient === 'number' && d.ambient >= -40 && d.ambient <= 150 ? d.ambient : AMBIENT;
+  return { format: FORMAT, version: VERSION, parts, joints, wires, ambient, view };
 }
 
 function readPart(o: Record<string, unknown>): Part {

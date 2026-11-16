@@ -83,6 +83,7 @@ export function cmos<P extends { maxCurrent: number }>(pins: {
       load: (r, p) => Math.max(...outputs.map((k) => Math.abs(r.pins[k]))) / p.maxCurrent,
       tau: 0.2,
       limit: 1.5,
+      rise: 30, // °C at its rating: logic output
     },
     failure: { label: 'burnt out', open: true },
   };

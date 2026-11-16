@@ -41,7 +41,7 @@ function capacitor<P extends { capacitance: number; ratedVoltage: number }>(
       ['Charge', fmt(p.capacitance * Math.abs(r.v), 'C')],
       ['Level', pct(level(r, p))],
     ],
-    thermal: { load: (r, p) => load(r.v, p), tau: 0.05, limit: 1.5 },
+    thermal: { load: (r, p) => load(r.v, p), tau: 0.05, limit: 1.5, rise: 0 }, // °C at its rating: over-voltage, not heat
     failure: { label: 'blown', open: true },
   };
 }

@@ -93,7 +93,7 @@ const lm358Model: ModelDef<PropsByType['lm358']> = (() => {
       ['Output 2', fmt(r.pinV[6] - r.pinV[GND], 'V')],
       ['Supply', fmt(r.pinV[VCC] - r.pinV[GND], 'V')],
     ],
-    thermal: { load: (r, p) => Math.max(Math.abs(r.pins[0]), Math.abs(r.pins[6])) / p.maxCurrent, tau: 0.2, limit: 1.5 },
+    thermal: { load: (r, p) => Math.max(Math.abs(r.pins[0]), Math.abs(r.pins[6])) / p.maxCurrent, tau: 0.2, limit: 1.5, rise: 40 }, // °C at its rating: a small IC package
     failure: { label: 'burnt out', open: true },
   };
 })();

@@ -6,7 +6,7 @@ import type { Engine } from './sim/engine.ts';
 import { MODELS, type Lines } from './sim/models.ts';
 import { actualFactor } from './sim/shared/tolerance.ts';
 import { isWire, type Part, type Wire } from './types.ts';
-import { formatSI } from './units.ts';
+import { formatSI, formatTemp } from './units.ts';
 
 // Tooltip with the live simulation values of the part or wire under the
 // pointer, unless turned off (`enabled`, from Settings or the I key).
@@ -30,6 +30,10 @@ export function createReadout(
     // Load against the rating, unless brightness already says the same thing.
     if (r && model.thermal && !model.brightness && !c.broken) {
       lines.push(['Load', `${Math.round(r.load * 100)} %`]);
+    }
+    // How hot it runs (unless its own readout says so already, as the NTC's).
+    if (r?.celsius !== undefined && !c.broken && !lines.some(([label]) => label === 'Temperature')) {
+      lines.push(['Temperature', formatTemp(r.celsius)]);
     }
     // Simulated as built: the values its tolerance moved, and by how much.
     if (engine.tolerances && model.tolerance) {

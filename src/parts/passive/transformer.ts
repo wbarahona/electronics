@@ -88,6 +88,7 @@ function transformer(): ModelDef<PropsByType['transformer']> {
       load: (r, p) => Math.max(Math.abs(r.pins[2]), Math.abs(r.pins[0]) * p.ratio) / p.maxCurrent,
       tau: 2,
       limit: 1.5,
+      rise: 60, // °C at its rating: windings
     },
     failure: { label: 'burnt out', open: true },
   };

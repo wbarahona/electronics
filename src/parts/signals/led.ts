@@ -74,7 +74,7 @@ export const models: ModelDefs<'led'> = {
       else if (i > p.maxCurrent * 0.01) status = 'on';
       return [...basicReadout(r), ['State', status]];
     },
-    thermal: { load: (r, p) => Math.max(0, r.i) / p.maxCurrent, tau: 0.05, limit: 1.5 },
+    thermal: { load: (r, p) => Math.max(0, r.i) / p.maxCurrent, tau: 0.05, limit: 1.5, rise: 40 }, // °C at its rating: a small LED
     failure: { label: 'burnt out', open: true },
   },
 };

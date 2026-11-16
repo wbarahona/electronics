@@ -91,7 +91,7 @@ function gateModel(fn: (a: boolean, b: boolean) => boolean, inputs: 1 | 2 = 2): 
         ['Supply', fmt(p.supply, 'V')],
       ];
     },
-    thermal: { load: (r, p) => Math.abs(r.pins[outPin]) / p.maxCurrent, tau: 0.2, limit: 1.5 },
+    thermal: { load: (r, p) => Math.abs(r.pins[outPin]) / p.maxCurrent, tau: 0.2, limit: 1.5, rise: 30 }, // °C at its rating: logic output
     failure: { label: 'burnt out', open: true },
   };
 }

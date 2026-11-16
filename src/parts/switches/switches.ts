@@ -14,7 +14,7 @@ export interface PartProps {
 // Overloaded contacts weld shut: a failed switch conducts whatever its setting.
 const switchModel: ModelDef<PropsByType['switch']> = {
   ...ohmic((p, el) => (p.closed || el.broken ? R_SWITCH_ON : Infinity)),
-  thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.2, limit: 1.5 },
+  thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.2, limit: 1.5, rise: 40 }, // °C at its rating: contacts
   failure: { label: 'contacts welded', open: false },
 };
 
@@ -124,7 +124,7 @@ export const models: ModelDefs<'switch' | 'button' | 'buttonNC'> = {
   // Conducts until pressed; overloaded contacts weld shut.
   buttonNC: {
     ...ohmic((p, el) => (p.pressed && !el.broken ? Infinity : R_SWITCH_ON)),
-    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.2, limit: 1.5 },
+    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.2, limit: 1.5, rise: 40 }, // °C at its rating: contacts
     failure: { label: 'contacts welded', open: false },
   },
 };

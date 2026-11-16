@@ -63,7 +63,7 @@ export const models: ModelDefs<'ldr'> = {
       el.state.light = dt === null ? target : target + (now - target) * Math.exp(-dt / LDR_TAU);
       return Math.abs(el.state.light - now) > 1e-4;
     },
-    thermal: powerThermal(1, 2),
+    thermal: powerThermal(1, 2, 60),
     failure: { label: 'burnt out', open: true },
   },
 };

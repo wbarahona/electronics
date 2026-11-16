@@ -49,7 +49,7 @@ function sounder<P extends { ratedVoltage: number; ratedCurrent: number }>(
     },
     active: (r) => !!r.state.energized,
     sound: (r, p) => (r.state.energized ? { ...tone(p, r), level: Math.min(1, drive(r, p)) } : null),
-    thermal: { load: (r, p) => Math.abs(r.v) / p.ratedVoltage, tau: 1, limit: 2 },
+    thermal: { load: (r, p) => Math.abs(r.v) / p.ratedVoltage, tau: 1, limit: 2, rise: 40 }, // °C at its rating: its coil or crystal
     failure: { label: 'burnt out', open: true },
   };
 }

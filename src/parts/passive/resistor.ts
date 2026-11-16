@@ -37,7 +37,7 @@ export const defs: PartDefs<'resistor'> = {
 export const models: ModelDefs<'resistor'> = {
   resistor: {
     ...ohmic((p) => p.resistance),
-    thermal: { load: (r, p) => Math.abs(r.p) / p.powerRating, tau: 2, limit: 2 },
+    thermal: { load: (r, p) => Math.abs(r.p) / p.powerRating, tau: 2, limit: 2, rise: 70 }, // °C at its rating: a small film resistor at its rating
     failure: { label: 'burnt out', open: true },
     tolerance: ['resistance'],
   },

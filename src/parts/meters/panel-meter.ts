@@ -31,7 +31,7 @@ const panelMeterModel: ModelDef<PropsByType['panelMeter']> = {
   },
   needle: (r) => r.state.needle ?? 0,
   // A movement survives some overload, not a sustained several times full scale.
-  thermal: { load: (r, p) => Math.abs(r.v) / (2 * p.fullScale), tau: 0.5, limit: 1.5 },
+  thermal: { load: (r, p) => Math.abs(r.v) / (2 * p.fullScale), tau: 0.5, limit: 1.5, rise: 40 }, // °C at its rating: its moving coil
   failure: { label: 'movement burnt out', open: true },
 };
 

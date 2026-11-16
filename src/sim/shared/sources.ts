@@ -33,4 +33,5 @@ export const sourceThermal: Thermal<{ maxCurrent: number }> = {
   load: (r, p) => Math.abs(r.i) / p.maxCurrent,
   tau: 1,
   limit: 1.5,
+  rise: 30, // a cell or generator warms only modestly at its rated current
 };

@@ -22,6 +22,7 @@ import type { PartProps as SevenSegProps } from './parts/signals/seven-seg.ts';
 import type { PartProps as SwitchesProps } from './parts/switches/switches.ts';
 import type { PartProps as ChangeoverProps } from './parts/switches/changeover.ts';
 import type { PartProps as MotorProps } from './parts/loads/motor.ts';
+import type { PartProps as FanProps } from './parts/loads/fan.ts';
 import type { PartProps as HeaterProps } from './parts/loads/heater.ts';
 import type { PartProps as SolenoidProps } from './parts/loads/solenoid.ts';
 import type { PartProps as FluorescentProps } from './parts/loads/fluorescent.ts';
@@ -88,6 +89,7 @@ export interface PropsByType
     SwitchesProps,
     ChangeoverProps,
     MotorProps,
+    FanProps,
     HeaterProps,
     SolenoidProps,
     FluorescentProps,

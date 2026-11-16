@@ -40,7 +40,7 @@ const bicolorModel: ModelDef<PropsByType['bicolorLed']> = (() => {
       ...basicReadout(r),
       ['Lit', r.i > 1e-4 ? 'red' : r.i < -1e-4 ? 'green' : r.ac && r.irms > 1e-4 ? 'red and green (alternating)' : 'none'],
     ],
-    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.05, limit: 1.5 },
+    thermal: { load: (r, p) => Math.abs(r.i) / p.maxCurrent, tau: 0.05, limit: 1.5, rise: 40 }, // °C at its rating: a small LED
     failure: { label: 'burnt out', open: true },
   };
 })();

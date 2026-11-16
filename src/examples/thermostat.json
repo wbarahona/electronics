@@ -1,0 +1,453 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "c1",
+      "ref": "R1",
+      "usRef": "RT1",
+      "type": "ntc",
+      "x": 200,
+      "y": 120,
+      "rotation": 90,
+      "props": {
+        "resistance": 10000,
+        "beta": 3950,
+        "powerRating": 0.5
+      },
+      "broken": false
+    },
+    {
+      "id": "c2",
+      "ref": "X1",
+      "usRef": "X1",
+      "type": "rail",
+      "x": 200,
+      "y": 20,
+      "rotation": 0,
+      "props": {
+        "voltage": 12,
+        "maxCurrent": 3
+      },
+      "broken": false
+    },
+    {
+      "id": "c3",
+      "ref": "R2",
+      "usRef": "R1",
+      "type": "rheostat",
+      "x": 200,
+      "y": 240,
+      "rotation": 90,
+      "props": {
+        "resistance": 1000,
+        "position": 47,
+        "powerRating": 0.5,
+        "tolerance": 20,
+        "deviation": 0.094
+      },
+      "broken": false
+    },
+    {
+      "id": "c4",
+      "ref": "X2",
+      "usRef": "X2",
+      "type": "ground",
+      "x": 200,
+      "y": 320,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "c5",
+      "ref": "E1",
+      "usRef": "HR1",
+      "type": "heater",
+      "x": 100,
+      "y": 120,
+      "rotation": 0,
+      "props": {
+        "ratedVoltage": 12,
+        "ratedPower": 10
+      },
+      "broken": false
+    },
+    {
+      "id": "c6",
+      "ref": "X3",
+      "usRef": "X3",
+      "type": "ground",
+      "x": 60,
+      "y": 180,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "c7",
+      "ref": "M1",
+      "usRef": "B1",
+      "type": "fan",
+      "x": -40,
+      "y": 120,
+      "rotation": 90,
+      "props": {
+        "supply": "DC",
+        "ratedVoltage": 12,
+        "ratedPower": 1.5
+      },
+      "broken": false
+    },
+    {
+      "id": "c8",
+      "ref": "X4",
+      "usRef": "X4",
+      "type": "ground",
+      "x": -40,
+      "y": 200,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "c9",
+      "ref": "R3",
+      "usRef": "R2",
+      "type": "resistor",
+      "x": 300,
+      "y": 160,
+      "rotation": 0,
+      "props": {
+        "resistance": 1000,
+        "powerRating": 0.25,
+        "tolerance": 5,
+        "deviation": 0.432
+      },
+      "broken": false
+    },
+    {
+      "id": "c10",
+      "ref": "K1",
+      "usRef": "Q1",
+      "type": "npn",
+      "x": 380,
+      "y": 160,
+      "rotation": 0,
+      "props": {
+        "partNumber": "BC547",
+        "gain": 290,
+        "maxCurrent": 0.1,
+        "powerRating": 0.5
+      },
+      "broken": false
+    },
+    {
+      "id": "c11",
+      "ref": "X5",
+      "usRef": "X5",
+      "type": "ground",
+      "x": 400,
+      "y": 240,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "c12",
+      "ref": "K2",
+      "usRef": "K1",
+      "type": "relay",
+      "x": 480,
+      "y": 80,
+      "rotation": 0,
+      "props": {
+        "partNumber": "Generic",
+        "coil": "DC",
+        "coilVoltage": 12,
+        "coilResistance": 400,
+        "contacts": 1,
+        "contactType": "SPDT",
+        "maxCurrent": 10
+      },
+      "broken": false
+    },
+    {
+      "id": "c13",
+      "ref": "X6",
+      "usRef": "X6",
+      "type": "rail",
+      "x": 440,
+      "y": 0,
+      "rotation": 0,
+      "props": {
+        "voltage": 12,
+        "maxCurrent": 3
+      },
+      "broken": false
+    },
+    {
+      "id": "c14",
+      "ref": "R4",
+      "usRef": "D1",
+      "type": "diode",
+      "x": 280,
+      "y": 80,
+      "rotation": 270,
+      "props": {
+        "partNumber": "1N4007",
+        "forwardVoltage": 0.65,
+        "maxCurrent": 1,
+        "reverseVoltage": 1000
+      },
+      "broken": false
+    },
+    {
+      "id": "c15",
+      "ref": "X7",
+      "usRef": "X7",
+      "type": "rail",
+      "x": 500,
+      "y": 160,
+      "rotation": 180,
+      "props": {
+        "voltage": 12,
+        "maxCurrent": 3
+      },
+      "broken": false
+    },
+    {
+      "id": "c16",
+      "ref": "N1",
+      "usRef": "N1",
+      "type": "note",
+      "x": 760,
+      "y": 40,
+      "rotation": 0,
+      "props": {
+        "text": "A thermostat. The NTC {R1} and {R2} divide 12 V: as the NTC warms, its resistance falls and the voltage between them rises, until it turns transistor {K1} on through {R3}. That pulls in relay {K2}, whose changeover moves from heater {E1} to fan {M1}.\nA relay pulls in at a higher coil voltage than it lets go, so it switches a few degrees apart each way. {R4} catches the coil’s kick.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "c17",
+      "ref": "N2",
+      "usRef": "N2",
+      "type": "note",
+      "x": 760,
+      "y": 260,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run and open the Thermal view. The heater warms the NTC, the relay clicks over and the fan cools it, then back again. Change {R2} to set the temperature (higher, cooler), raise the ambient, or turn the fan away.",
+        "color": "amber"
+      },
+      "broken": false
+    }
+  ],
+  "joints": [],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "c2",
+        "pin": 0
+      },
+      "to": {
+        "part": "c1",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w2",
+      "from": {
+        "part": "c1",
+        "pin": 1
+      },
+      "to": {
+        "part": "c3",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "part": "c3",
+        "pin": 1
+      },
+      "to": {
+        "part": "c4",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w4",
+      "from": {
+        "part": "c5",
+        "pin": 0
+      },
+      "to": {
+        "part": "c6",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w5",
+      "from": {
+        "part": "c7",
+        "pin": 1
+      },
+      "to": {
+        "part": "c8",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w6",
+      "from": {
+        "part": "c1",
+        "pin": 1
+      },
+      "to": {
+        "part": "c9",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w7",
+      "from": {
+        "part": "c9",
+        "pin": 1
+      },
+      "to": {
+        "part": "c10",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w8",
+      "from": {
+        "part": "c10",
+        "pin": 2
+      },
+      "to": {
+        "part": "c11",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w9",
+      "from": {
+        "part": "c10",
+        "pin": 1
+      },
+      "to": {
+        "part": "c12",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w10",
+      "from": {
+        "part": "c13",
+        "pin": 0
+      },
+      "to": {
+        "part": "c12",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w11",
+      "from": {
+        "part": "c14",
+        "pin": 0
+      },
+      "to": {
+        "part": "c10",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w12",
+      "from": {
+        "part": "c14",
+        "pin": 1
+      },
+      "to": {
+        "part": "c12",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w13",
+      "from": {
+        "part": "c12",
+        "pin": 2
+      },
+      "to": {
+        "part": "c15",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w14",
+      "from": {
+        "part": "c12",
+        "pin": 3
+      },
+      "to": {
+        "part": "c5",
+        "pin": 1
+      },
+      "via": [
+        {
+          "x": 480,
+          "y": -40
+        },
+        {
+          "x": 140,
+          "y": -40
+        }
+      ]
+    },
+    {
+      "id": "w15",
+      "from": {
+        "part": "c12",
+        "pin": 4
+      },
+      "to": {
+        "part": "c7",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 520,
+          "y": -80
+        },
+        {
+          "x": -80,
+          "y": -80
+        },
+        {
+          "x": -80,
+          "y": 80
+        }
+      ]
+    }
+  ]
+}

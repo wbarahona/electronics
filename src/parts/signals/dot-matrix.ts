@@ -197,7 +197,7 @@ export const models: ModelDefs<'dotMatrix'> = {
         ['Current', fmt(total, 'A')],
       ];
     },
-    thermal: { load: (r, p) => Math.max(0, ...levels(r, p)), tau: 0.05, limit: 1.5 },
+    thermal: { load: (r, p) => Math.max(0, ...levels(r, p)), tau: 0.05, limit: 1.5, rise: 40 }, // °C at its rating: small LEDs
     failure: { label: 'burnt out', open: true },
   },
 };

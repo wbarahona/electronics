@@ -76,6 +76,7 @@ const uln2003Model: ModelDef<PropsByType['uln2003']> = (() => {
       load: (r, p) => Math.max(...Array.from({ length: 7 }, (_, ch) => Math.abs(r.pins[ulnOut(ch)]))) / p.maxCurrent,
       tau: 0.2,
       limit: 1.5,
+      rise: 50, // °C at its rating: a DIP driver
     },
     failure: { label: 'burnt out', open: true },
   };

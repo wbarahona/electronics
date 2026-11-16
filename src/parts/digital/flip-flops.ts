@@ -109,6 +109,7 @@ function flipFlopModel(
       load: (r, p) => Math.max(Math.abs(r.pins[Q]), Math.abs(r.pins[QN])) / p.maxCurrent,
       tau: 0.2,
       limit: 1.5,
+      rise: 30, // °C at its rating: logic output
     },
     failure: { label: 'burnt out', open: true },
   };

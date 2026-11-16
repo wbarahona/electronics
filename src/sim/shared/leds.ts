@@ -48,7 +48,7 @@ export function ledGroup<P extends LedGroupProps>(names: string[], fv: (p: P, k:
         ['Current', fmt(currents(r, p).reduce((sum, i) => sum + i, 0), 'A')],
       ];
     },
-    thermal: { load: (r, p) => Math.max(0, ...currents(r, p)) / p.maxCurrent, tau: 0.05, limit: 1.5 },
+    thermal: { load: (r, p) => Math.max(0, ...currents(r, p)) / p.maxCurrent, tau: 0.05, limit: 1.5, rise: 40 }, // °C at its rating: a small LED
     failure: { label: 'burnt out', open: true },
   };
 }

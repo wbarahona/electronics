@@ -1431,6 +1431,45 @@ body.dragging * {
   display: inline;
 }
 
+/* A fan's blades turn while it runs. */
+.part .fan-blades {
+  fill: var(--ink);
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.part.active .fan-blades {
+  animation: fan-spin 0.4s linear infinite;
+}
+
+@keyframes fan-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The air a running fan moves: a faint cone, while it's selected or the
+   Thermal view is on (hidden otherwise, and in the parts tray). */
+.part .airflow {
+  display: none;
+  fill: color-mix(in srgb, var(--md-sys-color-primary) 10%, transparent);
+  stroke: color-mix(in srgb, var(--md-sys-color-primary) 40%, transparent);
+  stroke-dasharray: 4 4;
+  pointer-events: none;
+}
+
+#board .part.active.selected .airflow,
+#board.thermal .part.active .airflow {
+  display: inline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .part.active .fan-blades {
+    animation-duration: 2s;
+  }
+}
+
 /* A running motor's spinning rotor mark; a sounder's sound arcs. */
 .part .rotor,
 .part .waves {
@@ -1919,6 +1958,17 @@ body.dragging * {
 
 .thermal-legend-labels span:last-child {
   right: 0;
+}
+
+/* The ambient temperature under the legend: the one part of the panel that
+   takes the pointer. */
+.thermal-ambient {
+  margin-top: 12px;
+  pointer-events: auto;
+}
+
+.thermal-ambient[hidden] {
+  display: none;
 }
 
 /* Oscilloscope: an M3 standard bottom sheet docked under the board (surface

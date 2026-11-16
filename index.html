@@ -290,6 +290,10 @@
         <div class="thermal-legend-labels">
           <span>Cool</span><span>Rated</span><span>Failing</span>
         </div>
+        <div class="thermal-ambient slider-field">
+          <div class="slider-head"><span>Ambient</span><span class="slider-value thermal-ambient-value"></span></div>
+          <ampage-slider class="thermal-ambient-slider" label="Ambient temperature"></ampage-slider>
+        </div>
       </div>
       <div id="zoom" class="zoom-controls" role="group" aria-label="Zoom">
         <md-icon-button id="zoom-in" title="Zoom in (⌘=)" aria-label="Zoom in">
@@ -490,6 +494,10 @@
             <label class="settings-switch">
               <span><span class="settings-option">Parts can burn out</span><span class="settings-note">Overloaded parts fail; off, they only get hot</span></span>
               <md-switch data-setting="burnOut"></md-switch>
+            </label>
+            <label class="settings-switch">
+              <span><span class="settings-option">Temperature effects</span><span class="settings-note">Ambient temperature, hot parts warming their neighbours, fans cooling them. Off: each part heats on its own, at 25 °C</span></span>
+              <md-switch data-setting="temperatures"></md-switch>
             </label>
             <label class="settings-switch">
               <span><span class="settings-option">Run on opening</span><span class="settings-note">An opened circuit or example starts running at once</span></span>

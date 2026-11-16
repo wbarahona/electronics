@@ -32,7 +32,6 @@ sheet frame and title block for printing):
   amplifier and plot gain and phase.
 - **DC sweep / I–V curve tracer**: plot a diode's, LED's or transistor's
   characteristic curve.
-- **Ambient temperature**: affects the NTC, LDR and when parts overheat.
 - **More part numbers**: the first batch is built (diodes, Schottkys,
   zeners, NPN/PNP/MOSFET transistors, LEDs, regulators, with European
   defaults and a modified mark). Still to do: relays and contactors by coil

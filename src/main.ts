@@ -4,7 +4,7 @@ import './material.ts';
 import { createBoard } from './board.ts';
 import { createAudio } from './audio.ts';
 import { createControls } from './controls.ts';
-import { createCircuit } from './model.ts';
+import { AMBIENT, createCircuit } from './model.ts';
 import { createEditor, type Live } from './editor.ts';
 import { createBackdrop } from './backdrop.ts';
 import { createFileActions } from './files.ts';
@@ -27,10 +27,10 @@ import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
 import { onLanguage, t } from './i18n/index.ts';
 import { onNorm, refText } from './norm.ts';
-import { onDecimalMark } from './units.ts';
+import { fromShown, onDecimalMark, shownUnit, toShown } from './units.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
-import { MODELS, type Sound } from './sim/models.ts';
+import { MODELS, type Result, type Sound, type Thermal } from './sim/models.ts';
 import { parse, serialize, type SavedCircuit } from './persist.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
@@ -61,6 +61,31 @@ const settings = createSettings(byId('settings-dialog'));
 const board = createBoard(byId<SVGSVGElement>('board'));
 const circuit = createCircuit();
 const engine = createEngine(circuit);
+
+// The ambient temperature, on the Thermal view's panel: the circuit's own
+// (saved with it, undoable), −20 to 60 °C, shown in °F under the US standard.
+// It applies at once, paused or running; undo takes it when the slider is let go.
+const ambientSlider = byId<HTMLElement & { min: number; max: number; step: number; value: number; valueLabel: string }>('thermal-legend').querySelector<
+  HTMLElement & { min: number; max: number; step: number; value: number; valueLabel: string }
+>('.thermal-ambient-slider')!;
+const ambientValue = byId('thermal-legend').querySelector<HTMLElement>('.thermal-ambient-value')!;
+const ambientText = (celsius: number) => `${Math.round(toShown(celsius, '°C'))} ${shownUnit('°C')}`;
+function showAmbient() {
+  Object.assign(ambientSlider, { min: Math.round(toShown(-20, '°C')), max: Math.round(toShown(60, '°C')), step: 1 });
+  ambientSlider.value = Math.round(toShown(circuit.ambient, '°C'));
+  ambientValue.textContent = ambientSlider.valueLabel = ambientText(circuit.ambient);
+}
+ambientSlider.addEventListener('input', () => {
+  circuit.ambient = fromShown(ambientSlider.value, '°C');
+  ambientValue.textContent = ambientSlider.valueLabel = ambientText(circuit.ambient);
+  if (!nets) return;
+  engine.rebuild(nets);
+  showResults();
+});
+ambientSlider.addEventListener('change', () => {
+  files.changed();
+  history.changed();
+});
 let nets: Nets | null = null;
 // Ideal values or the real spread (Settings): solve again when it changes.
 engine.tolerances = settings.tolerances;
@@ -102,6 +127,12 @@ window.addEventListener('keydown', (e) => {
   settings.readout = !settings.readout;
 });
 
+// How close a part runs to failing on the scale of its heat (1 = at its
+// rating, its limit = failing): its heat, plus what warmer or cooler
+// surroundings add (see thermalState in src/sim/engine.ts).
+const stressOf = (r: Result, thermal: Thermal<never>) =>
+  r.celsius !== undefined && thermal.rise ? (r.celsius - AMBIENT) / thermal.rise : r.heat;
+
 // Push the latest simulation results to the screen: how brightly each part
 // shines, how close each is to failing (0 at its rating, 1 at its limit), and
 // the current along every wire. While running, light and flow ease toward the
@@ -118,8 +149,8 @@ function showResults() {
     live.set(c.id, {
       reading: reading && (c.broken ? (failure?.display ?? '–') : r ? reading(r, c.props) : '–'),
       glow: r && brightness ? brightness(r, c.props) : 0,
-      heat: r && thermal && !c.broken ? Math.min(1, Math.max(0, (r.heat - 1) / (thermal.limit - 1))) : 0,
-      temp: thermal ? (c.broken ? 1 : (r?.heat ?? 0) / thermal.limit) : undefined,
+      heat: r && thermal && !c.broken ? Math.min(1, Math.max(0, (stressOf(r, thermal) - 1) / (thermal.limit - 1))) : 0,
+      temp: thermal ? (c.broken ? 1 : r ? Math.max(0, stressOf(r, thermal) / thermal.limit) : 0) : undefined,
       needle: r && needle && !c.broken ? needle(r, c.props) : undefined,
       level: r?.level,
       active: r && active ? !c.broken && active(r) : undefined,
@@ -140,8 +171,9 @@ const history = createHistory(byId('history-actions'), {
   capture: () => JSON.stringify(serialize(circuit)),
   restore(snapshot) {
     const data = parse(snapshot);
-    circuit.load(data.parts, data.joints, data.wires);
+    circuit.load(data.parts, data.joints, data.wires, data.ambient);
     editor.reload();
+    showAmbient();
   },
 });
 
@@ -189,7 +221,7 @@ function showToast(message: string) {
 // An opened one (file, example, link) is fitted in view unless Settings ask
 // for the view saved with it; the autosave always comes back as it was left.
 function loadCircuit(data: SavedCircuit, opened = false) {
-  circuit.load(data.parts, data.joints, data.wires);
+  circuit.load(data.parts, data.joints, data.wires, data.ambient);
   engine.reset();
   scope.clear();
   const fit = opened && settings.openView === 'fit' && circuit.components.length > 0;
@@ -197,6 +229,7 @@ function loadCircuit(data: SavedCircuit, opened = false) {
   editor.reload();
   if (fit) board.fitAll();
   controls.showTime(engine.time);
+  showAmbient();
   history.reset();
   // Settings may ask for an opened circuit to start running at once.
   if (opened && settings.autoRun && !controls.running) controls.toggle();
@@ -399,6 +432,7 @@ byId('file-backdrop').addEventListener('click', () => backdrop.open());
 onNorm(() => {
   editor.reload();
   showResults();
+  showAmbient();
 });
 onDecimalMark(() => {
   editor.reload();
@@ -406,12 +440,17 @@ onDecimalMark(() => {
 });
 
 // Settings the board and simulation follow as they change: the grid, the
-// current-flow dots, whether parts burn out. (Flow direction and sound are
-// read as results are shown.)
+// current-flow dots, whether parts burn out, temperature effects (which also
+// show or hide the Thermal panel's ambient slider, and re-solve when they
+// change). (Flow direction and sound are read as results are shown.)
 function applyBoardSettings() {
   board.svg.dataset.grid = settings.grid;
   board.svg.classList.toggle('no-flow', !settings.flowDots);
   engine.burnOut = settings.burnOut;
+  ambientSlider.closest<HTMLElement>('.thermal-ambient')!.hidden = !settings.temperatures;
+  if (engine.temperatures === settings.temperatures) return;
+  engine.temperatures = settings.temperatures;
+  if (nets) engine.rebuild(nets);
 }
 applyBoardSettings();
 settings.onChange(() => {

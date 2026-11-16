@@ -18,6 +18,7 @@ export interface Result {
   irms: number;
   pavg: number;
   heat: number; // 1 = at its rating; fails past the model's thermal limit
+  celsius?: number; // its temperature, for parts that heat up (thermal rise > 0)
   load: number; // how hard it's driven right now, 1 = at its rating
   level?: number; // how full an energy store is, 0..1
   ac: boolean;
@@ -34,7 +35,8 @@ export interface PartState {
   v?: number; // capacitor voltage at the end of the last step
   i?: number; // inductor current at the end of the last step
   light?: number; // light an LDR is getting, 0..1
-  rise?: number; // a thermistor's temperature above ambient, K
+  rise?: number; // a thermistor's self-heating above what's around it, K
+  around?: number; // the temperature around a sensing part (the NTC), °C
   ins?: boolean[]; // a logic part's input levels and output(s)
   outs?: boolean[];
   count?: number; // a counter's count; a decoder's latched value
@@ -115,12 +117,25 @@ export interface Sound {
 export interface Env {
   readonly time: number; // simulated time, s
   light(el: Element): number; // light reaching it from glowing parts, 0..1+
+  temperature(el: Element): number; // °C around it: the ambient plus warmth from nearby hot parts
 }
 
+// How a part heats up: `load` is how hard it's driven against its rating now
+// (1 = at its rating), which its heat follows with time constant `tau`
+// seconds; it fails past `limit`. `rise` is how many °C above its
+// surroundings it runs at its rating (a datasheet-like constant), so its
+// temperature is local temperature + heat × rise, and it fails above
+// 25 °C + limit × rise: at 25 °C ambient, exactly where heat passes the limit.
+// `rise: 0` is for stress that isn't heat (a capacitor or meter over its
+// voltage): no temperature, and ambient doesn't touch it. `heatShare` is how
+// much of the power it takes ends up as heat around it (1 unless said: a
+// motor's goes mostly into motion, only its losses warm its neighbours).
 export interface Thermal<P> {
   load(r: Result, p: P): number;
   tau: number;
   limit: number;
+  rise: number;
+  heatShare?: number;
 }
 
 // One part type's model, checked against its values P.
@@ -136,6 +151,9 @@ export interface ModelDef<P> {
   brightness?(r: Result, p: P): number;
   maxStep?(p: P): number;
   thermal?: Thermal<P>;
+  // A part that moves air (a fan): how much of its full airflow it moves
+  // now, 0..1. The air leaves along its local up (−y), turned with the part.
+  airflow?(r: Result, p: P): number;
   failure?: { label: string; open: boolean; display?: string }; // display: what a broken meter shows
   level?(r: Result, p: P): number;
   drain?(el: Element<P>, r: Result, dt: number): boolean;

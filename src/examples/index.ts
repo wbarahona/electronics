@@ -55,6 +55,13 @@ export const EXAMPLES: Example[] = [
     load: file(() => import('./decade-counter.json?raw')),
   },
   {
+    id: 'thermostat',
+    icon: 'thermostat',
+    title: 'Thermostat',
+    description: 'An NTC and a comparator switch a heater off and a fan on at the set temperature.',
+    load: file(() => import('./thermostat.json?raw')),
+  },
+  {
     id: 'rgb-rainbow',
     icon: 'gradient',
     title: 'Rainbow matrix',

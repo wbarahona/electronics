@@ -24,7 +24,7 @@ const solenoidModel: ModelDef<PropsByType['solenoid']> = {
   },
   active: (r) => !!r.state.energized,
   readout: (r) => [...basicReadout(r), ['Plunger', r.state.energized ? 'pulled in' : 'out']],
-  thermal: { load: (r, p) => (r.ac ? r.irms : Math.abs(r.i)) / p.ratedCurrent, tau: 5, limit: 1.6 },
+  thermal: { load: (r, p) => (r.ac ? r.irms : Math.abs(r.i)) / p.ratedCurrent, tau: 5, limit: 1.6, rise: 60 }, // °C at its rating: winding
   failure: { label: 'burnt out', open: true },
 };
 

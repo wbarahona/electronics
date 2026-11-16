@@ -239,6 +239,7 @@ function relayModel<P extends CoilProps>(
       load: (r, p) => Math.max(level(r, p) / (1.3 * p.coilVoltage), Math.max(0, ...r.pins.slice(2).map(Math.abs)) / p.maxCurrent),
       tau: 0.5,
       limit: 1.5,
+      rise: 50, // °C at its rating: coil and contacts
     },
     failure: { label: 'burnt out', open: true },
   };
