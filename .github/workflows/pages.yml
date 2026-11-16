@@ -1,0 +1,59 @@
+# The web version of Ampage on GitHub Pages
+# (https://wbarahona.github.io/electronics/), published from the same version
+# tags as the desktop builds (release.yml), or by hand from the Actions tab.
+#
+# One-time setup in the repo's Settings:
+#   Pages → Build and deployment → Source: GitHub Actions
+#   Environments → github-pages → Deployment branches and tags → add a tag
+#   rule "v*" (by default only the default branch may deploy there)
+#
+# The app lives under /<repo name>/ there, not at the site root, so it's built
+# with that base path; the desktop app and local builds keep "/".
+name: Web
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer tag waits for the one in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build for /${{ github.event.repository.name }}/
+        run: |
+          npx tsc
+          npx vite build --base=/${{ github.event.repository.name }}/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

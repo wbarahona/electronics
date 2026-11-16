@@ -14,9 +14,13 @@ ANSI / IEEE 315 symbols and US designations (R1, Q1, D1…).
 
 ![Ampage window](public/ampage-app.png)
 
-## Download
+## Try it or download it
 
-**[Download the latest release](https://github.com/wbarahona/electronics/releases/latest)**:
+**[Open Ampage in your browser](https://wbarahona.github.io/electronics/)**:
+nothing to install; works on tablets too. Saving works best in Chrome and
+Edge (elsewhere a save downloads the file).
+
+Or **[download the latest release](https://github.com/wbarahona/electronics/releases/latest)**:
 Ampage as a desktop app for macOS (Apple Silicon and Intel, `.dmg`) and
 Windows 10 / 11 (`-setup.exe`).
 
@@ -76,7 +80,8 @@ npm run app:build  # build the installer into src-tauri/target/release/bundle/
 
 Releases: set `version` in `package.json`, commit, then push a matching tag
 (`git tag v0.2.0 && git push origin v0.2.0`). GitHub Actions builds macOS and
-Windows installers into a draft release to review and publish.
+Windows installers into a draft release to review and publish, and publishes
+the web version to GitHub Pages (`.github/workflows/pages.yml`).
 
 ## Shortcuts
 
