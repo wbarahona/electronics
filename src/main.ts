@@ -197,6 +197,7 @@ const editor = createEditor(board, circuit, {
       { label: t('Copy'), icon: 'content_copy', shortcut: `${MOD}C`, enabled: editor.canCopy(), action: editor.copy },
       { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste(), action: () => editor.paste(at) },
       { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy(), action: editor.duplicate },
+      { label: t('Rotate'), icon: 'rotate_right', shortcut: 'R', enabled: editor.hasSelection(), action: editor.rotate },
       'separator',
       { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection(), danger: true, action: editor.deleteSelected },
     ]),

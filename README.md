@@ -109,7 +109,7 @@ On Windows and Linux use Ctrl instead of ⌘.
 
 On a touch screen (a tablet, or a touchscreen laptop): drag with one finger
 on empty board to pan, pinch to zoom, long-press a part or the board for cut,
-copy, paste and delete, and drag a part down out of the tray to place it.
+copy, paste, rotate and delete, and drag a part down out of the tray to place it.
 
 ## Project layout
 

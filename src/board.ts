@@ -150,6 +150,19 @@ export function createBoard(svg: SVGSVGElement) {
   let pinch: { dist: number; mid: { x: number; y: number } } | null = null;
   let press: { id: number; x: number; y: number; timer: number } | null = null;
   let lastTouch = 0;
+  let pressedLong: number | null = null; // the finger whose long press opened a menu
+
+  // Lifting a finger after its long press makes a click, which would close
+  // the menu just opened (a click outside it). That click, if it comes
+  // straight away, is swallowed.
+  function swallowNextClick() {
+    const swallow = (click: Event) => {
+      click.preventDefault();
+      click.stopImmediatePropagation();
+    };
+    window.addEventListener('click', swallow, { capture: true, once: true });
+    setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 500);
+  }
 
   const twoFingers = () => {
     const [a, b] = [...fingers.values()];
@@ -193,6 +206,7 @@ export function createBoard(svg: SVGSVGElement) {
       timer: window.setTimeout(() => {
         press = null;
         takeOver([id]);
+        pressedLong = id;
         const target = document.elementFromPoint(x, y) ?? svg;
         target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 2 }));
       }, LONG_PRESS_MS),
@@ -220,6 +234,10 @@ export function createBoard(svg: SVGSVGElement) {
   const lift = (e: PointerEvent) => {
     if (e.pointerType !== 'touch') return;
     if (press?.id === e.pointerId) cancelPress();
+    if (pressedLong === e.pointerId) {
+      pressedLong = null;
+      if (e.type === 'pointerup') swallowNextClick();
+    }
     fingers.delete(e.pointerId);
     if (fingers.size < 2) pinch = null;
     if (swallowed.delete(e.pointerId)) e.stopImmediatePropagation();

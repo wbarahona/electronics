@@ -67,7 +67,7 @@ const GROUPS: { title: string; icon: string; rows: Row[] }[] = [
     rows: [
       ['Pan the board', [['drag with one finger']]],
       ['Zoom', [['pinch']]],
-      ['Cut, copy, paste, delete', [['long press']]],
+      ['Cut, copy, paste, rotate, delete', [['long press']]],
       ['Place a part', [['drag it down from the tray']]],
     ],
   },
