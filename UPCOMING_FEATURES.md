@@ -7,7 +7,7 @@ add. Parts and instruments still to come are in
 ## Top picks
 
 The most value for the effort, roughly in order (already built: the example
-gallery, net labels, share by link, fault injection, image export, notes
+gallery, net labels, fault injection, image export, notes
 explaining every example, fit-on-open, component tolerances, and the ISO
 sheet frame and title block for printing):
 

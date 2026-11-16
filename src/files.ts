@@ -3,7 +3,6 @@ import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
 import { confirmDialog, promptDialog } from './confirm.ts';
 import { isApp, onOpenedFiles, openCircuitFile, saveCircuitFile, saveFile, setWindowTitle, type CircuitFile } from './platform.ts';
-import { circuitInLink, clearLink, linkFor } from './share.ts';
 import type { Circuit } from './model.ts';
 
 const AUTOSAVE_KEY = 'electronics:autosave';
@@ -285,38 +284,6 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     }
   }
 
-  // --- Share by link ------------------------------------------------------------
-  // Copy a link that opens this circuit (see share.ts); opening the page from
-  // such a link offers to open its circuit, as does pasting one into this tab.
-
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(await linkFor(JSON.stringify(serialize(circuit, getView()))));
-      report(t('Link copied: anyone with it can open this circuit.'));
-    } catch (e) {
-      report(t('Couldn’t make a link: {error}', { error: (e as Error).message }));
-    }
-  }
-
-  async function openLink() {
-    let text: string | null;
-    try {
-      text = await circuitInLink();
-    } catch {
-      report(t('This link’s circuit is damaged (was the link cut short?).'));
-      clearLink();
-      return;
-    }
-    if (text === null) return;
-    clearLink();
-    if ((await replaceOk()) && open(text, 'shared-circuit.ampage')) detach();
-  }
-
-  // A link from the desktop app would point into the app itself: none there.
-  if (isApp) root.querySelector<HTMLElement>('#file-share')!.hidden = true;
-  else root.querySelector('#file-share')!.addEventListener('click', copyLink);
-  window.addEventListener('hashchange', openLink);
-
   // The desktop app: circuit files opened from the system (double-clicked,
   // or dropped on the app's icon), at launch or while running; the last of a
   // batch goes on the board, saving back to its file. Resolves, once the
@@ -354,5 +321,5 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   showTitle();
   onLanguage(showTitle);
 
-  return { changed, restore, quietly, title, openText, openLink, openSystemFiles };
+  return { changed, restore, quietly, title, openText, openSystemFiles };
 }

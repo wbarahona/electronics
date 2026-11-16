@@ -246,22 +246,18 @@ const files = createFileActions(byId('file-menu'), {
 const restored = files.restore();
 if (restored) files.quietly(() => loadCircuit(restored));
 else history.reset();
-// Opened from a shared link or a file: its circuit (asking first if that
-// replaces one). Otherwise a tip of the day, unless turned off (here or in Settings).
-const fromLink = location.hash.length > 1;
-files.openLink();
-// In the desktop app, a circuit file it was started to open.
+// In the desktop app, a circuit file it was started to open (asking first if
+// that replaces one); otherwise the tour for newcomers or a tip of the day,
+// unless turned off (here or in Settings).
 const fromFile = files.openSystemFiles();
 const tips = createTips(byId('tip-dialog'), settings);
 settings.onChange(tips.sync);
 const tour = createTour();
-if (!fromLink) {
-  fromFile.then((opened) => {
-    if (opened) return;
-    if (newcomer) tour.start();
-    else if (settings.tips) tips.show();
-  });
-}
+fromFile.then((opened) => {
+  if (opened) return;
+  if (newcomer) tour.start();
+  else if (settings.tips) tips.show();
+});
 // Help in the rail: the keyboard shortcuts, the tour, a tip.
 const shortcuts = createShortcuts(byId('shortcuts-dialog'));
 const helpMenu = byId<MdMenu>('help-menu');

@@ -25,7 +25,7 @@ export const TIPS = [
   'Place a scope probe and open Scope to watch its voltage over time.',
   'Give a part a fault in its properties, hidden, to practise fault finding with meters.',
   'Set Component values to Real spread in Settings to simulate parts within their tolerance, as built.',
-  'Copy share link in the File menu puts the whole circuit in a link. Nothing is uploaded.',
+  'Save a circuit ({mod}S) and send the .ampage file: a double-click opens it in Ampage.',
   'Background image in the File menu puts a picture under the grid to trace a circuit from.',
   'Your circuit is saved in this browser as you work. Save it to a file to keep a copy elsewhere.',
 ];

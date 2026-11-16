@@ -45,7 +45,7 @@ const STEPS: Step[] = [
   {
     target: '#rail-file',
     title: 'Files',
-    text: 'Save and open circuits, share one as a link, export or print it.',
+    text: 'Save and open circuits, export or print them. A saved .ampage file opens in Ampage with a double-click.',
   },
   {
     target: '#rail-settings',

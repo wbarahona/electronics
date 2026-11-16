@@ -10,7 +10,7 @@ const ICONS = [
   'content_copy', 'content_cut', 'content_paste', 'contrast', 'dark_mode', 'delete', 'developer_board', 'doorbell',
   'draw', 'edit', 'edit_note', 'electrical_services', 'fast_forward', 'fast_rewind', 'filter_center_focus',
   'fit_screen', 'folder', 'folder_open', 'format_color_fill', 'gradient', 'grid_on', 'help', 'history', 'image',
-  'keyboard', 'library_add', 'light_mode', 'lightbulb', 'linear_scale', 'link', 'memory', 'menu', 'menu_open',
+  'keyboard', 'library_add', 'light_mode', 'lightbulb', 'linear_scale', 'memory', 'menu', 'menu_open',
   'mode_fan', 'monitoring', 'more_horiz', 'note_add', 'palette', 'pause', 'play_arrow', 'play_circle', 'power',
   'print', 'redo', 'restart_alt', 'save', 'schedule', 'schema', 'school', 'search', 'search_off', 'settings',
   'speed', 'stairs', 'swap_horiz', 'thermostat', 'timer', 'toggle_on', 'tour', 'translate', 'tune', 'undo',
