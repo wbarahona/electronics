@@ -3232,6 +3232,87 @@ body.dragging * {
   }
 }
 
+/* The app's own logo as a menu item's icon (About Ampage): the same mask
+   as the title's logo, in the menu's icon size and colour. */
+.menu-logo {
+  display: block;
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  -webkit-mask: url(/ampage.svg) center / contain no-repeat;
+  mask: url(/ampage.svg) center / contain no-repeat;
+}
+
+/* About (Help in the rail), M3 Expressive: centred, the logo, the name in
+   headline-small, the version in a primary-container chip, then the line
+   about it and the small print. */
+.about-dialog {
+  max-width: min(360px, calc(100vw - 48px));
+}
+
+.about-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 32px 24px 8px;
+  text-align: center;
+}
+
+.about-logo {
+  margin-bottom: 4px;
+}
+
+/* M3 headline-small */
+.about-name {
+  margin: 0;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* M3 label-large in a chip */
+.about-version {
+  margin: 0;
+  padding: 2px 12px;
+  border-radius: 8px;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+/* M3 body-medium */
+.about-text {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* M3 body-small */
+.about-small,
+.about-link {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.about-link {
+  color: var(--md-sys-color-primary);
+}
+
+/* The version at the foot of Settings › Misc: M3 body-small. */
+.settings-version {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
 /* A confirmation (src/confirm.ts): headline, one sentence, Cancel / action. */
 .confirm-dialog {
   max-width: min(400px, calc(100vw - 48px));

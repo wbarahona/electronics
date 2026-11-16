@@ -23,6 +23,7 @@ import { createTips } from './tips.ts';
 import { createTour, toured } from './tour.ts';
 import { createShortcuts } from './shortcuts.ts';
 import { createTooltips } from './tooltip.ts';
+import { showVersion } from './version.ts';
 import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
 import { onLanguage, t } from './i18n/index.ts';
@@ -53,6 +54,7 @@ const newcomer = (() => {
 })();
 
 createTooltips();
+showVersion();
 
 // Settings first: the theme colours everything else, and the language
 // translates index.html before anything is added to it.
@@ -221,6 +223,8 @@ function showToast(message: string) {
 // An opened one (file, example, link) is fitted in view unless Settings ask
 // for the view saved with it; the autosave always comes back as it was left.
 function loadCircuit(data: SavedCircuit, opened = false) {
+  // Another circuit (new, opened, an example): the simulation stops first.
+  controls.pause();
   circuit.load(data.parts, data.joints, data.wires, data.ambient);
   engine.reset();
   scope.clear();
@@ -258,7 +262,9 @@ fromFile.then((opened) => {
   if (newcomer) tour.start();
   else if (settings.tips) tips.show();
 });
-// Help in the rail: the keyboard shortcuts, the tour, a tip.
+// Help in the rail: the keyboard shortcuts, the tour, a tip, About.
+const about = byId<MdDialog>('about-dialog');
+byId('help-about').addEventListener('click', () => about.show());
 const shortcuts = createShortcuts(byId('shortcuts-dialog'));
 const helpMenu = byId<MdMenu>('help-menu');
 byId('rail-help').addEventListener('click', () => (helpMenu.open = !helpMenu.open));

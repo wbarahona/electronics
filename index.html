@@ -140,6 +140,8 @@
       <md-menu-item id="help-shortcuts"><md-icon slot="start">keyboard</md-icon><div slot="headline">Keyboard shortcuts</div><div slot="end" class="menu-shortcut">?</div></md-menu-item>
       <md-menu-item id="help-tour"><md-icon slot="start">tour</md-icon><div slot="headline">Take the tour</div></md-menu-item>
       <md-menu-item id="help-tip"><md-icon slot="start">lightbulb</md-icon><div slot="headline">Show a tip</div></md-menu-item>
+      <md-divider></md-divider>
+      <md-menu-item id="help-about"><span slot="start" class="menu-logo" aria-hidden="true"></span><div slot="headline">About Ampage</div></md-menu-item>
     </md-menu>
     <md-menu id="file-menu" anchor="rail-file" positioning="fixed" anchor-corner="start-end" menu-corner="start-start">
       <md-menu-item id="file-new"><md-icon slot="start">note_add</md-icon><div slot="headline">New circuit</div></md-menu-item>
@@ -528,6 +530,7 @@
             <h3 class="settings-heading"><md-icon>restart_alt</md-icon>Reset</h3>
             <md-outlined-button id="settings-reset" class="settings-action"><md-icon slot="icon">restart_alt</md-icon>Reset settings to defaults</md-outlined-button>
           </section>
+          <p class="settings-version app-version"></p>
         </div>
       </form>
       <div slot="actions" class="dialog-actions">
@@ -540,6 +543,19 @@
       <form slot="content" id="shortcuts-form" method="dialog" class="shortcuts-body"></form>
       <div slot="actions" class="dialog-actions">
         <md-filled-button form="shortcuts-form" value="close" autofocus>Done</md-filled-button>
+      </div>
+    </md-dialog>
+    <md-dialog id="about-dialog" class="about-dialog">
+      <form slot="content" id="about-form" method="dialog" class="about-body">
+        <img class="about-logo" src="/ampage.svg" alt="" width="72" height="72" />
+        <h2 class="about-name">Ampage</h2>
+        <p class="about-version app-version"></p>
+        <p class="about-text">An electronics simulator: circuits that come alive.</p>
+        <p class="about-small">MIT License · © wbarahona</p>
+        <a class="about-link" href="https://github.com/wbarahona/electronics" target="_blank" rel="noopener">github.com/wbarahona/electronics</a>
+      </form>
+      <div slot="actions" class="dialog-actions">
+        <md-filled-button form="about-form" value="close" autofocus>Close</md-filled-button>
       </div>
     </md-dialog>
     <md-dialog id="tip-dialog" class="tip-dialog">
