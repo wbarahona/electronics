@@ -263,6 +263,7 @@ export default {
   'Temperature effects': 'Efectos de temperatura',
   'Ambient temperature, hot parts warming their neighbours, fans cooling them. Off: each part heats on its own, at 25 °C': 'Temperatura ambiente, componentes calientes que calientan a sus vecinos, ventiladores que los enfrían. Desactivado: cada componente se calienta por sí solo, a 25 °C',
   'Warm-up time': 'Tiempo de calentamiento',
+  Edited: 'Editado',
   'Opening a circuit': 'Al abrir un circuito',
   'Fit it in view': 'Ajustarlo a la vista',
   'The whole circuit, whatever the window size': 'El circuito entero, sea cual sea el tamaño de la ventana',

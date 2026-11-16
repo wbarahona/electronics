@@ -1,12 +1,13 @@
-import { t } from './i18n/index.ts';
+import { onLanguage, t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
 import { confirmDialog } from './confirm.ts';
-import { isApp, onOpenedFiles, openCircuitFile, saveCircuitFile, saveFile, type CircuitFile } from './platform.ts';
+import { isApp, onOpenedFiles, openCircuitFile, saveCircuitFile, saveFile, setWindowTitle, type CircuitFile } from './platform.ts';
 import { circuitInLink, clearLink, linkFor } from './share.ts';
 import type { Circuit } from './model.ts';
 
 const AUTOSAVE_KEY = 'electronics:autosave';
+const AUTOSAVE_NAME_KEY = 'electronics:autosave-name'; // its name and whether it was edited since saving
 const AUTOSAVE_EVERY_MS = 5000;
 // Circuits are saved as .ampage (JSON inside); .json files from before still open.
 const MIME = 'application/vnd.ampage+json';
@@ -45,6 +46,38 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   let handle: FileSystemFileHandle | null = null; // file the last save or open used
   let path: string | null = null; // the same, in the desktop app
   let name = NEW_NAME;
+  let untitled = true; // a new circuit, never saved or opened from a file or example
+  let edited = false; // changed since it was opened, started or last saved
+  let quiet = false; // while loading: the changes loading fires aren't edits
+
+  // The window's title: Ampage, the circuit's name (or New circuit) and
+  // [Edited] while it has changes not yet saved.
+  function showTitle() {
+    const shown = untitled ? t('New circuit') : title();
+    setWindowTitle(`Ampage - ${shown}${edited ? ` [${t('Edited')}]` : ''}`);
+  }
+
+  // Edited or not, under its present name: shown, and remembered with the
+  // autosave so a reload keeps it.
+  function setEdited(on: boolean) {
+    edited = on;
+    showTitle();
+    try {
+      localStorage.setItem(AUTOSAVE_NAME_KEY, JSON.stringify({ name, untitled, edited }));
+    } catch {
+      // no storage: the title starts afresh next time
+    }
+  }
+
+  // Run `fn` (loading a circuit) without its changes counting as edits.
+  function quietly(fn: () => void) {
+    quiet = true;
+    try {
+      fn();
+    } finally {
+      quiet = false;
+    }
+  }
 
   const empty = () => !circuit.components.length && !circuit.wires.length && !circuit.joints.length;
   // Whether the circuit on the board may go: asked, unless the board is empty,
@@ -67,7 +100,9 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     if (!(await replaceOk('new'))) return;
     detach();
     name = NEW_NAME;
-    load({ format: 'electronics-circuit', version: 1, parts: [], joints: [], wires: [] });
+    untitled = true;
+    quietly(() => load({ format: 'electronics-circuit', version: 1, parts: [], joints: [], wires: [] }));
+    setEdited(false);
   }
 
   function open(text: string, fileName: string) {
@@ -78,8 +113,10 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
       report(t('Couldn’t open {file}: {error}', { file: fileName, error: (e as Error).message }));
       return false;
     }
-    load(data, true);
+    quietly(() => load(data, true));
     name = fileName;
+    untitled = false;
+    setEdited(false);
     return true;
   }
 
@@ -121,7 +158,11 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
     if (isApp) {
       try {
         const file = await saveCircuitFile(text(), path, ampageName(name));
-        if (file) ({ path, name } = file);
+        if (file) {
+          ({ path, name } = file);
+          untitled = false;
+          setEdited(false);
+        }
       } catch (e) {
         report(t('Couldn’t save: {error}', { error: String(e) }));
       }
@@ -134,12 +175,17 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
         await writable.write(text());
         await writable.close();
         name = handle.name;
+        untitled = false;
+        setEdited(false);
       } catch (e) {
         if (!cancelled(e)) report(t('Couldn’t save: {error}', { error: (e as Error).message }));
       }
       return;
     }
-    saveFile(new Blob([text()], { type: MIME }), ampageName(name));
+    name = ampageName(name);
+    saveFile(new Blob([text()], { type: MIME }), name);
+    untitled = false;
+    setEdited(false);
   }
 
   root.querySelector('#file-new')!.addEventListener('click', newCircuit);
@@ -185,6 +231,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   let pending = 0;
   // Call after edits; saves shortly after things settle.
   function changed() {
+    if (!quiet && !edited) setEdited(true);
     clearTimeout(pending);
     pending = window.setTimeout(autosave, 500);
   }
@@ -197,10 +244,16 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   // The autosaved circuit, if there is a usable one.
   function restore(): SavedCircuit | null {
     try {
+      const meta = JSON.parse(localStorage.getItem(AUTOSAVE_NAME_KEY) ?? '{}');
+      if (typeof meta.name === 'string' && meta.name) name = meta.name;
+      untitled = meta.untitled !== false;
+      edited = meta.edited === true;
       const saved = localStorage.getItem(AUTOSAVE_KEY);
       return saved ? parse(saved) : null;
     } catch {
       return null;
+    } finally {
+      showTitle();
     }
   }
 
@@ -270,5 +323,8 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   // The circuit's file name without its extension (for print titles).
   const title = () => name.replace(/\.(ampage|json)$/i, '');
 
-  return { changed, restore, title, openText, openLink, openSystemFiles };
+  showTitle();
+  onLanguage(showTitle);
+
+  return { changed, restore, quietly, title, openText, openLink, openSystemFiles };
 }

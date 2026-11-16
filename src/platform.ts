@@ -55,6 +55,13 @@ export async function onOpenedFiles(handle: (files: Promise<CircuitFile[]>) => v
   handle(take());
 }
 
+// The window's title: the page's, and in the desktop app the window's own
+// (the web view's title doesn't reach it).
+export function setWindowTitle(title: string) {
+  document.title = title;
+  if (isApp) void import('@tauri-apps/api/window').then(({ getCurrentWindow }) => getCurrentWindow().setTitle(title));
+}
+
 // Hand a file to the user: a download in the browser, a save dialog in the app.
 export async function saveFile(blob: Blob, fileName: string): Promise<void> {
   if (!isApp) {

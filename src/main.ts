@@ -244,7 +244,7 @@ const files = createFileActions(byId('file-menu'), {
 
 // Pick up where the last session left off.
 const restored = files.restore();
-if (restored) loadCircuit(restored);
+if (restored) files.quietly(() => loadCircuit(restored));
 else history.reset();
 // Opened from a shared link or a file: its circuit (asking first if that
 // replaces one). Otherwise a tip of the day, unless turned off (here or in Settings).
