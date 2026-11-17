@@ -30,11 +30,6 @@ sheet frame and title block for printing):
 
 ## Simulation depth
 
-- **Enclosures**: an "Enclosure" setting on the Frame: the parts inside
-  share an inside air temperature (heat in from its parts, out through its
-  walls: sealed / vented / open), fans on its edge blow in or extract,
-  nested enclosures use the outer one's air. Shown as a solid edge with the
-  inside temperature on its tab, tinted in the Thermal view.
 - **AC motor slip model**: induction motors' speed from supply frequency and
   load (slip), current and power factor following load, stalling past
   breakdown torque; synchronous speed from the rated speed. DC motors and the

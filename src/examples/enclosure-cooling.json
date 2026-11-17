@@ -1,0 +1,276 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "box",
+      "ref": "N1",
+      "usRef": "N1",
+      "type": "frame",
+      "x": 160,
+      "y": 40,
+      "rotation": 0,
+      "props": {
+        "text": "Power supply",
+        "width": 320,
+        "height": 240,
+        "color": "coral",
+        "enclosure": true,
+        "walls": "Sealed"
+      },
+      "broken": false
+    },
+    {
+      "id": "x1",
+      "ref": "X1",
+      "usRef": "X1",
+      "type": "rail",
+      "x": 80,
+      "y": 120,
+      "rotation": 0,
+      "props": {
+        "voltage": 12,
+        "maxCurrent": 3
+      },
+      "broken": false
+    },
+    {
+      "id": "u1",
+      "ref": "T1",
+      "usRef": "U1",
+      "type": "regulator",
+      "x": 360,
+      "y": 140,
+      "rotation": 0,
+      "props": {
+        "partNumber": "7805",
+        "outputVoltage": 5,
+        "dropout": 2,
+        "maxCurrent": 1.5,
+        "powerRating": 2
+      },
+      "broken": false
+    },
+    {
+      "id": "g1",
+      "ref": "X2",
+      "usRef": "X2",
+      "type": "ground",
+      "x": 360,
+      "y": 220,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "r1",
+      "ref": "R1",
+      "usRef": "R1",
+      "type": "resistor",
+      "x": 440,
+      "y": 180,
+      "rotation": 90,
+      "props": {
+        "resistance": 33,
+        "powerRating": 5,
+        "tolerance": 5,
+        "deviation": -0.442
+      },
+      "broken": false
+    },
+    {
+      "id": "g2",
+      "ref": "X3",
+      "usRef": "X3",
+      "type": "ground",
+      "x": 440,
+      "y": 260,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "m1",
+      "ref": "M1",
+      "usRef": "B1",
+      "type": "fan",
+      "x": 360,
+      "y": 40,
+      "rotation": 180,
+      "props": {
+        "partNumber": "8025 (80 mm)",
+        "supply": "DC",
+        "size": "80 mm",
+        "ratedVoltage": 12,
+        "ratedPower": 1.5,
+        "ratedSpeed": 2500,
+        "direction": "Clockwise"
+      },
+      "broken": false
+    },
+    {
+      "id": "s1",
+      "ref": "S1",
+      "usRef": "S1",
+      "type": "switch",
+      "x": 400,
+      "y": -20,
+      "rotation": 90,
+      "props": {
+        "closed": false,
+        "maxCurrent": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "x2",
+      "ref": "X4",
+      "usRef": "X4",
+      "type": "rail",
+      "x": 400,
+      "y": -100,
+      "rotation": 0,
+      "props": {
+        "voltage": 12,
+        "maxCurrent": 3
+      },
+      "broken": false
+    },
+    {
+      "id": "g3",
+      "ref": "X5",
+      "usRef": "X5",
+      "type": "ground",
+      "x": 280,
+      "y": 20,
+      "rotation": 0,
+      "props": {},
+      "broken": false
+    },
+    {
+      "id": "n1",
+      "ref": "N2",
+      "usRef": "N2",
+      "type": "note",
+      "x": 760,
+      "y": 60,
+      "rotation": 0,
+      "props": {
+        "text": "Cooling an enclosure. Regulator {T1} drops 12 V to 5 V for load {R1}: about 1 W of heat in {T1} and 0.75 W in {R1}, all inside a sealed box (a Frame set as an Enclosure). Its tab shows the air inside.\nFan {M1} sits on the box wall: it swaps the warm inside air for outside air, and blows a cool jet down onto {T1}.",
+        "color": "blue"
+      },
+      "broken": false
+    },
+    {
+      "id": "n2",
+      "ref": "N3",
+      "usRef": "N3",
+      "type": "note",
+      "x": 760,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "text": "Try: press Run, open the Thermal view and press Faster a few times. The box air climbs and {T1} runs hot enough to shimmer. Close {S1}: the fan’s streamlines show cool air coming in and warming as it passes {T1}, and the box cools down. Turn the fan round (R twice) to extract instead, raise the Ambient, or set the box’s walls to Vented.",
+        "color": "amber"
+      },
+      "broken": false
+    }
+  ],
+  "joints": [],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "x1",
+        "pin": 0
+      },
+      "to": {
+        "part": "u1",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w2",
+      "from": {
+        "part": "u1",
+        "pin": 1
+      },
+      "to": {
+        "part": "g1",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "part": "u1",
+        "pin": 2
+      },
+      "to": {
+        "part": "r1",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 440,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "id": "w4",
+      "from": {
+        "part": "r1",
+        "pin": 1
+      },
+      "to": {
+        "part": "g2",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w5",
+      "from": {
+        "part": "m1",
+        "pin": 0
+      },
+      "to": {
+        "part": "s1",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w6",
+      "from": {
+        "part": "s1",
+        "pin": 0
+      },
+      "to": {
+        "part": "x2",
+        "pin": 0
+      },
+      "via": []
+    },
+    {
+      "id": "w7",
+      "from": {
+        "part": "m1",
+        "pin": 1
+      },
+      "to": {
+        "part": "g3",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 320,
+          "y": 0
+        }
+      ]
+    }
+  ]
+}

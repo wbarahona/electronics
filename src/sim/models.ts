@@ -70,6 +70,9 @@ export interface PartState {
   energy?: number; // electrical energy a motor has taken (J)
   output?: number; // a motor's shaft power now (W)
   shaft?: ShaftState; // a docked load's speed, torque and work, as its motor drives it
+  air?: number; // an enclosure's inside air (°C), the heat its parts give off
+  inside?: number; //   into it (W) and the air the fans on its walls move (m³/h)
+  exchange?: number;
   broken?: boolean;
   avg?: { v: [number, number]; i: [number, number]; v2: [number, number]; i2: [number, number]; p: number; x2: number[] };
   i1?: number; // transformer winding currents at the end of the last step
@@ -182,7 +185,12 @@ export interface ModelDef<P> {
   sound?(r: Result, p: P): Sound | null;
   needle?(r: Result, p: P): number;
   extras?(r: Result): number[];
-  reading?(r: Result, p: P): string;
+  // What a meter's display shows (or an enclosure's tab: its inside air);
+  // undefined for nothing.
+  reading?(r: Result, p: P): string | undefined;
+  // How warm it shows in the Thermal view (0..1) when it has no thermal
+  // model of its own: an enclosure's inside air.
+  tint?(r: Result, p: P): number | undefined;
   power?(el: Element<P>, s: Stamper): number;
   respond?(el: Element<P>, env: Env, r: Result, dt: number | null): boolean | void;
   grounded?: boolean;

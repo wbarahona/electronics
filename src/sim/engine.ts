@@ -2,6 +2,8 @@ import { pinsOf } from '../components.ts';
 import { AMBIENT, type Circuit } from '../model.ts';
 import { pinKey, type Nets } from '../nets.ts';
 import { dockings } from '../shaft.ts';
+import { WALL_CONDUCTANCE, frameSize } from '../parts/annotate/frame.ts';
+import type { PropsByType } from '../types.ts';
 import { STOPPED } from './shared/shaft.ts';
 import { solve } from './linear.ts';
 import { actualProps } from './shared/tolerance.ts';
@@ -55,6 +57,7 @@ import { MODELS, type Element, type Env, type PartState, type Result, type Stamp
 // and the simulation simply runs slower than asked.
 
 export const TIME_STEP = 1e-4; // s
+export { FAN_LENGTH, FAN_REACH, INTAKE_LENGTH };
 // Step used when re-solving without moving time on: so short that capacitors
 // and inductors simply hold what they have.
 const HOLD_STEP = 1e-9; // s
@@ -97,9 +100,19 @@ const INTAKE_LENGTH = 60;
 const INTAKE_SHARE = 0.25;
 const MAX_COOLING = 0.6;
 
+// Enclosures (see enclosures()): how deep a box is, how big a board pixel is,
+// what a box holds per m² of wall (air, walls, boards), the heat a m³/h of
+// air carries per kelvin (ρ·c of air ÷ 3600), and how near its edge a fan
+// counts as on its wall.
+const BOX_DEPTH = 0.05; // m
+const M_PER_PX = 0.0005; // m: a 20 px grid square is a centimetre
+const BOX_HEAT = 600; // J/(K·m²)
+const AIR_HEAT = 0.335; // W/K per m³/h
+const WALL_REACH = 10; // px
+
 // A fan as the air sees it: where it is, the way its air goes (dx, dy), how
 // strong its air is (1 = an 80 mm fan at FAN_FLOW) and its size against 80 mm.
-interface Fan {
+export interface Fan {
   x: number;
   y: number;
   dx: number;
@@ -156,6 +169,30 @@ export function createEngine(circuit: Circuit) {
     get time() {
       return t;
     },
+    // The air as the last thermal pass left it, for drawing it (see
+    // src/airflow.ts): the running fans, the air's temperature at a point
+    // (its box's air plus warmth from the parts near it in the same box,
+    // leaving out part `except`), and the enclosure a point is in.
+    air: {
+      fans: (): readonly Fan[] => air.fans,
+      at(p: { x: number; y: number }, except?: string): number {
+        const box = innermost(air.boxes, p);
+        let celsius = box ? box.el.state.air! : engine.temperatures ? circuit.ambient : AMBIENT;
+        for (const s of air.sources) {
+          if (s.id === except || air.home.get(s.id) !== box) continue;
+          celsius += s.warmth / (1 + (Math.hypot(s.x - p.x, s.y - p.y) / HEAT_REACH) ** 2);
+        }
+        return celsius;
+      },
+      box: (p: { x: number; y: number }): string | null => innermost(air.boxes, p)?.el.id ?? null,
+    },
+  };
+  // What the last thermal pass found (see feelSurroundings).
+  const air = {
+    fans: [] as Fan[],
+    boxes: [] as Enclosure[],
+    sources: [] as { x: number; y: number; warmth: number; id: string }[],
+    home: new Map<string, Enclosure | null>(),
   };
 
   // A and b are null when only reading the solution (after it converged).
@@ -480,11 +517,22 @@ export function createEngine(circuit: Circuit) {
     return 1 - MAX_COOLING * (1 - still);
   }
 
-  function feelSurroundings() {
+  // `dt`: the time since the last call, over which enclosures' air moves
+  // toward its balance (0 when the circuit was just edited: nothing moves).
+  function feelSurroundings(dt = 0) {
     surroundings.clear();
     coolings.clear();
+    Object.assign(air, { fans: [], boxes: [], sources: [], home: new Map() });
     // Temperature effects off (Settings): nothing around any part but 25 °C.
     if (!engine.temperatures) return;
+    const boxes = enclosures();
+    // The innermost enclosure each part sits in; air, warmth and fans don't
+    // cross walls (a fan on a wall belongs to the box it's on).
+    const home = new Map<string, Enclosure | null>();
+    for (const el of elements) {
+      const at = circuit.part(el.id);
+      if (at && at.type !== 'frame') home.set(el.id, innermost(boxes, at));
+    }
     const fans: Fan[] = [];
     for (const el of elements) {
       const r = engine.results.get(el.id);
@@ -495,13 +543,16 @@ export function createEngine(circuit: Circuit) {
       // Its local up (−y), turned clockwise with the part.
       const turn = (at.rotation * Math.PI) / 180;
       if (strength > 0.01) fans.push({ x: at.x, y: at.y, dx: Math.sin(turn), dy: -Math.cos(turn), strength, scale: diameter / FAN_SIZE, id: el.id });
+      // On a wall it swaps the box's air for the air outside, whichever way it blows.
+      const box = home.get(el.id);
+      if (box && onWall(box, at)) box.exchange += flow;
     }
     // Air first: a part under a fan's air runs cooler, and so gives off less
     // warmth to its neighbours (the air carries it away) and takes in less.
     if (fans.length) {
       for (const el of elements) {
         const at = circuit.part(el.id);
-        if (at) coolings.set(el.id, coolingAt(el, at, fans));
+        if (at) coolings.set(el.id, coolingAt(el, at, fans.filter((f) => home.get(f.id) === home.get(el.id))));
       }
     }
     const sources: { x: number; y: number; warmth: number; id: string }[] = [];
@@ -515,17 +566,95 @@ export function createEngine(circuit: Circuit) {
       // around it), but never more than its own temperature rise.
       const warmth = Math.min((el.state.watts ?? 0) * WARMTH_PER_WATT, (el.state.heat ?? 0) * thermal.rise);
       if (warmth > 0.01) sources.push({ x: at.x, y: at.y, warmth, id: el.id });
+      // All of it ends up in the air of its box, and of the boxes round that.
+      const heat = Math.abs(r.ac ? r.pavg : r.p) * (thermal.heatShare ?? 1);
+      for (let box = home.get(el.id); box; box = box.parent) box.heat += heat;
     }
+    breathe(boxes, dt);
+    Object.assign(air, { fans, boxes, sources, home });
     for (const el of elements) {
       const at = circuit.part(el.id);
       if (!at) continue;
       const cooling = coolings.get(el.id) ?? 1;
-      let around = circuit.ambient;
+      const box = home.get(el.id);
+      let around = box ? box.el.state.air! : circuit.ambient;
       for (const s of sources) {
-        if (s.id === el.id) continue;
+        if (s.id === el.id || home.get(s.id) !== box) continue;
         around += (cooling * s.warmth) / (1 + (Math.hypot(s.x - at.x, s.y - at.y) / HEAT_REACH) ** 2);
       }
       surroundings.set(el.id, around);
+    }
+  }
+
+  // --- Enclosures ------------------------------------------------------------
+  // A frame set as an enclosure is a box of air round the parts inside it.
+  // Their heat warms it; it loses heat through its walls (WALL_CONDUCTANCE
+  // per m² of a box BOX_DEPTH deep, its face at M_PER_PX: a grid square is a
+  // centimetre) and with the air the fans on its walls swap for outside air
+  // (AIR_HEAT per m³/h). Its air settles at outside + heat ÷ (walls + fans),
+  // at the pace of what it holds (BOX_HEAT per m² of wall). Outside is the
+  // air of the box it's in, or the ambient: boxes in boxes pass their heat on.
+
+  interface Enclosure {
+    el: Element;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    area: number; // its walls, m²
+    walls: number; // what they let out, W/K
+    parent: Enclosure | null;
+    heat: number; // W given off inside it (and in boxes inside it)
+    exchange: number; // m³/h the fans on its walls move
+  }
+
+  function enclosures(): Enclosure[] {
+    const boxes: Enclosure[] = [];
+    for (const el of elements) {
+      const c = circuit.part(el.id);
+      const p = c?.props as PropsByType['frame'];
+      if (c?.type !== 'frame' || !p.enclosure) continue;
+      const { w, h } = frameSize(p);
+      const [a, b] = [w * M_PER_PX, h * M_PER_PX];
+      const area = 2 * (a * b + (a + b) * BOX_DEPTH);
+      boxes.push({ el, x1: c.x, y1: c.y, x2: c.x + w, y2: c.y + h, area, walls: area * WALL_CONDUCTANCE[p.walls], parent: null, heat: 0, exchange: 0 });
+    }
+    const size = (b: Enclosure) => (b.x2 - b.x1) * (b.y2 - b.y1);
+    for (const b of boxes) {
+      const outer = boxes.filter((o) => o !== b && o.x1 <= b.x1 && o.y1 <= b.y1 && o.x2 >= b.x2 && o.y2 >= b.y2 && size(o) > size(b));
+      b.parent = outer.sort((p, q) => size(p) - size(q))[0] ?? null;
+    }
+    return boxes;
+  }
+
+  // The smallest box round point p (its edge counts as inside).
+  function innermost(boxes: Enclosure[], p: { x: number; y: number }): Enclosure | null {
+    let best: Enclosure | null = null;
+    for (const b of boxes) {
+      if (p.x < b.x1 || p.x > b.x2 || p.y < b.y1 || p.y > b.y2) continue;
+      if (!best || (b.x2 - b.x1) * (b.y2 - b.y1) < (best.x2 - best.x1) * (best.y2 - best.y1)) best = b;
+    }
+    return best;
+  }
+
+  const onWall = (b: Enclosure, p: { x: number; y: number }) =>
+    Math.min(p.x - b.x1, b.x2 - p.x, p.y - b.y1, b.y2 - p.y) <= WALL_REACH;
+
+  // Move each box's air toward its balance over dt, outer boxes first, and
+  // keep what it shows in its state.
+  function breathe(boxes: Enclosure[], dt: number) {
+    const depth = (b: Enclosure): number => (b.parent ? 1 + depth(b.parent) : 0);
+    for (const b of [...boxes].sort((p, q) => depth(p) - depth(q))) {
+      const outside = b.parent ? b.parent.el.state.air! : circuit.ambient;
+      const g = b.walls + b.exchange * AIR_HEAT;
+      const target = outside + b.heat / g;
+      const air = b.el.state.air ?? outside;
+      b.el.state.air = target + (air - target) * Math.exp(-(dt * g) / (b.area * BOX_HEAT));
+      b.el.state.inside = b.heat;
+      b.el.state.exchange = b.exchange;
+    }
+    for (const el of elements) {
+      if (circuit.part(el.id)?.type === 'frame' && !boxes.some((b) => b.el === el)) delete el.state.air;
     }
   }
 
@@ -607,7 +736,7 @@ export function createEngine(circuit: Circuit) {
   // Otherwise time goes in whole steps: in slow motion one call can be shorter
   // than a step, so the remainder carries over to the next call.
   function advance(seconds: number): string[] {
-    feelSurroundings();
+    feelSurroundings(seconds);
     if (!engine.dynamic) {
       t += seconds;
       if (engine.error) return [];

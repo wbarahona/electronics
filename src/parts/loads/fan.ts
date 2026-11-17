@@ -1,5 +1,4 @@
-import { formatSI } from '../../units.ts';
-import { fmtAirflow } from '../../sim/shared/readout.ts';
+import { formatAirflow, formatSI } from '../../units.ts';
 import type { ModelDef, ModelDefs } from '../../sim/models.ts';
 import { partNumberSpec, type LabelSpot, type PartDefs, type Preset } from '../defs.ts';
 import type { PropsByType } from '../../types.ts';
@@ -111,10 +110,13 @@ export const models: ModelDefs<'fan'> = {
   fan: {
     ...(motorModel as unknown as ModelDef<PropsByType['fan']>),
     respond: respondWith({ kind: 'pump', torque: 1, inertia: 0.5 }) as unknown as ModelDef<PropsByType['fan']>['respond'],
+    // Its motor sits in its own air, so runs barely warm (a motor's windings
+    // run 60 °C up).
+    thermal: { ...motorModel.thermal!, rise: 15 } as unknown as ModelDef<PropsByType['fan']>['thermal'],
     airflow: (r, p) => ({ flow: ratedFlow(p) * Math.abs(r.state.speed ?? 0), diameter: SIZES[p.size].diameter }),
     readout: (r, p) => [
       ...(motorModel.readout as unknown as ModelDef<PropsByType['fan']>['readout'])(r, p),
-      ['Airflow', fmtAirflow(ratedFlow(p) * Math.abs(r.state.speed ?? 0))],
+      ['Airflow', formatAirflow(ratedFlow(p) * Math.abs(r.state.speed ?? 0))],
     ],
   },
 };

@@ -5,7 +5,7 @@ import { writeFile } from 'node:fs/promises';
 
 // Alphabetical, as Google Fonts requires.
 const ICONS = [
-  '123', 'apps', 'arrow_back', 'arrow_drop_down', 'arrow_selector_tool', 'autorenew', 'avg_pace',
+  '123', 'air', 'apps', 'arrow_back', 'arrow_drop_down', 'arrow_selector_tool', 'autorenew', 'avg_pace',
   'battery_charging_full', 'bolt', 'brightness_auto', 'category', 'check', 'check_box_outline_blank', 'close',
   'content_copy', 'content_cut', 'content_paste', 'contrast', 'dark_mode', 'delete', 'developer_board', 'doorbell',
   'draw', 'edit', 'edit_note', 'electrical_services', 'fast_forward', 'fast_rewind', 'filter_center_focus',

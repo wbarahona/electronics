@@ -70,6 +70,15 @@ export const fromShown = (v: number, unit: string): number => (fahrenheit(unit) 
 // 25 -> "25.0 °C", or "77.0 °F" under the US standard.
 export const formatTemp = (celsius: number, digits = 1): string => `${withMark(toShown(celsius, '°C').toFixed(digits))} ${shownUnit('°C')}`;
 
+// An airflow (kept in m³/h) as shown: "60 m³/h", or "35 CFM" (cubic feet
+// per minute) under the US standard.
+export function formatAirflow(m3h: number): string {
+  const [v, unit] = getNorm() === 'us' ? [m3h / CFM, 'CFM'] : [m3h, 'm³/h'];
+  return `${withMark(v.toFixed(v < 10 ? 1 : 0))} ${unit}`;
+}
+
+const CFM = 1.699; // m³/h
+
 // A text's temperatures as shown: "Resistance at 25 °C" reads "at 77 °F"
 // under the US standard.
 export const shownTemps = (text: string): string =>

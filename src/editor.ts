@@ -32,6 +32,10 @@ const thermoBox = ({ w = PART_W, h = PART_H, x = 0 } = {}) =>
 const hitBox = ({ w = PART_W, h = PART_H, x = 0 } = {}) =>
   `<rect class="hit" x="${x - w / 2}" y="${-h / 2}" width="${w}" height="${h}" />`;
 
+// Heat haze over something too hot to touch: wavy lines rising from it (shown
+// with .touch-hot; see place() for where).
+const HAZE = `<g class="haze">${[-8, 0, 8].map((x) => `<path d="M ${x} 0 q 3 -4 0 -8 q -3 -4 0 -8" />`).join('')}</g>`;
+
 // Things with a position of their own (wires take theirs from their ends).
 type Placed = Part | Joint;
 
@@ -67,7 +71,8 @@ interface Box {
 // see src/parts/light.ts),
 // `temp` how hot it runs as a fraction of the heat that destroys it (for the
 // thermal view; undefined for parts that don't heat up), `needle` where a
-// panel meter points (0..1 of full scale).
+// panel meter points (0..1 of full scale), `shimmer` how hot it is to touch
+// (0 below 60 °C, up to 1: it shimmers with heat haze).
 export type Live = Map<
   string,
   {
@@ -81,6 +86,7 @@ export type Live = Map<
     light?: number[];
     temp?: number;
     needle?: number;
+    shimmer?: number;
   }
 >;
 
@@ -226,7 +232,13 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // colour changes as it runs, an RGB LED's).
   svg.querySelector('defs')!.insertAdjacentHTML(
     'beforeend',
-    `<radialGradient id="glow-fade">
+    `<filter id="heat-shimmer" x="-10%" y="-20%" width="120%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.1" numOctaves="1" seed="3" result="noise">
+        <animate attributeName="baseFrequency" values="0.02 0.1;0.024 0.07;0.02 0.1" dur="1.4s" repeatCount="indefinite" />
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+    <radialGradient id="glow-fade">
       <stop offset="0" stop-color="#fff" stop-opacity="1" />
       <stop offset="0.35" stop-color="#fff" stop-opacity="0.5" />
       <stop offset="1" stop-color="#fff" stop-opacity="0" />
@@ -264,6 +276,14 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     }
     g.querySelector('.actuator')
       ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '34 0' : '0 -34'})`);
+    // Heat rises: the haze sits just above it on screen, whichever way it's
+    // turned (above a frame's top edge, mid-way along).
+    if (isFrame(n)) {
+      g.querySelector('.haze')?.setAttribute('transform', `translate(${frameSize(n.props).w / 2} -14)`);
+    } else {
+      const { w = PART_W, h = PART_H } = hitOf(n.type, n.props) ?? {};
+      g.querySelector('.haze')?.setAttribute('transform', `rotate(${-rotation}) translate(0 ${-(vertical ? w : h) / 2 - 2})`);
+    }
     // The charge gauge and a meter's display sit opposite the label: below,
     // or to the left when vertical.
     g.querySelector('.gauge')
@@ -305,10 +325,22 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   }
 
   function paintDisplay(g: SVGElement, reading: string) {
+    const frame = g.querySelector<SVGTSpanElement>('.frame-reading');
+    if (frame) return paintFrameReading(frame, reading);
     const text = g.querySelector<SVGTextElement>('.meter-text');
     if (!text || text.textContent === reading) return;
     text.textContent = reading;
     layoutDisplay(g.querySelector('.meter-display')!);
+  }
+
+  // An enclosure's inside air on its title tab, the tab sized to fit.
+  function paintFrameReading(span: SVGTSpanElement, reading: string) {
+    const shown = (span.textContent!.startsWith(' · ') ? ' · ' : '') + reading;
+    if (span.textContent === shown) return;
+    span.textContent = shown;
+    const text = span.parentNode as SVGTextElement;
+    const tab = text.parentNode!.querySelector('.frame-tab')!;
+    tab.setAttribute('width', String(text.getComputedTextLength() + 20));
   }
 
   // A small battery icon whose fill shows how full an energy store is.
@@ -385,7 +417,8 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       pinHits.join('') +
       (part.actuator ? actuatorMarkup(c) : '') +
       (part.gauge ? GAUGE : '') +
-      (part.display ? displayMarkup(c) : '');
+      (part.display ? displayMarkup(c) : '') +
+      HAZE;
     place(c);
     const display = g.querySelector('.meter-display');
     if (display) layoutDisplay(display);
@@ -428,13 +461,15 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   const glows = new Map<string, { target: Lit; shown: Lit }>();
 
   function showLive(live: Live, smooth = false) {
-    for (const [id, { glow, heat, level: charge, reading, active, reverse, segments, light, temp, needle }] of live) {
+    for (const [id, { glow, heat, level: charge, reading, active, reverse, segments, light, temp, needle, shimmer = 0 }] of live) {
       const g = nodes.get(id);
       if (!g) continue;
       if (charge !== undefined) paintGauge(g, charge);
       if (reading !== undefined) paintDisplay(g, reading);
       if (active !== undefined) g.classList.toggle('active', active);
       if (reverse !== undefined) g.classList.toggle('reverse', reverse);
+      g.classList.toggle('touch-hot', shimmer > 0);
+      if (shimmer > 0) g.style.setProperty('--shimmer', shimmer.toFixed(2));
       if (needle !== undefined) g.querySelector('.needle')?.setAttribute('transform', `rotate(${(-50 + 100 * needle).toFixed(2)} 0 6)`);
       const target: Lit = { glow: Math.min(1, Math.max(0, glow)), segments, light };
       const s = glows.get(id);

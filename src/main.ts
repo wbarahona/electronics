@@ -32,6 +32,7 @@ import { onNorm, refText } from './norm.ts';
 import { fromShown, onDecimalMark, shownUnit, toShown } from './units.ts';
 import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
+import { createAirflow } from './airflow.ts';
 import { MODELS, type Result, type Sound, type Thermal } from './sim/models.ts';
 import { parse, serialize, type SavedCircuit } from './persist.ts';
 
@@ -64,6 +65,7 @@ const settings = createSettings(byId('settings-dialog'));
 const board = createBoard(byId<SVGSVGElement>('board'));
 const circuit = createCircuit();
 const engine = createEngine(circuit);
+const airflow = createAirflow(board.world);
 
 // The ambient temperature, on the Thermal view's panel: the circuit's own
 // (saved with it, undoable), −20 to 60 °C, shown in °F under the US standard.
@@ -140,12 +142,20 @@ const stressOf = (r: Result, thermal: Thermal<never>) =>
 // shines, how close each is to failing (0 at its rating, 1 at its limit), and
 // the current along every wire. While running, light and flow ease toward the
 // new values (see editor.animate); when paused they jump straight there.
+// How hot to touch something is, for its shimmer: 0 up to TOUCH_HOT, rising
+// to 1 at TOUCH_SCORCHING. Around 60 °C a surface starts to burn (touch limits
+// in safety standards run about 48–70 °C, by material).
+const TOUCH_HOT = 60;
+const TOUCH_SCORCHING = 120;
+const hotToTouch = (celsius: number | undefined) =>
+  celsius === undefined ? 0 : Math.min(1, Math.max(0, (celsius - TOUCH_HOT) / (TOUCH_SCORCHING - TOUCH_HOT)));
+
 function showResults() {
   const smooth = controls.running;
   const live: Live = new Map();
   sounds = new Map();
   for (const c of circuit.components) {
-    const { brightness, thermal, reading, failure, active, reverse, segments, light, sound, needle } = MODELS[c.type];
+    const { brightness, thermal, reading, failure, active, reverse, tint, segments, light, sound, needle } = MODELS[c.type];
     const r = engine.results.get(c.id);
     const tone = r && sound && !c.broken ? sound(r, c.props) : null;
     if (tone) sounds.set(c.id, tone);
@@ -153,7 +163,8 @@ function showResults() {
       reading: reading && (c.broken ? (failure?.display ?? '–') : r ? reading(r, c.props) : '–'),
       glow: r && brightness ? brightness(r, c.props) : 0,
       heat: r && thermal && !c.broken ? Math.min(1, Math.max(0, (stressOf(r, thermal) - 1) / (thermal.limit - 1))) : 0,
-      temp: thermal ? (c.broken ? 1 : r ? Math.max(0, stressOf(r, thermal) / thermal.limit) : 0) : undefined,
+      temp: thermal ? (c.broken ? 1 : r ? Math.max(0, stressOf(r, thermal) / thermal.limit) : 0) : r && tint ? tint(r, c.props) : undefined,
+      shimmer: r && !c.broken ? hotToTouch(r.celsius ?? r.state.air) : 0,
       needle: r && needle && !c.broken ? needle(r, c.props) : undefined,
       level: r?.level,
       active: r && active ? !c.broken && active(r) : undefined,
@@ -163,6 +174,8 @@ function showResults() {
     });
   }
   editor.showLive(live, smooth);
+  // (The board's class, not the legend: a circuit can load before that's set up.)
+  if (board.svg.classList.contains('thermal')) airflow.update(engine);
   panel.showLive(live);
   currents = nets ? wireCurrents(circuit, nets, engine.results) : new Map();
   editor.setFlow(currents, smooth, settings.flow === 'electron');
@@ -185,6 +198,7 @@ const editor = createEditor(board, circuit, {
   onSelect: (ids) => panel.show(ids.length === 1 ? ids[0] : null),
   onChange: (next) => {
     nets = next;
+    airflow.reset();
     findProbes();
     engine.rebuild(nets);
     showResults();
@@ -364,6 +378,7 @@ function toggleScope() {
 function toggleThermal() {
   thermalLegend.hidden = !thermalLegend.hidden;
   board.svg.classList.toggle('thermal', !thermalLegend.hidden);
+  if (!thermalLegend.hidden) airflow.update(engine);
   syncViews();
 }
 
@@ -446,12 +461,13 @@ onDecimalMark(() => {
 });
 
 // Settings the board and simulation follow as they change: the grid, the
-// current-flow dots, whether parts burn out, temperature effects (which also
+// current-flow dots, heat haze, whether parts burn out, temperature effects (which also
 // show or hide the Thermal panel's ambient slider, and re-solve when they
 // change). (Flow direction and sound are read as results are shown.)
 function applyBoardSettings() {
   board.svg.dataset.grid = settings.grid;
   board.svg.classList.toggle('no-flow', !settings.flowDots);
+  board.svg.classList.toggle('heat-haze', settings.heatHaze);
   engine.burnOut = settings.burnOut;
   ambientSlider.closest<HTMLElement>('.thermal-ambient')!.hidden = !settings.temperatures;
   if (engine.temperatures === settings.temperatures) return;

@@ -35,6 +35,7 @@ interface Settings {
   grid: Grid;
   flow: Flow;
   flowDots: boolean; // animate current along the wires
+  heatHaze: boolean; // parts too hot to touch shimmer with heat haze
   sound: boolean; // sounders are heard while running
   burnOut: boolean; // overloaded parts fail
   temperatures: boolean; // ambient temperature, heat between parts, fans cooling
@@ -51,7 +52,7 @@ const CHOICES: Partial<Record<keyof Settings, readonly string[]>> = {
   flow: ['conventional', 'electron'],
 };
 const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu', openView: 'fit', tolerances: false, readout: true, tips: true,
-  decimal: 'auto', grid: 'lines', flow: 'conventional', flowDots: true, sound: true, burnOut: true, temperatures: true, autoRun: false,
+  decimal: 'auto', grid: 'lines', flow: 'conventional', flowDots: true, heatHaze: false, sound: true, burnOut: true, temperatures: true, autoRun: false,
 };
 
 function load(): Settings {
@@ -311,6 +312,9 @@ export function createSettings(dialog: MdDialog) {
     },
     get flowDots() {
       return settings.flowDots;
+    },
+    get heatHaze() {
+      return settings.heatHaze;
     },
     get sound() {
       return settings.sound;

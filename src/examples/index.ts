@@ -62,6 +62,13 @@ export const EXAMPLES: Example[] = [
     load: file(() => import('./thermostat.json?raw')),
   },
   {
+    id: 'enclosure-cooling',
+    icon: 'air',
+    title: 'Cooling an enclosure',
+    description: 'A regulator heats a sealed box; a fan on its wall brings fresh air in. Shows the airflow and heat haze.',
+    load: file(() => import('./enclosure-cooling.json?raw')),
+  },
+  {
     id: 'rgb-rainbow',
     icon: 'gradient',
     title: 'Rainbow matrix',
