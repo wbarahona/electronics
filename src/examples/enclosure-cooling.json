@@ -170,7 +170,7 @@
       "y": 300,
       "rotation": 0,
       "props": {
-        "text": "Try: press Run, open the Thermal view and press Faster a few times. The box air climbs and {T1} runs hot enough to shimmer. Close {S1}: the fan’s streamlines show cool air coming in and warming as it passes {T1}, and the box cools down. Turn the fan round (R twice) to extract instead, raise the Ambient, or set the box’s walls to Vented.",
+        "text": "Try: press Run, open the Thermal view and press Faster a few times. The box air climbs and {T1} runs hot enough to shimmer (turn on Heat haze in Settings to see it). Close {S1}: the fan’s streamlines show cool air coming in and warming as it passes {T1}, and the box cools down. Turn the fan round (R twice) to extract instead, raise the Ambient, or set the box’s walls to Vented.",
         "color": "amber"
       },
       "broken": false
