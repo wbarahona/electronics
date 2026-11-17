@@ -145,7 +145,7 @@ function showResults() {
   const live: Live = new Map();
   sounds = new Map();
   for (const c of circuit.components) {
-    const { brightness, thermal, reading, failure, active, segments, light, sound, needle } = MODELS[c.type];
+    const { brightness, thermal, reading, failure, active, reverse, segments, light, sound, needle } = MODELS[c.type];
     const r = engine.results.get(c.id);
     const tone = r && sound && !c.broken ? sound(r, c.props) : null;
     if (tone) sounds.set(c.id, tone);
@@ -157,6 +157,7 @@ function showResults() {
       needle: r && needle && !c.broken ? needle(r, c.props) : undefined,
       level: r?.level,
       active: r && active ? !c.broken && active(r) : undefined,
+      reverse: r && reverse ? reverse(r, c.props) : undefined,
       segments: r && segments ? (c.broken ? [] : segments(r, c.props)) : undefined,
       light: r && light ? light(r, c.props).map((x) => (c.broken ? 0 : x)) : undefined,
     });
@@ -198,6 +199,7 @@ const editor = createEditor(board, circuit, {
       { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste(), action: () => editor.paste(at) },
       { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy(), action: editor.duplicate },
       { label: t('Rotate'), icon: 'rotate_right', shortcut: 'R', enabled: editor.hasSelection(), action: editor.rotate },
+      ...(editor.canSelectContents() ? [{ label: t('Select contents'), icon: 'select_all', enabled: true, action: editor.selectContents }] : []),
       'separator',
       { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection(), danger: true, action: editor.deleteSelected },
     ]),

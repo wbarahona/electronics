@@ -12,7 +12,7 @@ const ICONS = [
   'fit_screen', 'folder', 'folder_open', 'format_color_fill', 'gradient', 'grid_on', 'help', 'history', 'image',
   'keyboard', 'library_add', 'light_mode', 'lightbulb', 'linear_scale', 'memory', 'menu', 'menu_open', 'mode_fan',
   'monitoring', 'more_horiz', 'note_add', 'palette', 'pause', 'play_arrow', 'play_circle', 'power', 'print', 'redo',
-  'restart_alt', 'rotate_right', 'save', 'schedule', 'schema', 'school', 'search', 'search_off', 'settings', 'speed',
+  'restart_alt', 'rotate_right', 'save', 'schedule', 'schema', 'school', 'search', 'search_off', 'select_all', 'settings', 'speed',
   'stairs', 'swap_horiz', 'thermostat', 'timer', 'toggle_on', 'touch_app', 'tour', 'translate', 'tune', 'undo',
   'visibility', 'wallpaper', 'zoom_in', 'zoom_out',
 ];

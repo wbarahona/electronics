@@ -2,6 +2,7 @@
 
 import type { PartType, Props, PropsByType } from '../types.ts';
 import { MODEL_DEFS } from '../parts/index.ts';
+import type { ShaftLoad, ShaftState } from './shared/shaft.ts';
 
 // A solved part. v, i, p are instantaneous (v and i between pins 0 and 1;
 // `pins` has the current into the part at every pin, `pinV` each pin's
@@ -64,6 +65,11 @@ export interface PartState {
   glow?: number; // a starter's smoothed voltage (V) and whether it's glowing
   glowing?: boolean;
   windings?: number[]; // a motor's winding currents at the end of the last step
+  lines?: [number, number]; // a three-phase motor's line voltages U−V, V−W at the last step,
+  sequence?: number; //   and their phase sequence, smoothed (> 0: U, V, W)
+  energy?: number; // electrical energy a motor has taken (J)
+  output?: number; // a motor's shaft power now (W)
+  shaft?: ShaftState; // a docked load's speed, torque and work, as its motor drives it
   broken?: boolean;
   avg?: { v: [number, number]; i: [number, number]; v2: [number, number]; i2: [number, number]; p: number; x2: number[] };
   i1?: number; // transformer winding currents at the end of the last step
@@ -119,6 +125,9 @@ export interface Env {
   readonly time: number; // simulated time, s
   light(el: Element): number; // light reaching it from glowing parts, 0..1+
   temperature(el: Element): number; // °C around it: the ambient plus warmth from nearby hot parts
+  // The load docked on a motor's shaft (see src/shaft.ts), with the state the
+  // motor writes its readout into; null when its shaft is free.
+  shaft(el: Element): { load: ShaftLoad; state: PartState } | null;
 }
 
 // How a part heats up: `load` is how hard it's driven against its rating now
@@ -152,15 +161,21 @@ export interface ModelDef<P> {
   brightness?(r: Result, p: P): number;
   maxStep?(p: P): number;
   thermal?: Thermal<P>;
-  // A part that moves air (a fan): how much of its full airflow it moves
-  // now, 0..1. The air leaves along its local up (−y), turned with the part.
-  airflow?(r: Result, p: P): number;
+  // A part that moves air (a fan): the air it moves now (m³/h) and its
+  // diameter (mm), which sets how far and wide its air reaches. The air
+  // leaves along its local up (−y), turned with the part, and is drawn in
+  // from behind.
+  airflow?(r: Result, p: P): { flow: number; diameter: number };
   failure?: { label: string; open: boolean; display?: string }; // display: what a broken meter shows
   level?(r: Result, p: P): number;
   drain?(el: Element<P>, r: Result, dt: number): boolean;
   pinCurrents?(el: Element<P>, s: Stamper): number[];
   groups?: number[][] | ((p: P) => number[][]);
   active?(r: Result): boolean;
+  // A mechanical load that docks on a motor's shaft: how it loads it.
+  shaftLoad?(p: P): ShaftLoad;
+  // A part that turns (a motor): true while it turns counter-clockwise.
+  reverse?(r: Result, p: P): boolean;
   segments?(r: Result, p: P): number[];
   tolerance?: readonly (keyof P & string)[]; // values its tolerance applies to (see src/parts/tolerance.ts)
   light?(r: Result, p: P): number[]; // mixed light, linear RGB per spot (see src/parts/light.ts)

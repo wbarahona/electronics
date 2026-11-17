@@ -1460,6 +1460,85 @@ body.dragging * {
   stroke-width: 2;
 }
 
+/* Frames: a faintly tinted box in its colour (--note) with a dashed edge and
+   a title on a tonal tab. Only the edge, the tab and (selected) the corner
+   handles take presses, so the parts and empty board inside stay usable. */
+.part .frame {
+  pointer-events: none;
+}
+
+.part .frame-fill {
+  fill: color-mix(in srgb, var(--note) 6%, transparent);
+  stroke: none;
+}
+
+.part .frame-edge {
+  fill: none;
+  stroke: var(--note);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 5;
+}
+
+.part .frame-grab {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  pointer-events: stroke;
+}
+
+.part .frame-tab {
+  fill: color-mix(in srgb, var(--note) 22%, var(--md-sys-color-surface));
+  stroke: var(--note);
+  stroke-width: 1;
+  pointer-events: all;
+}
+
+.part .frame-text {
+  fill: var(--ink);
+  stroke: none;
+  font: 500 12px var(--md-ref-typeface-plain);
+  letter-spacing: 0.1px;
+}
+
+.part .frame-handle {
+  display: none;
+  pointer-events: all;
+}
+
+.part .frame-handle-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.part .frame-handle-dot {
+  fill: var(--md-sys-color-surface);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+#board .part.selected .frame-edge,
+#board .part.selected .frame-tab {
+  stroke: var(--accent);
+}
+
+#board .part.selected .frame-edge {
+  stroke-width: 2;
+}
+
+#board .part.selected .frame-handle {
+  display: inline;
+}
+
+#board .part .frame-handle.nw,
+#board .part .frame-handle.se {
+  cursor: nwse-resize;
+}
+
+#board .part .frame-handle.ne,
+#board .part .frame-handle.sw {
+  cursor: nesw-resize;
+}
+
 /* A fault put in on purpose (and shown): drawn dashed in the error colour. */
 #board .part.faulted {
   stroke: var(--md-sys-color-error);
@@ -1520,6 +1599,56 @@ body.dragging * {
   display: inline;
 }
 
+/* A motor's shaft and the loads docked on it (src/shaft.ts). A load's
+   coupling is an open ring while free and a filled dot once it sits on a
+   shaft, as pins are hollow until something connects to them. The link
+   itself stays dashed: IEC 60617's mechanical link. */
+.part .shaft {
+  stroke-width: 3;
+}
+
+.part .coupling-end {
+  fill: var(--md-sys-color-surface);
+}
+
+.part.docked .coupling-end {
+  fill: var(--ink);
+}
+
+#board .part.selected.docked .coupling-end {
+  fill: var(--accent);
+}
+
+.part .rim {
+  stroke-width: 4;
+}
+
+/* A conveyor's belt: its dashes run while it moves, with its rollers. */
+.part .belt {
+  fill: none;
+  stroke-dasharray: 6 4;
+}
+
+.part.active .belt {
+  animation: belt-run 0.5s linear infinite;
+}
+
+.part.active.reverse .belt {
+  animation-direction: reverse;
+}
+
+@keyframes belt-run {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* A turning motor's rotor mark: clockwise, or (.reverse) counter-clockwise. */
+.part.active.reverse .turn-cw,
+.part.active:not(.reverse) .turn-ccw {
+  display: none;
+}
+
 /* A fan's blades (still, or turning about the hub while it runs). */
 .part .fan-blades {
   fill: var(--ink);
@@ -1534,6 +1663,11 @@ body.dragging * {
   stroke: color-mix(in srgb, var(--md-sys-color-primary) 40%, transparent);
   stroke-dasharray: 4 4;
   pointer-events: none;
+}
+
+/* Behind it, the air it draws in: wider, slower, fainter. */
+.part .airflow.intake {
+  fill: color-mix(in srgb, var(--md-sys-color-primary) 5%, transparent);
 }
 
 #board .part.active.selected .airflow,

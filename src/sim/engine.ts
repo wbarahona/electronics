@@ -1,6 +1,8 @@
 import { pinsOf } from '../components.ts';
 import { AMBIENT, type Circuit } from '../model.ts';
 import { pinKey, type Nets } from '../nets.ts';
+import { dockings } from '../shaft.ts';
+import { STOPPED } from './shared/shaft.ts';
 import { solve } from './linear.ts';
 import { actualProps } from './shared/tolerance.ts';
 import { MODELS, type Element, type Env, type PartState, type Result, type Stamper } from './models.ts';
@@ -81,10 +83,31 @@ const WARMTH_PER_WATT = 15; // °C/W
 // A fan's air: a cone FAN_SPREAD either side of its axis and FAN_LENGTH long
 // (ten grid squares), half as strong FAN_REACH away; full air takes
 // MAX_COOLING of a part's rise away (forced air cools much better than still).
+// Those are for an 80 mm fan moving FAN_FLOW; a fan reaches in proportion to
+// its diameter, and its air is as strong as its flow against FAN_FLOW. Behind
+// it, the air it draws in comes from all round and slowly: a half circle
+// INTAKE_LENGTH deep (also scaled), at INTAKE_SHARE of its strength, fading
+// to nothing at its edge.
 const FAN_SPREAD = (35 * Math.PI) / 180;
 const FAN_LENGTH = 200;
 const FAN_REACH = 120;
+const FAN_FLOW = 60; // m³/h
+const FAN_SIZE = 80; // mm
+const INTAKE_LENGTH = 60;
+const INTAKE_SHARE = 0.25;
 const MAX_COOLING = 0.6;
+
+// A fan as the air sees it: where it is, the way its air goes (dx, dy), how
+// strong its air is (1 = an 80 mm fan at FAN_FLOW) and its size against 80 mm.
+interface Fan {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  strength: number;
+  scale: number;
+  id: string;
+}
 const G_GROUND = 1e6; // S; how firmly Ground holds its net at 0 V
 const G_TIE = 1; // S; the tie for a circuit that has no Ground
 const G_SHORT = 1e3; // S; a short-circuit fault (1 mΩ)
@@ -112,6 +135,8 @@ export function createEngine(circuit: Circuit) {
   // Per-part memory (heat, last diode voltage, later capacitor charge), kept by
   // part id so it survives rebuilds while the circuit is being edited.
   const state = new Map<string, PartState>();
+  // The load each motor's shaft drives: motor id → the load's element.
+  const docked = new Map<string, Element>();
   const engine = {
     results: new Map<string, Result>(),
     error: null as string | null,
@@ -213,6 +238,17 @@ export function createEngine(circuit: Circuit) {
       return el;
     });
     size = next;
+    // Which loads sit on which shafts. A docked load starts out standing still
+    // (its motor writes its motion once it runs), and stands still while its
+    // motor is out; a load on no shaft has no motion at all.
+    docked.clear();
+    const byId = new Map(elements.map((el) => [el.id, el]));
+    for (const [motor, load] of dockings(circuit.components)) docked.set(motor, byId.get(load)!);
+    for (const [motor, load] of docked) {
+      if (!load.state.shaft || byId.get(motor)!.open) load.state.shaft = { ...STOPPED, work: load.state.shaft?.work ?? 0 };
+    }
+    const onShaft = new Set(docked.values());
+    for (const el of elements) if (el.model.shaftLoad && !onShaft.has(el)) delete el.state.shaft;
     refs = referenceNets();
     for (const id of state.keys()) if (!circuit.get(id)) state.delete(id);
     engine.dynamic = elements.some((el) => el.model.dynamic);
@@ -252,6 +288,10 @@ export function createEngine(circuit: Circuit) {
       return light;
     },
     temperature: around,
+    shaft(el) {
+      const load = docked.get(el.id);
+      return load?.model.shaftLoad && !load.open ? { load: load.model.shaftLoad(load.props), state: load.state } : null;
+    },
   };
 
   // Let parts react to their surroundings: over dt seconds, or at once (null).
@@ -417,17 +457,24 @@ export function createEngine(circuit: Circuit) {
   // FAN_LENGTH long), more strongly near the fan and the axis, in proportion
   // to the fan's speed. Several fans add up; full air takes MAX_COOLING of a
   // part's rise away.
-  function coolingAt(el: Element, at: { x: number; y: number }, fans: { x: number; y: number; dx: number; dy: number; strength: number; id: string }[]) {
+  function coolingAt(el: Element, at: { x: number; y: number }, fans: Fan[]) {
     let still = 1; // share of air that doesn't reach it
     for (const f of fans) {
       if (f.id === el.id) continue;
       const [vx, vy] = [at.x - f.x, at.y - f.y];
       const along = vx * f.dx + vy * f.dy;
       const d = Math.hypot(vx, vy);
-      if (along <= 0 || d > FAN_LENGTH) continue;
-      const off = Math.acos(Math.min(1, along / d)); // angle off the axis
-      if (off > FAN_SPREAD) continue;
-      const air = f.strength * (1 - off / FAN_SPREAD) / (1 + (d / FAN_REACH) ** 2);
+      let air: number;
+      if (along <= 0) {
+        // Behind it: drawn in from every side.
+        if (d > INTAKE_LENGTH * f.scale) continue;
+        air = INTAKE_SHARE * f.strength * (1 - d / (INTAKE_LENGTH * f.scale));
+      } else {
+        if (d > FAN_LENGTH * f.scale) continue;
+        const off = Math.acos(Math.min(1, along / d)); // angle off the axis
+        if (off > FAN_SPREAD) continue;
+        air = f.strength * (1 - off / FAN_SPREAD) / (1 + (d / (FAN_REACH * f.scale)) ** 2);
+      }
       still *= 1 - Math.min(1, air);
     }
     return 1 - MAX_COOLING * (1 - still);
@@ -438,15 +485,16 @@ export function createEngine(circuit: Circuit) {
     coolings.clear();
     // Temperature effects off (Settings): nothing around any part but 25 °C.
     if (!engine.temperatures) return;
-    const fans: { x: number; y: number; dx: number; dy: number; strength: number; id: string }[] = [];
+    const fans: Fan[] = [];
     for (const el of elements) {
       const r = engine.results.get(el.id);
       const at = circuit.part(el.id);
       if (!el.model.airflow || el.broken || !r || !at) continue;
-      const strength = el.model.airflow(r, el.props);
+      const { flow, diameter } = el.model.airflow(r, el.props);
+      const strength = flow / FAN_FLOW;
       // Its local up (−y), turned clockwise with the part.
       const turn = (at.rotation * Math.PI) / 180;
-      if (strength > 0.01) fans.push({ x: at.x, y: at.y, dx: Math.sin(turn), dy: -Math.cos(turn), strength, id: el.id });
+      if (strength > 0.01) fans.push({ x: at.x, y: at.y, dx: Math.sin(turn), dy: -Math.cos(turn), strength, scale: diameter / FAN_SIZE, id: el.id });
     }
     // Air first: a part under a fan's air runs cooler, and so gives off less
     // warmth to its neighbours (the air carries it away) and takes in less.

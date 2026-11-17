@@ -22,6 +22,7 @@ import * as sevenSeg from './signals/seven-seg.ts';
 import * as switches from './switches/switches.ts';
 import * as changeover from './switches/changeover.ts';
 import * as motor from './loads/motor.ts';
+import * as mechLoads from './loads/mech-loads.ts';
 import * as fan from './loads/fan.ts';
 import * as heater from './loads/heater.ts';
 import * as solenoid from './loads/solenoid.ts';
@@ -45,6 +46,7 @@ import * as diodes from './semiconductors/diodes.ts';
 import * as transistors from './semiconductors/transistors.ts';
 import * as note from './annotate/note.ts';
 import * as textLabel from './annotate/text-label.ts';
+import * as frame from './annotate/frame.ts';
 import type { PartDefs } from './defs.ts';
 import type { ModelDefs } from '../sim/models.ts';
 import type { PartType } from '../types.ts';
@@ -79,6 +81,7 @@ export const DEFS: PartDefs<PartType> = {
   ...switches.defs,
   ...changeover.defs,
   ...motor.defs,
+  ...mechLoads.defs,
   ...fan.defs,
   ...heater.defs,
   ...solenoid.defs,
@@ -102,6 +105,7 @@ export const DEFS: PartDefs<PartType> = {
   ...transistors.defs,
   ...note.defs,
   ...textLabel.defs,
+  ...frame.defs,
 };
 
 export const MODEL_DEFS: ModelDefs<PartType> = {
@@ -129,6 +133,7 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...switches.models,
   ...changeover.models,
   ...motor.models,
+  ...mechLoads.models,
   ...fan.models,
   ...heater.models,
   ...solenoid.models,
@@ -152,4 +157,5 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...transistors.models,
   ...note.models,
   ...textLabel.models,
+  ...frame.models,
 };

@@ -23,11 +23,23 @@ sheet frame and title block for printing):
 ## Schematic editing
 
 - **Subcircuits / blocks**: turn a selection into one reusable block and drop
-  copies of it.
+  copies of it. Starting point: a Frame (Annotate) already marks out a section
+  and finds its contents; "Make block from frame" would take those, with net
+  labels on the frame's edge as the block's pins.
 - **Align and distribute**: tidy a selection, with its wires following.
 
 ## Simulation depth
 
+- **Enclosures**: an "Enclosure" setting on the Frame: the parts inside
+  share an inside air temperature (heat in from its parts, out through its
+  walls: sealed / vented / open), fans on its edge blow in or extract,
+  nested enclosures use the outer one's air. Shown as a solid edge with the
+  inside temperature on its tab, tinted in the Thermal view.
+- **AC motor slip model**: induction motors' speed from supply frequency and
+  load (slip), current and power factor following load, stalling past
+  breakdown torque; synchronous speed from the rated speed. DC motors and the
+  fan already run on shaft mechanics (src/sim/shared/shaft.ts); AC motors
+  still ramp to a fixed speed, so their losses and efficiency aren't shown.
 - **Frequency response (Bode plot)**: sweep a frequency through a filter or
   amplifier and plot gain and phase.
 - **DC sweep / I–V curve tracer**: plot a diode's, LED's or transistor's

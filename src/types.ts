@@ -22,6 +22,7 @@ import type { PartProps as SevenSegProps } from './parts/signals/seven-seg.ts';
 import type { PartProps as SwitchesProps } from './parts/switches/switches.ts';
 import type { PartProps as ChangeoverProps } from './parts/switches/changeover.ts';
 import type { PartProps as MotorProps } from './parts/loads/motor.ts';
+import type { PartProps as MechLoadsProps } from './parts/loads/mech-loads.ts';
 import type { PartProps as FanProps } from './parts/loads/fan.ts';
 import type { PartProps as HeaterProps } from './parts/loads/heater.ts';
 import type { PartProps as SolenoidProps } from './parts/loads/solenoid.ts';
@@ -45,6 +46,7 @@ import type { PartProps as DiodesProps } from './parts/semiconductors/diodes.ts'
 import type { PartProps as TransistorsProps } from './parts/semiconductors/transistors.ts';
 import type { PartProps as NoteProps } from './parts/annotate/note.ts';
 import type { PartProps as TextLabelProps } from './parts/annotate/text-label.ts';
+import type { PartProps as FrameProps } from './parts/annotate/frame.ts';
 
 // Shared shapes of the circuit data: what the editor draws, what gets copied
 // and pasted, and what the simulator reads.
@@ -89,6 +91,7 @@ export interface PropsByType
     SwitchesProps,
     ChangeoverProps,
     MotorProps,
+    MechLoadsProps,
     FanProps,
     HeaterProps,
     SolenoidProps,
@@ -111,7 +114,8 @@ export interface PropsByType
     DiodesProps,
     TransistorsProps,
     NoteProps,
-    TextLabelProps {}
+    TextLabelProps,
+    FrameProps {}
 
 export interface LogicGate {
   supply: number;

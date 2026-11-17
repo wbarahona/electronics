@@ -2,8 +2,10 @@ import { GRID, snap, type Board } from './board.ts';
 import { getNorm, refText } from './norm.ts';
 import { LIGHT_COLORS, PARTS, defaults, mixedLight, hitOf, keepUpright, pinNamesOf, pinsOf, symbolMarkup, tagOf, type ChoiceSpec } from './components.ts';
 import { fromControl } from './keys.ts';
+import { FRAME_MIN, frameSize, type Corner } from './parts/annotate/frame.ts';
 import type { Circuit } from './model.ts';
 import { buildNets, keyOf, pinKey, type Nets } from './nets.ts';
+import { dockSpot, dockings, hasShaft, isShaftLoad } from './shaft.ts';
 import { isPart, isWire, type End, type Joint, type Part, type PartType, type Point, type Props, type PropValue, type Wire } from './types.ts';
 import {
   endHorizontal, endId, endPos, moveSegment, pinPos, pointOnPath, route, simplify, toPoints, wirePoints,
@@ -60,7 +62,7 @@ interface Box {
 // `heat` is 0..1 from its rating up to the point where it fails, `level` how
 // full an energy store is (for its gauge), `reading` what a meter shows,
 // `active` whether it's switched on by itself (an energized relay: its symbol
-// shows the contacts moved), `segments` each display segment's brightness,
+// shows the contacts moved), `reverse` whether it turns counter-clockwise, `segments` each display segment's brightness,
 // `light` the mixed light of RGB LEDs (linear RGB, three numbers per spot,
 // see src/parts/light.ts),
 // `temp` how hot it runs as a fraction of the heat that destroys it (for the
@@ -74,6 +76,7 @@ export type Live = Map<
     level?: number;
     reading?: string;
     active?: boolean;
+    reverse?: boolean;
     segments?: number[];
     light?: number[];
     temp?: number;
@@ -124,8 +127,22 @@ function sameEnd(a: Target, b: Target): boolean {
   return endId(a) === endId(b) && a.pin === b.pin;
 }
 
+const isFrame = (n: Placed | undefined): n is Part<'frame'> => !!n && isPart(n) && n.type === 'frame';
+
+// A frame's box on the board (its position is its top-left corner).
+function frameBox(f: Part<'frame'>): Box {
+  const { w, h } = frameSize(f.props);
+  return { x1: f.x, y1: f.y, x2: f.x + w, y2: f.y + h };
+}
+
+const within = (outer: Box, inner: Box) =>
+  inner.x1 >= outer.x1 && inner.x2 <= outer.x2 && inner.y1 >= outer.y1 && inner.y2 <= outer.y2;
+
 // Does a part's (rotated) box, or a joint's point, fall in the selection box?
+// A frame only when the box takes in all of it, so a box drawn round parts
+// inside a frame doesn't pick up the frame too.
 function touches(box: Box, n: Placed): boolean {
+  if (isFrame(n)) return within(box, frameBox(n));
   let hw = 0;
   let hh = 0;
   if (isPart(n)) {
@@ -158,7 +175,9 @@ function svgEl<K extends keyof SVGElementTagNameMap>(name: K, className: string,
 export function createEditor(board: Board, circuit: Circuit, events: EditorEvents = {}) {
   const { onSelect = () => {}, onChange = () => {}, onPropChange = () => {}, onContextMenu = () => {} } = events;
   const { svg, world } = board;
-  // Wires sit under joints, joints under parts, so pins stay clickable.
+  // Frames lie under everything; wires sit under joints, joints under parts,
+  // so pins stay clickable.
+  const framesLayer = svgEl('g', 'frames', world);
   const wiresLayer = svgEl('g', 'wires', world);
   const jointsLayer = svgEl('g', 'joints', world);
   const partsLayer = svgEl('g', 'parts', world);
@@ -196,6 +215,8 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     d: number;
     orig: Point[];
   } | null = null;
+  // Resizing a frame by one of its corner handles; `box` is where it started.
+  let resize: { id: number; f: Part<'frame'>; corner: Corner; box: Box } | null = null;
   let wiringClickAt = -Infinity; // time of the last click used by wiring
   let lit: string | null = null; // wire highlighted as the place a dragged part will drop into
   let nets = buildNets(circuit);
@@ -326,7 +347,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // ({R1}) reads as that part's reference in the drawing standard in use
   // (R1, or L1 for an inductor under US), so notes stay right in both. Braces
   // round anything else are left alone.
-  function annotationText<T extends 'note' | 'textLabel'>(c: Part<T>): Part<T>['props'] {
+  function annotationText<T extends 'note' | 'textLabel' | 'frame'>(c: Part<T>): Part<T>['props'] {
     const text = c.props.text.replace(/\{([A-Z]+\d+)\}/g, (all, ref: string) => {
       const part = circuit.components.find((p) => p.ref === ref);
       return part ? (getNorm() === 'us' ? part.usRef : part.ref) : all;
@@ -351,14 +372,16 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       glow = `<circle class="glow" r="${part.glow.radius}" fill="url(#glow-${key})" />`;
       g.style.setProperty('--glow-color', LIGHT_COLORS[key]);
     }
-    const props = c.type === 'note' || c.type === 'textLabel' ? annotationText(c as Part<'note'>) : c.props;
+    const props = c.type === 'note' || c.type === 'textLabel' || c.type === 'frame' ? annotationText(c as Part<'note'>) : c.props;
     const hit = hitOf(c.type, props);
+    // A frame takes presses on its own edge and title (see frame.ts), not a box.
+    const box = c.type !== 'frame';
     g.innerHTML =
-      thermoBox(hit) +
+      (box ? thermoBox(hit) : '') +
       glow +
       symbolMarkup(c.type, props, c.broken) +
       (part.noLabel ? '' : `<text class="value"><tspan class="ref">${refText(c)}</tspan>${tag ? ` ${tag}` : ''}</text>`) +
-      hitBox(hit) +
+      (box ? hitBox(hit) : '') +
       pinHits.join('') +
       (part.actuator ? actuatorMarkup(c) : '') +
       (part.gauge ? GAUGE : '') +
@@ -405,12 +428,13 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   const glows = new Map<string, { target: Lit; shown: Lit }>();
 
   function showLive(live: Live, smooth = false) {
-    for (const [id, { glow, heat, level: charge, reading, active, segments, light, temp, needle }] of live) {
+    for (const [id, { glow, heat, level: charge, reading, active, reverse, segments, light, temp, needle }] of live) {
       const g = nodes.get(id);
       if (!g) continue;
       if (charge !== undefined) paintGauge(g, charge);
       if (reading !== undefined) paintDisplay(g, reading);
       if (active !== undefined) g.classList.toggle('active', active);
+      if (reverse !== undefined) g.classList.toggle('reverse', reverse);
       if (needle !== undefined) g.querySelector('.needle')?.setAttribute('transform', `rotate(${(-50 + 100 * needle).toFixed(2)} 0 6)`);
       const target: Lit = { glow: Math.min(1, Math.max(0, glow)), segments, light };
       const s = glows.get(id);
@@ -559,6 +583,51 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   const selectedNodes = (): Placed[] =>
     [...selected].map((id) => circuit.get(id)).filter((x): x is Placed => !!x && !isWire(x));
 
+  // What lies inside a frame: the parts and joints within its box (a frame
+  // only whole). A frame carries these when it moves or turns.
+  function contentsOf(f: Part<'frame'>): Placed[] {
+    const box = frameBox(f);
+    const inside = (p: Point) => p.x >= box.x1 && p.x <= box.x2 && p.y >= box.y1 && p.y <= box.y2;
+    return [...circuit.components, ...circuit.joints].filter((n) => n !== f && (isFrame(n) ? within(box, frameBox(n)) : inside(n)));
+  }
+
+  // The given parts and joints with everything inside the frames among them,
+  // and the loads docked on the motors among those.
+  function withContents(list: Placed[]): Placed[] {
+    const all = new Map(list.map((n) => [n.id, n]));
+    for (const n of list) if (isFrame(n)) for (const m of contentsOf(n)) all.set(m.id, m);
+    const docks = dockings(circuit.components);
+    for (const n of [...all.values()]) {
+      const load = docks.get(n.id);
+      if (load) all.set(load, circuit.part(load)!);
+    }
+    return [...all.values()];
+  }
+
+  // Where a mechanical load put down near `p` docks onto a motor's shaft, if
+  // it does (see src/shaft.ts); `self` is the load itself when it's moved.
+  const dockFor = (type: PartType, p: Point, self?: string) =>
+    isShaftLoad(type) ? dockSpot(circuit.components, p, self) : null;
+
+  // Motors and loads show whether they're docked (a free coupling shows as
+  // an open ring).
+  function showDocks() {
+    const docks = dockings(circuit.components);
+    const docked = new Set([...docks.keys(), ...docks.values()]);
+    for (const c of circuit.components) {
+      if (hasShaft(c.type) || isShaftLoad(c.type)) nodes.get(c.id)?.classList.toggle('docked', docked.has(c.id));
+    }
+  }
+
+  // Select what's inside the one selected frame, with the wires between it.
+  function selectContents() {
+    const [f, ...rest] = selectedNodes();
+    if (!isFrame(f) || rest.length) return;
+    const ids = new Set(contentsOf(f).map((n) => n.id));
+    for (const w of circuit.wires) if (ids.has(endId(w.from)) && ids.has(endId(w.to))) ids.add(w.id);
+    setSelected(ids);
+  }
+
   // Pins that touch are connected (nets join them by position), but only
   // until one of the parts moves. So before parts move, each of their pins
   // touching a pin or joint that stays put gets a real wire to it (of no
@@ -609,9 +678,12 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   function add(type: PartType, x: number, y: number, rotation = 0) {
     highlight(null);
     const spot = findSpot(type, { x, y }, rotation);
+    const dock = dockFor(type, { x, y });
     const c = spot
       ? circuit.add(type, spot.x, spot.y, spot.rotation)
-      : circuit.add(type, snap(x), snap(y), rotation);
+      : dock
+        ? circuit.add(type, dock.x, dock.y, dock.rotation)
+        : circuit.add(type, snap(x), snap(y), rotation);
     mountPart(c);
     if (spot) embed(c, spot);
     else refreshNets();
@@ -620,7 +692,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   // Create the drawing for a part that is already in the circuit.
   function mountPart(c: Part) {
-    const g = svgEl('g', 'part', partsLayer);
+    const g = svgEl('g', 'part', c.type === 'frame' ? framesLayer : partsLayer);
     g.dataset.id = c.id;
     nodes.set(c.id, g);
     renderPart(c);
@@ -631,7 +703,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   function preview(type: PartType, p: Point, rotation: number): Point & { rotation: number } {
     const spot = findSpot(type, p, rotation);
     highlight(spot?.wire);
-    return spot ?? { x: snap(p.x), y: snap(p.y), rotation };
+    return spot ?? dockFor(type, p) ?? { x: snap(p.x), y: snap(p.y), rotation };
   }
 
   function addWire(w: Wire) {
@@ -672,6 +744,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
         el.classList.toggle('linked', nets.nets[n].length > 1);
       }
     }
+    showDocks();
     onChange(nets);
   }
 
@@ -820,7 +893,11 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const d = drag!;
     const c = d.free!;
     const spot = findSpot(c.type, c, d.rot);
+    // A load docks from where the pointer has it, not where it last docked.
+    const base = d.base.get(c.id)!;
+    const dock = dockFor(c.type, { x: base.x + d.dx, y: base.y + d.dy }, c.id);
     if (spot) Object.assign(c, { x: spot.x, y: spot.y, rotation: spot.rotation });
+    else if (dock) Object.assign(c, dock);
     else c.rotation = d.rot;
     place(c);
     highlight(spot?.wire);
@@ -831,16 +908,27 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // Rotate the selection 90° clockwise about a grid point at its centre,
   // so a single part spins in place and every position stays on the grid.
   function rotateSelected() {
-    const list = selectedNodes();
+    const list = withContents(selectedNodes());
     if (!list.length) return;
     if (!drag) bindTouchingPins(list);
-    const cx = snap(list.reduce((s, n) => s + n.x, 0) / list.length);
-    const cy = snap(list.reduce((s, n) => s + n.y, 0) / list.length);
+    const centre = (n: Placed): Point => (isFrame(n) ? { x: n.x + frameSize(n.props).w / 2, y: n.y + frameSize(n.props).h / 2 } : n);
+    const cx = snap(list.reduce((s, n) => s + centre(n).x, 0) / list.length);
+    const cy = snap(list.reduce((s, n) => s + centre(n).y, 0) / list.length);
     const spin = (p: Point): Point => ({ x: cx - (p.y - cy), y: cy + (p.x - cx) });
     const d = drag;
     for (const n of list) {
-      Object.assign(n, spin(n));
-      if (isPart(n)) n.rotation = (n.rotation + 90) % 360;
+      if (isFrame(n)) {
+        // A frame stays upright: its box turns, so its bottom-left corner
+        // becomes its top-left and its sides swap.
+        const { w, h } = frameSize(n.props);
+        Object.assign(n, spin({ x: n.x, y: n.y + h }));
+        n.props.width = h;
+        n.props.height = w;
+        renderPart(n);
+      } else {
+        Object.assign(n, spin(n));
+        if (isPart(n)) n.rotation = (n.rotation + 90) % 360;
+      }
       place(n);
       // Mid-drag, re-base so the rotated group keeps following the cursor.
       if (d) d.base.set(n.id, { x: n.x - d.dx, y: n.y - d.dy });
@@ -884,6 +972,34 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     drag = null;
     highlight(null);
     refreshNets();
+  }
+
+  // Put a frame on box `b`, if it isn't there already.
+  function setFrameBox(f: Part<'frame'>, b: Box) {
+    const now = frameBox(f);
+    if (now.x1 === b.x1 && now.y1 === b.y1 && now.x2 === b.x2 && now.y2 === b.y2) return;
+    f.x = b.x1;
+    f.y = b.y1;
+    f.props.width = b.x2 - b.x1;
+    f.props.height = b.y2 - b.y1;
+    renderPart(f);
+  }
+
+  // A resize that changed the frame is an edit (for undo), and the panel
+  // shows its new size.
+  function endResize() {
+    const { f, box } = resize!;
+    resize = null;
+    const now = frameBox(f);
+    if (now.x1 === box.x1 && now.y1 === box.y1 && now.x2 === box.x2 && now.y2 === box.y2) return;
+    onPropChange(f.id);
+    refreshNets();
+  }
+
+  // Esc puts it back as it was.
+  function cancelResize() {
+    setFrameBox(resize!.f, resize!.box);
+    resize = null;
   }
 
   function endMarquee() {
@@ -1042,6 +1158,16 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       actuate(circuit.part(act.closest<SVGElement>('.part')!.dataset.id!)!);
       return;
     }
+    // A selected frame's corner handle resizes it, the opposite corner fixed.
+    const handle = closestIn(e.target, '.frame-handle');
+    if (handle) {
+      e.stopPropagation();
+      const g = handle.closest<SVGGElement>('.part')!;
+      const f = circuit.part(g.dataset.id!) as Part<'frame'>;
+      resize = { id: e.pointerId, f, corner: handle.dataset.corner as Corner, box: frameBox(f) };
+      g.setPointerCapture(e.pointerId);
+      return;
+    }
     const g = closestIn(e.target, '.part, .wire');
     if (!g) return;
     e.stopPropagation();
@@ -1061,7 +1187,8 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       return;
     }
 
-    const list = selectedNodes();
+    // A frame carries what's inside it.
+    const list = withContents(selectedNodes());
     bindTouchingPins(list);
     const { touching, inside } = wiresAround(list);
     const first = list[0];
@@ -1085,6 +1212,17 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   });
 
   world.addEventListener('pointermove', (e) => {
+    if (resize && e.pointerId === resize.id) {
+      const { f, corner, box } = resize;
+      const p = board.screenToWorld(e.clientX, e.clientY);
+      const b = { ...box };
+      if (corner[1] === 'w') b.x1 = Math.min(snap(p.x), box.x2 - FRAME_MIN);
+      else b.x2 = Math.max(snap(p.x), box.x1 + FRAME_MIN);
+      if (corner[0] === 'n') b.y1 = Math.min(snap(p.y), box.y2 - FRAME_MIN);
+      else b.y2 = Math.max(snap(p.y), box.y1 + FRAME_MIN);
+      setFrameBox(f, b);
+      return;
+    }
     if (segDrag && e.pointerId === segDrag.id) {
       const { w, base, i, horiz, start } = segDrag;
       const p = board.screenToWorld(e.clientX, e.clientY);
@@ -1125,6 +1263,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       inspectOnLift = null;
     }
     if (segDrag && e.pointerId === segDrag.id) segDrag = null;
+    if (resize && e.pointerId === resize.id) endResize();
     if (!drag || e.pointerId !== drag.id) return;
     const c = drag.free;
     drag = null;
@@ -1217,8 +1356,10 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       e.preventDefault();
       deleteSelected();
     } else if (e.key === 'Escape') {
-      if (drag || segDrag || marquee) e.preventDefault();
-      if (drag) {
+      if (drag || segDrag || marquee || resize) e.preventDefault();
+      if (resize) {
+        cancelResize();
+      } else if (drag) {
         cancelDrag();
       } else if (segDrag) {
         cancelSegmentDrag();
@@ -1362,6 +1503,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // Redraw everything from the circuit data, e.g. after a file was loaded.
   function reload() {
     drag = null;
+    resize = null;
     segDrag = null;
     if (wiring) stopWire();
     if (marquee) endMarquee();
@@ -1387,6 +1529,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // first finger started is undone, as Esc would.
   board.onGesture(() => {
     inspectOnLift = null;
+    if (resize) cancelResize();
     if (drag) cancelDrag();
     if (segDrag) cancelSegmentDrag();
     if (marquee) {
@@ -1425,6 +1568,11 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     canCopy: () => !!snapshot(),
     canPaste: () => !!clipboard,
     hasSelection: () => selected.size > 0,
+    selectContents,
+    canSelectContents: () => {
+      const [f, ...rest] = selectedNodes();
+      return isFrame(f) && !rest.length;
+    },
     deselect: () => setSelected([]),
     reload,
   };

@@ -6,7 +6,7 @@ import type { End, Part, Point, Wire } from './types.ts';
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 // Rotate a local offset clockwise on screen by a multiple of 90°.
-function turn(x: number, y: number, deg: number): Point {
+export function turn(x: number, y: number, deg: number): Point {
   switch (deg) {
     case 90: return { x: -y, y: x };
     case 180: return { x: -x, y: -y };
