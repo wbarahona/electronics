@@ -2266,6 +2266,11 @@ span.module-crumb {
   padding: 0 4px;
 }
 
+/* While editing, the label leads the bar. */
+.module-path > span.module-crumb:first-child {
+  padding-left: 12px;
+}
+
 .module-crumb-sep {
   color: var(--md-sys-color-on-surface-variant);
 }

@@ -125,7 +125,10 @@ function readModule(o: Record<string, unknown>): ModuleDef {
     if (!parts.some((p) => p.id === t && p.type === 'terminal')) throw new Error('A module pin isn’t one of its terminals.');
     return t as string;
   });
-  return { id: str(o.id, 'module id'), name: typeof o.name === 'string' ? o.name : 'Module', parts, joints, wires, ports };
+  // Its frame, where it's edited (files from before it was kept have none).
+  const b = o.box === undefined ? undefined : obj(o.box, 'module frame');
+  const box = b && { x: num(b.x, 'module frame x'), y: num(b.y, 'module frame y'), w: num(b.w, 'module frame width'), h: num(b.h, 'module frame height') };
+  return { id: str(o.id, 'module id'), name: typeof o.name === 'string' ? o.name : 'Module', parts, joints, wires, ports, ...(box ? { box } : {}) };
 }
 
 function readPart(o: Record<string, unknown>): Part {

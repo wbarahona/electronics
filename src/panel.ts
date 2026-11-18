@@ -20,7 +20,7 @@ const NO_FAULTS = new Set(['ground', 'netLabel', 'terminal', 'scopeProbe', 'modu
 // sits in the action area at the bottom.
 // Shown while exactly one part is selected; its close button, or Esc from
 // inside it, deselects the part (an open dropdown takes the Esc first).
-export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Editor, 'refreshPart' | 'deselect'>, makeModule: () => void) {
+export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Editor, 'refreshPart' | 'deselect'>, modules: { makeModule: () => void; editModule: (id: string) => void }) {
   let current: string | null = null;
 
   // The scrim behind it when it's modal: a click there closes it.
@@ -304,8 +304,16 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
       const make = document.createElement('md-outlined-button');
       make.innerHTML = `<md-icon slot="icon">category</md-icon>${t('Make module')}`;
       make.title = t('Make what’s inside into a module; Terminals on the edge become its pins');
-      make.addEventListener('click', makeModule);
+      make.addEventListener('click', modules.makeModule);
       actions.append(make);
+    }
+    // A module block opens its definition to edit.
+    if (c.type === 'module') {
+      const edit = document.createElement('md-outlined-button');
+      edit.innerHTML = `<md-icon slot="icon">edit</md-icon>${t('Edit module')}`;
+      edit.title = t('Edit what’s inside; every copy of this module follows');
+      edit.addEventListener('click', () => modules.editModule(c.id));
+      actions.append(edit);
     }
     el.replaceChildren(handle, head, body, actions);
     markModified(c);

@@ -126,11 +126,12 @@ export interface EditorEvents {
 }
 
 // What the editor shows can be the inside of a module block (see insideOf in
-// src/modules.ts) rather than the circuit itself: `root` is the whole circuit,
-// whose nets the simulator uses, and `locked` says the parts shown can be
+// src/modules.ts) rather than the circuit itself: `root` is the circuit whose
+// nets it works out (the whole circuit, which the simulator uses, or a
+// module's definition being edited), and `locked` says the parts shown can be
 // looked at and operated (buttons, switches) but not moved, wired or edited.
 export interface EditorScope {
-  root: Circuit;
+  root: () => Circuit;
   locked: () => boolean;
 }
 
@@ -194,7 +195,7 @@ function svgEl<K extends keyof SVGElementTagNameMap>(name: K, className: string,
 
 export function createEditor(board: Board, circuit: Circuit, events: EditorEvents = {}, scope?: EditorScope) {
   const { onSelect = () => {}, onChange = () => {}, onPropChange = () => {}, onContextMenu = () => {}, onEnterModule = () => {}, onLeaveModule = () => {} } = events;
-  const root = scope?.root ?? circuit;
+  const root = scope?.root ?? (() => circuit);
   const locked = scope?.locked ?? (() => false);
   const { svg, world } = board;
   // Frames lie under everything; wires sit under joints, joints under parts,
@@ -241,7 +242,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   let resize: { id: number; f: Part<'frame'>; corner: Corner; box: Box } | null = null;
   let wiringClickAt = -Infinity; // time of the last click used by wiring
   let lit: string | null = null; // wire highlighted as the place a dragged part will drop into
-  let nets = buildNets(root);
+  let nets = buildNets(root());
 
   // One soft radial gradient per light colour, fading out to transparent, and
   // a mask fading any shape out the same way from its centre (for light whose
@@ -802,7 +803,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // filled, open ones hollow; hovering a pin, joint or wire lights up its net.
 
   function refreshNets() {
-    nets = buildNets(root);
+    nets = buildNets(root());
     showNet(null);
     for (const c of circuit.components) {
       for (const el of nodes.get(c.id)!.querySelectorAll<SVGElement>('.pin')) {

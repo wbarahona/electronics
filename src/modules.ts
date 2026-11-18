@@ -1,5 +1,5 @@
 import { snap } from './board.ts';
-import { frameSize } from './parts/annotate/frame.ts';
+import { FRAME_MIN, frameSize } from './parts/annotate/frame.ts';
 import { encodePorts, type Side } from './parts/modules/block.ts';
 import { createCircuit, type Circuit } from './model.ts';
 import { keyOf, pinKey } from './nets.ts';
@@ -19,32 +19,63 @@ export interface ModuleDef {
   joints: Joint[];
   wires: Wire[];
   ports: string[]; // the Terminals that are its pins, by part id, in pin order
+  box?: Box; // its frame, where it's edited (made before it was kept: see boxOf)
+}
+
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+// --- Its pins --------------------------------------------------------------------
+
+type Port = { c: Part; side: Side };
+
+// The Terminals on the box's edge, in pin order: the left and right edges top
+// to bottom, then the top and bottom left to right.
+function portsOn(box: Box, parts: readonly Part[]): Port[] {
+  const sideOf = (p: Point): Side | null =>
+    p.x === box.x ? 'L' : p.x === box.x + box.w ? 'R' : p.y === box.y ? 'T' : p.y === box.y + box.h ? 'B' : null;
+  const order: Side[] = ['L', 'R', 'T', 'B'];
+  return parts
+    .filter((c) => c.type === 'terminal' && sideOf(c))
+    .map((c) => ({ c, side: sideOf(c)! }))
+    .sort((a, b) => order.indexOf(a.side) - order.indexOf(b.side) || (a.side === 'L' || a.side === 'R' ? a.c.y - b.c.y : a.c.x - b.c.x));
+}
+
+// The block's `ports` value: each pin's side and name (its Terminal's, or its
+// number).
+const portsValue = (ports: Port[]) =>
+  encodePorts(ports.map(({ c, side }, k) => [side, (c.props as { name: string }).name.trim() || String(k + 1)]));
+
+const frameBox = (frame: Part<'frame'>): Box => ({ x: frame.x, y: frame.y, ...frameSize(frame.props) });
+
+// A module's frame: as kept, or (made before it was) round its parts and joints.
+export function boxOf(def: ModuleDef): Box {
+  if (def.box) return def.box;
+  const points: Point[] = [...def.parts, ...def.joints];
+  const [x1, y1] = [Math.min(...points.map((p) => p.x)), Math.min(...points.map((p) => p.y))];
+  const [x2, y2] = [Math.max(...points.map((p) => p.x)), Math.max(...points.map((p) => p.y))];
+  return { x: x1, y: y1, w: Math.max(FRAME_MIN, x2 - x1), h: Math.max(FRAME_MIN, y2 - y1) };
 }
 
 // --- Making a module ---------------------------------------------------------
 
 // Make the frame's contents into a module and put a block in their place, at
 // the frame's centre. Terminals on the frame's edge are the module's pins
-// (left and right edges top to bottom, then top and bottom left to right);
-// wires from outside to them now end on the block's pins. Other wires that
-// cross the edge can't come along and are cut. Frames inside are dropped
-// (annotation of a section that is now a block).
+// (see portsOn); wires from outside to them now end on the block's pins.
+// Other wires that cross the edge can't come along and are cut. Frames
+// inside are dropped (annotation of a section that is now a block).
 export function makeModule(circuit: Circuit, frame: Part<'frame'>): { block: Part; cut: number } | { error: string } {
-  const { w, h } = frameSize(frame.props);
-  const [x1, y1, x2, y2] = [frame.x, frame.y, frame.x + w, frame.y + h];
-  const inside = (p: Point) => p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2;
+  const box = frameBox(frame);
+  const inside = (p: Point) => p.x >= box.x && p.x <= box.x + box.w && p.y >= box.y && p.y <= box.y + box.h;
   const frames = circuit.components.filter((c) => c !== frame && c.type === 'frame' && inside(c));
   const parts = circuit.components.filter((c) => c !== frame && c.type !== 'frame' && inside(c));
   if (!parts.some((c) => c.type !== 'terminal')) return { error: 'The frame has no parts to make a module of.' };
   const joints = circuit.joints.filter(inside);
-
-  const sideOf = (p: Point): Side | null =>
-    p.x === x1 ? 'L' : p.x === x2 ? 'R' : p.y === y1 ? 'T' : p.y === y2 ? 'B' : null;
-  const order: Side[] = ['L', 'R', 'T', 'B'];
-  const ports = parts
-    .filter((c) => c.type === 'terminal' && sideOf(c))
-    .map((c) => ({ c, side: sideOf(c)! }))
-    .sort((a, b) => order.indexOf(a.side) - order.indexOf(b.side) || (a.side === 'L' || a.side === 'R' ? a.c.y - b.c.y : a.c.x - b.c.x));
+  const ports = portsOn(box, parts);
   if (!ports.length) return { error: 'Put Terminals on the frame’s edge: they become the module’s pins.' };
 
   const ids = new Set([...parts, ...joints].map((n) => n.id));
@@ -56,14 +87,10 @@ export function makeModule(circuit: Circuit, frame: Part<'frame'>): { block: Par
   let n = 1;
   while (used.has(n)) n++;
   const name = frame.props.text.trim() || 'Module';
-  const def: ModuleDef = { id: `m${n}`, name, parts, joints, wires, ports: ports.map((p) => p.c.id) };
+  const def: ModuleDef = { id: `m${n}`, name, parts, joints, wires, ports: ports.map((p) => p.c.id), box };
 
-  const block = circuit.add('module', snap(frame.x + w / 2), snap(frame.y + h / 2));
-  Object.assign(block.props, {
-    module: def.id,
-    title: name,
-    ports: encodePorts(ports.map(({ c, side }, k) => [side, (c.props as { name: string }).name.trim() || String(k + 1)])),
-  });
+  const block = circuit.add('module', snap(box.x + box.w / 2), snap(box.y + box.h / 2));
+  Object.assign(block.props, { module: def.id, title: name, ports: portsValue(ports) });
 
   // Wires from outside: to a pin of the block, or cut.
   let cut = 0;
@@ -81,6 +108,72 @@ export function makeModule(circuit: Circuit, frame: Part<'frame'>): { block: Par
   for (const id of [...ids, ...wires.map((wi) => wi.id), ...frames.map((f) => f.id), frame.id]) circuit.remove(id);
   circuit.modules.push(def);
   return { block, cut };
+}
+
+// --- Editing a module ----------------------------------------------------------
+
+// A module's definition laid out to edit, as a circuit of its own: its parts,
+// joints and wires (copies, so cancelling leaves it as it was) and its frame,
+// whose edge's Terminals are its pins. `frame` is that frame's id.
+export function editCopy(def: ModuleDef, circuit: Circuit): { edit: Circuit; frame: string } {
+  const edit = createCircuit();
+  edit.load(structuredClone(def.parts), structuredClone(def.joints), structuredClone(def.wires), circuit.ambient, [...circuit.modules]);
+  const box = boxOf(def);
+  const frame = edit.add('frame', box.x, box.y);
+  Object.assign(frame.props, { text: def.name, width: box.w, height: box.h });
+  return { edit, frame: frame.id };
+}
+
+// Put an edited copy (editCopy) back as the module's definition, and bring
+// every block of it up to date, on the board and inside other modules: its
+// title, and its pins, which follow their Terminals; wires to a pin whose
+// Terminal is gone are cut. Everything in the edit is the module's, except
+// frames: its own frame marks the pins, others are dropped as when made.
+// Modules made while editing join the circuit's.
+export function updateModule(circuit: Circuit, def: ModuleDef, edit: Circuit, frameId: string): { cut: number } | { error: string } {
+  const frame = edit.part(frameId) as Part<'frame'> | undefined;
+  if (!frame) return { error: 'Keep the module’s frame: the Terminals on its edge are its pins.' };
+  const box = frameBox(frame);
+  const parts = edit.components.filter((c) => c.type !== 'frame');
+  if (!parts.some((c) => c.type !== 'terminal')) return { error: 'A module needs parts besides its terminals.' };
+  const ports = portsOn(box, parts);
+  if (!ports.length) return { error: 'Put Terminals on the frame’s edge: they become the module’s pins.' };
+  const modules = [...circuit.modules, ...edit.modules.filter((m) => !circuit.modules.some((o) => o.id === m.id))];
+  if (modulesInUse(parts, modules).some((m) => m.id === def.id)) return { error: 'A module can’t contain a copy of itself.' };
+
+  const before = def.ports;
+  Object.assign(def, {
+    name: frame.props.text.trim() || 'Module',
+    parts,
+    joints: [...edit.joints],
+    wires: [...edit.wires],
+    ports: ports.map((p) => p.c.id),
+    box,
+  });
+  circuit.modules.splice(0, circuit.modules.length, ...modules);
+  const value = portsValue(ports);
+  let cut = 0;
+  const update = (list: Part[], wires: Wire[], remove: (w: Wire) => void) => {
+    for (const block of list) {
+      if (block.type !== 'module' || (block.props as { module: string }).module !== def.id) continue;
+      Object.assign(block.props, { title: def.name, ports: value });
+      for (const w of [...wires]) {
+        for (const at of ['from', 'to'] as const) {
+          if (w[at].part !== block.id) continue;
+          const k = def.ports.indexOf(before[w[at].pin!]);
+          if (k >= 0) w[at] = { part: block.id, pin: k };
+          else {
+            remove(w);
+            cut++;
+            break;
+          }
+        }
+      }
+    }
+  };
+  update(circuit.components, circuit.wires, (w) => circuit.remove(w.id));
+  for (const m of circuit.modules) update(m.parts, m.wires, (w) => (m.wires = m.wires.filter((x) => x !== w)));
+  return { cut };
 }
 
 // The definitions a circuit's blocks use, directly or through blocks inside

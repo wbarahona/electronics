@@ -35,7 +35,7 @@ import { wireCurrents } from './sim/flow.ts';
 import { createAirflow } from './airflow.ts';
 import { MODELS, type Result, type Sound, type Thermal } from './sim/models.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
-import { blockAt, insideOf } from './modules.ts';
+import { blockAt, editCopy, insideOf, updateModule, type ModuleDef } from './modules.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
 
@@ -79,6 +79,12 @@ const shown = new Proxy(circuit, {
 // The blocks stepped into, outermost first (ids as flatten gives them), each
 // with the view of the level above, to come back to.
 const path: { id: string; view: View }[] = [];
+// A module's definition being edited (see editModule): a copy laid out as a
+// circuit of its own, shown instead, with the view and run state to go back to.
+let editing: { def: ModuleDef; circuit: Circuit; frame: string; block: string; view: View; running: boolean } | null = null;
+// The parts shown can only be looked at and operated: inside a block, not editing.
+const viewOnly = () => path.length > 0 && !editing;
+let selection: string[] = []; // the selected ids, for the context menu
 const engine = createEngine(circuit);
 const airflow = createAirflow(board.world);
 
@@ -200,9 +206,15 @@ function showResults() {
 // Undo / redo: the circuit captured whole after each edit, restored in place
 // (the simulation carries on; only a new or opened circuit resets it).
 const history = createHistory(byId('history-actions'), {
-  capture: () => JSON.stringify(serialize(circuit)),
+  // (While a module is edited, its own steps: see editModule.)
+  capture: () => JSON.stringify(serialize(editing ? editing.circuit : circuit)),
   restore(snapshot) {
     const data = parse(snapshot);
+    if (editing) {
+      editing.circuit.load(data.parts, data.joints, data.wires, data.ambient, data.modules);
+      editor.reload();
+      return;
+    }
     leaveModules();
     circuit.load(data.parts, data.joints, data.wires, data.ambient, data.modules);
     editor.reload();
@@ -212,8 +224,16 @@ const history = createHistory(byId('history-actions'), {
 
 const editor = createEditor(board, shown, {
   // (Inside a module the parts are looked at, not set: no panel.)
-  onSelect: (ids) => panel.show(ids.length === 1 && !path.length ? ids[0] : null),
+  onSelect: (ids) => {
+    selection = ids;
+    panel.show(ids.length === 1 && !viewOnly() ? ids[0] : null);
+  },
   onChange: (next) => {
+    // A module being edited: its own undo steps; the simulation waits.
+    if (editing) {
+      history.changed();
+      return;
+    }
     nets = next;
     airflow.reset();
     findProbes();
@@ -227,23 +247,26 @@ const editor = createEditor(board, shown, {
   onLeaveModule: () => leaveModule(),
   onContextMenu: (x, y, at) =>
     menu.open(x, y, [
-      { label: t('Cut'), icon: 'content_cut', shortcut: `${MOD}X`, enabled: editor.canCopy() && !path.length, action: editor.cut },
+      { label: t('Cut'), icon: 'content_cut', shortcut: `${MOD}X`, enabled: editor.canCopy() && !viewOnly(), action: editor.cut },
       { label: t('Copy'), icon: 'content_copy', shortcut: `${MOD}C`, enabled: editor.canCopy(), action: editor.copy },
-      { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste() && !path.length, action: () => editor.paste(at) },
-      { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy() && !path.length, action: editor.duplicate },
-      { label: t('Rotate'), icon: 'rotate_right', shortcut: 'R', enabled: editor.hasSelection() && !path.length, action: editor.rotate },
-      ...(editor.canSelectContents() && !path.length
+      { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste() && !viewOnly(), action: () => editor.paste(at) },
+      { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy() && !viewOnly(), action: editor.duplicate },
+      { label: t('Rotate'), icon: 'rotate_right', shortcut: 'R', enabled: editor.hasSelection() && !viewOnly(), action: editor.rotate },
+      ...(editor.canSelectContents() && !viewOnly()
         ? [
             { label: t('Select contents'), icon: 'select_all', enabled: true, action: editor.selectContents },
             { label: t('Make module'), icon: 'category', enabled: true, action: makeModule },
           ]
         : []),
+      ...(selection.length === 1 && shown.part(selection[0])?.type === 'module' && !editing
+        ? [{ label: t('Edit module'), icon: 'edit', enabled: true, action: () => editModule(selection[0]) }]
+        : []),
       'separator',
-      { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection() && !path.length, danger: true, action: editor.deleteSelected },
+      { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection() && !viewOnly(), danger: true, action: editor.deleteSelected },
     ]),
-}, { root: circuit, locked: () => path.length > 0 });
+}, { root: () => editing?.circuit ?? circuit, locked: viewOnly });
 const menu = createMenu(byId('menu'), byId('menu-anchor'));
-const panel = createPanel(byId('props'), shown, editor, makeModule);
+const panel = createPanel(byId('props'), shown, editor, { makeModule, editModule: (id) => editModule(id) });
 
 // Make the selected frame a module, saying why not or what had to give.
 function makeModule() {
@@ -275,14 +298,17 @@ function showToast(message: string) {
 // and zoom.
 const pathBar = byId('module-path');
 
+// Show the level the path ends at (dropping levels whose block is gone).
 function showLevel() {
+  while (path.length && !insideOf(circuit, path.at(-1)!.id)) path.pop();
   const id = path.at(-1)?.id;
-  shownCircuit = (id && insideOf(circuit, id)) || circuit;
+  shownCircuit = editing?.circuit ?? ((id && insideOf(circuit, id)) || circuit);
   files.quietly(() => editor.reload());
   renderPath();
 }
 
 function enterModule(id: string) {
+  if (editing) return;
   if (!insideOf(circuit, id)) {
     showToast(t('This module’s definition isn’t in this circuit.'));
     return;
@@ -294,7 +320,7 @@ function enterModule(id: string) {
 }
 
 function leaveModule(levels = 1) {
-  if (!path.length) return;
+  if (!path.length || editing) return;
   let view: View | undefined;
   for (let k = 0; k < levels && path.length; k++) view = path.pop()!.view;
   showLevel();
@@ -302,19 +328,86 @@ function leaveModule(levels = 1) {
 }
 
 // Back to the whole circuit at once, as it's about to be replaced (a file
-// opened, an undo); the caller redraws.
+// opened); an edit in progress is dropped. The caller redraws.
 function leaveModules() {
-  if (!path.length) return;
-  board.setView(path[0].view);
+  if (editing) {
+    board.setView(editing.view);
+    editing = null;
+    history.end();
+  }
+  if (path.length) board.setView(path[0].view);
   path.length = 0;
   shownCircuit = circuit;
   renderPath();
 }
 
+// --- Editing a module ------------------------------------------------------------
+// Edit module (a block's menu or panel, or the path bar inside one) opens its
+// definition as a circuit of its own, inside its frame: everything can be
+// moved, wired, added and set as on the board, with undo steps of its own,
+// while the simulation waits. Done puts it back as the definition and every
+// copy follows (one undo step on the circuit); Cancel leaves it as it was.
+
+function editModule(id: string) {
+  if (editing) return;
+  const block = blockAt(circuit, id);
+  const def = block && circuit.modules.find((m) => m.id === (block.props as { module: string }).module);
+  if (!block || !def) {
+    showToast(t('This module’s definition isn’t in this circuit.'));
+    return;
+  }
+  const { edit, frame } = editCopy(def, circuit);
+  editing = { def, circuit: edit, frame, block: id, view: { x: board.view.x, y: board.view.y, scale: board.view.scale }, running: controls.running };
+  controls.pause();
+  panel.show(null);
+  history.begin();
+  showLevel();
+  board.fitAll();
+}
+
+function finishEdit(save: boolean) {
+  const e = editing;
+  if (!e) return;
+  let cut = 0;
+  if (save) {
+    const done = updateModule(circuit, e.def, e.circuit, e.frame);
+    if ('error' in done) {
+      showToast(t(done.error));
+      return;
+    }
+    cut = done.cut;
+  }
+  editing = null;
+  history.end();
+  panel.show(null);
+  showLevel();
+  board.setView(e.view);
+  if (save) {
+    files.changed();
+    if (cut) showToast(t('{count} wires went to pins that are gone and were cut.', { count: String(cut) }));
+  }
+  if (e.running && !controls.running) controls.toggle();
+}
+
 // The path bar: back, then the circuit and each block stepped into, the
-// levels above clickable.
+// levels above clickable, and Edit module; while editing, what's being edited
+// with Cancel and Done.
 function renderPath() {
-  pathBar.hidden = !path.length;
+  pathBar.hidden = !path.length && !editing;
+  if (editing) {
+    const block = blockAt(circuit, editing.block);
+    const what = document.createElement('span');
+    what.className = 'module-crumb';
+    what.textContent = t('Editing {name}', { name: block ? `${refText(block)} ${editing.def.name}` : editing.def.name });
+    const cancel = document.createElement('md-text-button');
+    cancel.textContent = t('Cancel');
+    cancel.addEventListener('click', () => finishEdit(false));
+    const done = document.createElement('md-filled-button');
+    done.innerHTML = `<md-icon slot="icon">check</md-icon>${t('Done')}`;
+    done.addEventListener('click', () => finishEdit(true));
+    pathBar.replaceChildren(what, cancel, done);
+    return;
+  }
   if (!path.length) {
     pathBar.replaceChildren();
     return;
@@ -339,7 +432,10 @@ function renderPath() {
     const name = block ? `${refText(block)} ${(block.props as { title: string }).title}` : id;
     items.push(sep, crumb(name, path.length - 1 - k));
   });
-  pathBar.replaceChildren(back, ...items);
+  const edit = document.createElement('md-text-button');
+  edit.innerHTML = `<md-icon slot="icon">edit</md-icon>${t('Edit module')}`;
+  edit.addEventListener('click', () => editModule(path.at(-1)!.id));
+  pathBar.replaceChildren(back, ...items, edit);
 }
 
 // Put a loaded (or empty) circuit on the board, with fresh simulation state.

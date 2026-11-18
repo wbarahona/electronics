@@ -37,12 +37,29 @@ sheet frame and title block for printing):
      circuit file (a `modules` section, file VERSION 2), so a circuit opens
      anywhere without the library. Every copy is identical (no per-copy
      settings yet).
-  3. **Step inside a copy** (built; looking and operating only, editing the
-     definition still to come): double-click opens it in place with a path bar
+  3. **Step inside a copy** (built, with **Edit module**: the definition
+     opens in its frame to edit with its own undo steps, the simulation
+     paused; Done updates every copy, Cancel drops it): double-click opens it in place with a path bar
      (`Circuit › -A1 Controller`); the simulation keeps running, its
      readouts are live and its buttons work; Back / Esc returns to the same
      pan and zoom. A collapsed block's heat sits at the block's position.
-  4. **Module library**: a Modules tray category with Built-in (shipped
+  4. **Block face**: Edit module gets two views, Inside | Face (an M3
+     segmented button in the path bar). Face shows the block at real size:
+     resize the box (edges, corners, grid steps, never smaller than its pins
+     and title need), drag pins along an edge or to another side (on the grid,
+     never overlapping), and place the title (top, centre, hidden). Automatic
+     layout stays the default; once changed the module keeps its layout and a
+     new pin takes a free spot. Moving a pin changes where it is, not which
+     Terminal it is, so wires stay connected; every copy follows. Kept in the
+     definition and in each block's values, so its pins stay a pure function
+     of them.
+  5. **Front panel**: a part inside a module (switch, push button, LED, lamp,
+     display) can be set to Mounting: on the front panel. It's drawn on the
+     block's face, placed in the Face view, and works there: its switch flips
+     and its LED glows from the board, like the controls and pilot lights on
+     a real panel door (EN 81346's location aspect: +door vs inside). Its
+     state would then be saved with the circuit.
+  6. **Module library**: a Modules tray category with Built-in (shipped
      with the app, like the examples) and My modules (rename, edit, export,
      delete); placing one copies its definition into the circuit, and a newer
      library version can be offered as an update. Storage behind one

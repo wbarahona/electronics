@@ -68,6 +68,28 @@ export function createHistory(root: HTMLElement, { capture, restore }: HistoryOp
     apply(past[past.length - 1]);
   }
 
+  // A session with undo steps of its own (editing a module's definition):
+  // from begin() undo and redo step through it alone; end() brings back the
+  // steps from before, as they were.
+  const outer: { past: string[]; future: string[] }[] = [];
+
+  function begin() {
+    clearTimeout(pending);
+    pending = 0;
+    outer.push({ past, future });
+    past = [capture()];
+    future = [];
+    show();
+  }
+
+  function end() {
+    clearTimeout(pending);
+    pending = 0;
+    const was = outer.pop();
+    if (was) ({ past, future } = was);
+    show();
+  }
+
   // A different circuit (opened or new): its history starts here.
   function reset() {
     clearTimeout(pending);
@@ -89,5 +111,5 @@ export function createHistory(root: HTMLElement, { capture, restore }: HistoryOp
   });
 
   show();
-  return { changed, reset };
+  return { changed, reset, begin, end };
 }
