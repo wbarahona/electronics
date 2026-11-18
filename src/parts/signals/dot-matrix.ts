@@ -98,6 +98,15 @@ export const defs: PartDefs<'dotMatrix'> = {
   // Pins: see matrixPins.
   dotMatrix: {
     name: 'Dot-matrix display',
+    info: {
+      summary: 'A grid of LEDs wired in rows and columns: scan them to show characters or patterns, mono or RGB.',
+      about: {
+        how: 'A grid of LEDs connected in rows and columns. Lighting one row at a time quickly enough (multiplexing) shows characters or pictures.',
+        sim: 'Up to 16 × 16 dots, each an LED between its row and column line (rows as anodes or cathodes), mono or RGB. Lit dots blend over time as the eye sees them.',
+        uses: 'Scrolling text, symbols and small graphics.',
+      },
+      example: 'rgb-rainbow',
+    },
     letter: 'P',
     us: { letter: 'DS' },
     category: 'signals',

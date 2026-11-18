@@ -30,6 +30,14 @@ function size(p: PropsByType['textLabel']) {
 export const defs: PartDefs<'textLabel'> = {
   textLabel: {
     name: 'Text label',
+    info: {
+      summary: 'A line of text on the board: a title or a caption.',
+      about: {
+        how: 'A line of text on the drawing.',
+        sim: 'Not part of the circuit.',
+        uses: 'Titles, captions and labels.',
+      },
+    },
     letter: 'N',
     category: 'annotate',
     pins: [],

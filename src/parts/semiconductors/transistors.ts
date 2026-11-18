@@ -213,6 +213,15 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
   // Pins: base, collector, emitter. The emitter arrow points out of an NPN.
   npn: {
     name: 'NPN transistor',
+    info: {
+      summary: 'A bipolar transistor: a small base current controls a much larger collector current, to switch or amplify.',
+      about: {
+        how: 'A bipolar transistor: current into its base lets a current about its gain times larger flow from collector to emitter.',
+        sim: 'The Ebers–Moll model, with its gain and ratings from its part number; it heats with the power it takes. (The Early effect isn’t modelled.)',
+        uses: 'Switching loads from small signals, and amplifiers.',
+      },
+      example: 'thermostat',
+    },
     letter: 'K',
     us: { letter: 'Q', values: { partNumber: '2N3904' } },
     category: 'semiconductors',
@@ -235,6 +244,14 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
   // (the usual way up for a PNP), the emitter arrow pointing in.
   pnp: {
     name: 'PNP transistor',
+    info: {
+      summary: 'The NPN’s mirror image: switches or amplifies with current flowing out of its base, to switch the positive side.',
+      about: {
+        how: 'A bipolar transistor like the NPN with every polarity reversed: current flowing out of its base switches it on.',
+        sim: 'The Ebers–Moll model, as the NPN’s with every voltage and current reversed.',
+        uses: 'Switching the positive side of a load (high-side switches) and complementary stages.',
+      },
+    },
     letter: 'K',
     us: { letter: 'Q', values: { partNumber: '2N3906' } },
     category: 'semiconductors',
@@ -257,6 +274,14 @@ export const defs: PartDefs<'npn' | 'pnp' | 'nmos'> = {
   // channel line marks enhancement mode; the arrow points into the channel.
   nmos: {
     name: 'N-MOSFET',
+    info: {
+      summary: 'A MOSFET switched by the voltage on its gate, which draws no current: low-loss switching of loads.',
+      about: {
+        how: 'An N-channel MOSFET: a voltage on its gate, above its threshold, opens a channel from drain to source; the gate itself draws no current.',
+        sim: 'A square-law model with its threshold voltage and its on-resistance at 10 V on the gate. The channel works either way round; its body diode isn’t modelled.',
+        uses: 'Low-loss switching of motors, lamps and LEDs, and PWM.',
+      },
+    },
     letter: 'K',
     us: { letter: 'Q' },
     category: 'semiconductors',

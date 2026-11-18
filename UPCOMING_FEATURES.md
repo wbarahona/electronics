@@ -18,6 +18,9 @@ sheet frame and title block for printing, and modules: see
 
 ## Learning and sharing
 
+- **Review the part descriptions**: every part's summary and About this part
+  (PartInfo in its file) is a draft until an engineer checks it; mark each
+  `reviewed: true` as it's done (`npm run i18n:check` lists what's left).
 - **Challenges and lessons**: tasks such as "make the lamp light only when both
   switches are on", checked by the simulator.
 

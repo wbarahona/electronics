@@ -25,6 +25,15 @@ const LED_PRESETS: Preset<PropsByType['led']>[] = [
 export const defs: PartDefs<'led'> = {
   led: {
     name: 'LED',
+    info: {
+      summary: 'A light-emitting diode: lights when current flows from anode to cathode past its forward voltage; it needs a resistor to limit the current.',
+      about: {
+        how: 'A diode that gives off light when current flows forwards through it. It barely conducts below its forward voltage, then the current rises steeply, so it needs a resistor to limit it.',
+        sim: 'A diode junction with the forward voltage of its colour, lit in proportion to its current. Past its max current it burns out; the wrong way round it simply blocks.',
+        uses: 'Indicators, displays and lighting.',
+      },
+      example: '555-blinker',
+    },
     letter: 'P',
     us: { letter: 'D' },
     category: 'signals',

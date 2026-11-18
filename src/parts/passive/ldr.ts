@@ -23,6 +23,14 @@ export const defs: PartDefs<'ldr'> = {
   // Light-dependent resistor: two arrows of incoming light.
   ldr: {
     name: 'LDR',
+    info: {
+      summary: 'A light-dependent resistor: its resistance falls as the light on it rises, from lamps and LEDs near it.',
+      about: {
+        how: 'A light-dependent resistor: a material whose resistance falls as light frees more charge carriers in it.',
+        sim: 'Its resistance moves between its dark and bright values with the light reaching it: its ambient-light setting plus the lamps and LEDs on the board, the nearer and brighter the more.',
+        uses: 'Night lights, light sensors, and automatic switching at dusk.',
+      },
+    },
     letter: 'R',
     us: {
       draw: () => `

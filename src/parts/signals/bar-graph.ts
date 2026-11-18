@@ -15,6 +15,15 @@ export const defs: PartDefs<'barGraph'> = {
   // Ten segments (pins 1–10 down the left), then the common pin.
   barGraph: {
     name: 'LED bar graph',
+    info: {
+      summary: 'Ten LEDs in a row on a common pin: a level indicator.',
+      about: {
+        how: 'Ten LEDs in a row, lit in turn to show a level, like a signal meter.',
+        sim: 'Ten LEDs from their pins to a common anode or cathode, in the chosen colour.',
+        uses: 'Level meters, battery gauges, and showing a counter’s output.',
+      },
+      example: 'decade-counter',
+    },
     letter: 'P',
     us: { letter: 'DS' },
     category: 'signals',

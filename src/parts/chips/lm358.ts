@@ -112,6 +112,15 @@ export const defs: PartDefs<'lm358'> = {
   // to about VCC − 1.5 V.
   lm358: {
     name: 'Dual op-amp',
+    info: {
+      summary: 'Two op-amps on one supply: each amplifies the difference between its inputs, up to near its supply rails; they also work as comparators.',
+      about: {
+        how: 'Two operational amplifiers that run from a single supply. Each amplifies the difference between its + and − inputs by a large gain.',
+        sim: 'Each output heads for gain × (V+ − V−), limited to within its headroom of the supply rails; its current comes from VCC or goes to GND. With no feedback it switches like a comparator.',
+        uses: 'Amplifiers, comparators, active filters and sensor interfaces.',
+      },
+      example: 'thermostat',
+    },
     letter: 'K',
     us: { letter: 'U' },
     category: 'chips',

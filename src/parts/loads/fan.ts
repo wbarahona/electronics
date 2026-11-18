@@ -83,6 +83,15 @@ function fanSymbol(p: PropsByType['fan']) {
 export const defs: PartDefs<'fan'> = {
   fan: {
     name: 'Fan',
+    info: {
+      summary: 'A small DC cooling fan: blows air that cools the parts in its stream.',
+      about: {
+        how: 'A small DC motor driving a propeller, blowing air across nearby parts to cool them.',
+        sim: 'A DC motor with its blades as its load, its speed following its voltage. Its airflow cools the parts in its stream; on an enclosure’s wall it swaps the air inside for outside air. Its size sets how much air it moves.',
+        uses: 'Cooling hot parts and enclosures.',
+      },
+      example: 'enclosure-cooling',
+    },
     letter: 'M',
     us: { letter: 'B' },
     category: 'loads',

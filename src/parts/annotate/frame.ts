@@ -50,6 +50,15 @@ export type Corner = (typeof CORNERS)[number];
 export const defs: PartDefs<'frame'> = {
   frame: {
     name: 'Frame',
+    info: {
+      summary: 'A frame round a section of a circuit, with a title; it can also be an enclosure that warms up inside, or become a module.',
+      about: {
+        how: 'A frame round a section of a circuit, to show that its parts belong together.',
+        sim: 'Not part of the circuit, but it carries what’s inside when moved. As an enclosure, its parts share its inside air, which their heat warms and its walls and fans cool. Make module turns it into a reusable block.',
+        uses: 'Organising drawings, enclosures that heat up, and making modules.',
+      },
+      example: 'enclosure-cooling',
+    },
     letter: 'N',
     category: 'annotate',
     pins: [],

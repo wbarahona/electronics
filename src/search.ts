@@ -1,6 +1,6 @@
 import { CATEGORIES, PARTS, defaults, symbolMarkup } from './components.ts';
 import { t } from './i18n/index.ts';
-import { icon, type Palette } from './palette.ts';
+import { icon, partTooltip, type Palette } from './palette.ts';
 import { recentParts } from './recent.ts';
 import { availableCommands, type Command } from './commands.ts';
 import { combo } from './shortcuts.ts';
@@ -82,7 +82,7 @@ export function createSearch(root: HTMLElement, palette: Palette) {
     const name = t(part.name);
     const subgroup = part.group && t(part.group);
     const mark = (text: string) => (query ? highlight(text, query) : escape(text));
-    el.title = t('Drag {part} onto the board', { part: name });
+    el.title = partTooltip(type, t('Drag {part} onto the board', { part: name }));
     el.innerHTML = `
       <span class="search-option-icon"><svg class="part" viewBox="${box}" style="width: ${width}px; height: ${height}px" aria-hidden="true">${symbolMarkup(type, defaults(type))}</svg></span>
       <span class="search-option-text">

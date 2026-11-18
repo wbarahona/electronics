@@ -58,6 +58,14 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
   // Magnetic buzzer (DIN: a dome on its base); + is pin 0.
   buzzer: {
     name: 'Buzzer',
+    info: {
+      summary: 'A magnetic buzzer: sounds on DC the right way round, or on AC.',
+      about: {
+        how: 'An electromagnet that vibrates a metal disc to make a tone.',
+        sim: 'A resistive load that sounds while its voltage is near its rating: on DC the right way round or on AC. You hear it while the simulation runs.',
+        uses: 'Alarms, beepers and alerts.',
+      },
+    },
     letter: 'P',
     us: { letter: 'LS' },
     category: 'signals',
@@ -75,6 +83,14 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
   // Piezo sounder: a crystal between two plates; + is pin 0.
   piezo: {
     name: 'Piezo buzzer',
+    info: {
+      summary: 'A piezo buzzer: sounds on DC the right way round, and stays silent reversed.',
+      about: {
+        how: 'A piezoelectric disc with its own oscillator, which flexes to make a tone.',
+        sim: 'Sounds at its set frequency when its DC voltage is near its rating and the right way round; silent reversed or on AC. You hear it while the simulation runs.',
+        uses: 'Beeps in electronic equipment and timers.',
+      },
+    },
     letter: 'P',
     us: { letter: 'LS' },
     category: 'signals',
@@ -94,6 +110,14 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
   // Electromechanical bell (DIN: a bowl under its base).
   bell: {
     name: 'Bell',
+    info: {
+      summary: 'An electromechanical bell: rings on its rated voltage, AC or DC.',
+      about: {
+        how: 'An electromagnet pulls a striker against a gong and breaks its own circuit, over and over, ringing the bell.',
+        sim: 'Rings while its voltage (RMS, AC or DC) is near its rating. You hear it while the simulation runs.',
+        uses: 'Door bells, school and fire bells.',
+      },
+    },
     letter: 'P',
     us: { letter: 'LS' },
     category: 'signals',
@@ -110,6 +134,15 @@ export const defs: PartDefs<'buzzer' | 'piezo' | 'bell' | 'chime'> = {
   // Door chime: its plunger's coil between two tone bars.
   chime: {
     name: 'Door chime',
+    info: {
+      summary: 'A door chime: one tone when pressed and another when released (ding-dong), on a doorbell transformer’s AC.',
+      about: {
+        how: 'A plunger in a coil strikes one tone bar when powered and another when released: ding-dong.',
+        sim: 'One tone when its voltage comes on and another when it goes off, at its rated RMS voltage. You hear it while the simulation runs.',
+        uses: 'Door chimes on a bell transformer.',
+      },
+      example: 'doorbell',
+    },
     letter: 'P',
     us: { letter: 'LS' },
     category: 'signals',

@@ -30,6 +30,14 @@ function tag(p: PropsByType['netLabel']) {
 export const defs: PartDefs<'netLabel'> = {
   netLabel: {
     name: 'Net label',
+    info: {
+      summary: 'Names a net: every label with the same name is connected, as if wired together.',
+      about: {
+        how: 'A name for a net, so the same connection can appear in several places on a drawing without a wire between them.',
+        sim: 'All labels with the same name are one node, exactly as if wired together. Inside a module, a label only joins others inside the same copy.',
+        uses: 'Supply lines and signals that run across a large drawing, keeping it readable.',
+      },
+    },
     letter: 'W',
     category: 'sources',
     group: 'Reference',

@@ -46,6 +46,15 @@ export const defs: PartDefs<'heater'> = {
   // Heating element (a resistance with heating marks); glows red when hot.
   heater: {
     name: 'Heater',
+    info: {
+      summary: 'A heating element: warms up over time with the power it takes, warms what’s near it, and glows when hot.',
+      about: {
+        how: 'A resistance wire made to turn electricity into heat.',
+        sim: 'A fixed resistance set by its rated voltage and power. Its element warms up over its warm-up time, warms the parts near it, and glows red when hot.',
+        uses: 'Heating, and a heat source for testing thermostats and fans.',
+      },
+      example: 'thermostat',
+    },
     letter: 'E',
     us: {
       letter: 'HR',

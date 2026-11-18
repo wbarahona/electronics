@@ -38,6 +38,14 @@ export const defs: PartDefs<'logicSwitch' | 'clock' | 'probe'> = {
   // A logic level set by hand: its toggle switches the output between 1 and 0.
   logicSwitch: {
     name: 'Logic switch',
+    info: {
+      summary: 'A logic input set by hand: its toggle switches its output between 1 and 0.',
+      about: {
+        how: 'A switch that gives a logic 1 or 0.',
+        sim: 'Drives its pin to the logic supply or 0 V through a small resistance; click its toggle to change it.',
+        uses: 'Setting the inputs of logic circuits by hand.',
+      },
+    },
     letter: 'S',
     category: 'digital',
     group: 'Input/Output',
@@ -55,6 +63,15 @@ export const defs: PartDefs<'logicSwitch' | 'clock' | 'probe'> = {
   // Square-wave clock (the box shows a pulse).
   clock: {
     name: 'Clock',
+    info: {
+      summary: 'A square-wave logic clock at a set frequency and duty cycle.',
+      about: {
+        how: 'A source of square pulses that keeps logic circuits in step.',
+        sim: 'High for its duty cycle of each period at its frequency. At high frequencies the simulation runs slower so it can follow every edge.',
+        uses: 'Driving counters, flip-flops and multiplexed displays.',
+      },
+      example: 'decade-counter',
+    },
     letter: 'G',
     category: 'digital',
     group: 'Input/Output',
@@ -73,6 +90,14 @@ export const defs: PartDefs<'logicSwitch' | 'clock' | 'probe'> = {
   // Shows a logic level: lights red for 1; its display reads 1 or 0.
   probe: {
     name: 'Logic probe',
+    info: {
+      summary: 'Shows a logic level: lights for 1, and its display reads 1 or 0.',
+      about: {
+        how: 'Shows whether a point is at logic 1 or 0, like a logic probe’s tip.',
+        sim: 'Barely loads its point; lights red above 55 % of the logic supply, and its display reads 1 above half of it.',
+        uses: 'Watching logic signals.',
+      },
+    },
     letter: 'P',
     us: { letter: 'DS' },
     category: 'digital',

@@ -23,6 +23,14 @@ export const defs: PartDefs<'terminal'> = {
   // so wires run up to it from any side; its name to the right.
   terminal: {
     name: 'Terminal',
+    info: {
+      summary: 'A connection point a wire can end on; on a module frame’s edge it becomes one of the module’s pins.',
+      about: {
+        how: 'A point where wires connect, like a screw terminal on a terminal strip.',
+        sim: 'An open end with no effect on the circuit; its readout shows the voltage there, so it also works as a test point. On a frame’s edge it becomes a pin when the frame is made into a module.',
+        uses: 'Leaving a wire ready for later, test points, and the pins of a module.',
+      },
+    },
     letter: 'X',
     category: 'sources',
     group: 'Reference',

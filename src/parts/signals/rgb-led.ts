@@ -35,6 +35,15 @@ export const defs: PartDefs<'rgbLed'> = {
   // three dies' light added up (see mixedSpot).
   rgbLed: {
     name: 'RGB LED',
+    info: {
+      summary: 'Red, green and blue LEDs in one lens: their mix of brightness makes any colour.',
+      about: {
+        how: 'Red, green and blue LED chips in one package. Mixing their brightness makes any colour.',
+        sim: 'Three LEDs on a common anode or cathode, each with its forward voltage and intensity; the colour shown is their light mixed. A diffused lens blends them, a clear one shows the dies.',
+        uses: 'Colour indicators, mood lighting, colour mixing with PWM.',
+      },
+      example: 'rgb-mixing',
+    },
     letter: 'P',
     us: { letter: 'D' },
     category: 'signals',

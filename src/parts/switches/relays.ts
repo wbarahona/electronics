@@ -298,6 +298,15 @@ export const defs: PartDefs<'relay' | 'contactor'> = {
   // Pins: see relayPins.
   relay: {
     name: 'Relay',
+    info: {
+      summary: 'A coil that, energised, switches its contacts: a small current controls a separate, larger circuit.',
+      about: {
+        how: 'An electromagnet that moves switch contacts: a small current through the coil switches a separate, often much larger, circuit.',
+        sim: 'A coil (its resistance) that pulls in at three quarters of its rated voltage and drops out below 40 %; DC, or AC judged by RMS. Up to four contacts, changeover or make; contacts and coil heat past their ratings. The coil and contacts are separate circuits.',
+        uses: 'Switching mains loads from electronics, and relay logic.',
+      },
+      example: 'thermostat',
+    },
     letter: 'K',
     category: 'switches',
     group: 'Relays',
@@ -340,6 +349,15 @@ export const defs: PartDefs<'relay' | 'contactor'> = {
   // L2–T2, L3–T3.
   contactor: {
     name: 'Contactor',
+    info: {
+      summary: 'A heavy-duty relay for motors and other loads: three main poles, auxiliary contacts, usually an AC coil.',
+      about: {
+        how: 'A heavy-duty relay built to switch motors and big loads, with main poles for the load and small auxiliary contacts for control.',
+        sim: 'As a relay: up to four main poles that make when energised, and auxiliary contacts numbered as EN 50012 does (13–14 make, 21–22 break). Its coil is usually AC.',
+        uses: 'Motor starters, reversing starters and switching large loads.',
+      },
+      example: 'motor-starter',
+    },
     letter: 'Q',
     us: {
       letter: 'K',

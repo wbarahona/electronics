@@ -1284,6 +1284,80 @@ body.dragging * {
   padding: 8px 24px 16px;
 }
 
+/* About this part: shut, a title-small header with a turning arrow; open,
+   short sections (label-large headings, body-medium text). */
+.props-about {
+  margin: 4px 0 8px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  padding-bottom: 8px;
+}
+
+.props-about summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--md-sys-color-primary);
+}
+
+.props-about summary::-webkit-details-marker {
+  display: none;
+}
+
+.props-about summary md-icon {
+  transform: rotate(-90deg);
+  transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.props-about[open] summary md-icon {
+  transform: none;
+}
+
+.props-about h3 {
+  margin: 8px 0 2px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--md-sys-color-on-surface);
+}
+
+.props-about p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.props-about md-text-button {
+  margin-top: 8px;
+}
+
+/* M3 body-small */
+.props-about .props-draft {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  font-style: italic;
+}
+
+/* What the part is, under its name (M3 body-medium, on-surface-variant). */
+.props-summary {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
 .props-actions {
   flex: none;
   display: flex;
@@ -3270,6 +3344,11 @@ span.module-crumb {
 }
 
 .settings-panel[hidden] {
+  display: none;
+}
+
+/* (reset.css makes every section display: block, which beats [hidden].) */
+.settings-section[hidden] {
   display: none;
 }
 

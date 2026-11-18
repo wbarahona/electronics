@@ -33,6 +33,15 @@ const LENS_LETTER = { warm: 'C', red: 'R', yellow: 'Y', green: 'G', blue: 'B', w
 export const defs: PartDefs<'lamp' | 'pilot'> = {
   lamp: {
     name: 'Lamp',
+    info: {
+      summary: 'A filament lamp: lights with the power it takes, on AC or DC, and burns out if overdriven.',
+      about: {
+        how: 'A filament heated by the current until it glows. Its brightness follows the power it takes.',
+        sim: 'Its hot resistance (its rated voltage squared over its power), shining by its average power, so AC and DC light it alike. Overdriven, it burns out. It doesn’t model a cold filament’s inrush.',
+        uses: 'Lighting, indicators, and a simple load to test a circuit.',
+      },
+      example: 'stairway-light',
+    },
     letter: 'E',
     us: {
       letter: 'DS',
@@ -57,6 +66,14 @@ export const defs: PartDefs<'lamp' | 'pilot'> = {
   // A panel indicator: the lamp behind a lens (the outer ring).
   pilot: {
     name: 'Pilot lamp',
+    info: {
+      summary: 'An indicator lamp behind a coloured lens, as on a control panel.',
+      about: {
+        how: 'A small indicator lamp behind a coloured lens, mounted on control panels to show that something is on.',
+        sim: 'A lamp (as the Lamp) behind a lens of the chosen colour.',
+        uses: 'Showing that a machine is running, a supply is on, or a fault has happened.',
+      },
+    },
     letter: 'P',
     // US (NEMA pilot light): rays around the lens, its colour's letter inside.
     us: {

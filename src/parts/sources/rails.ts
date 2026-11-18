@@ -47,6 +47,15 @@ export const defs: PartDefs<'rail' | 'phase'> = {
   // whose other terminal is grounded.
   rail: {
     name: '+V rail',
+    info: {
+      summary: 'A supply rail: holds its net at a fixed voltage against 0 V, with no return wire to draw.',
+      about: {
+        how: 'A shorthand for a supply: the drawing shows the voltage at a point instead of a wire back to the power supply.',
+        sim: 'Holds its net at the set voltage against 0 V, up to its max current; driven well past that for long, it overheats like a tripped supply. Its voltage can be negative.',
+        uses: 'The +5 V or +12 V supply of electronic circuits, without drawing the supply itself.',
+      },
+      example: 'thermostat',
+    },
     letter: 'X',
     category: 'sources',
     group: 'Rails',
@@ -61,6 +70,15 @@ export const defs: PartDefs<'rail' | 'phase'> = {
   // One phase of the mains (voltage as RMS), against neutral at 0 V.
   phase: {
     name: 'AC phase',
+    info: {
+      summary: 'One phase of the mains: an AC voltage (RMS) against neutral at 0 V; three, 120° apart, make a three-phase supply.',
+      about: {
+        how: 'One line of the mains supply: an alternating voltage against the neutral conductor. A three-phase supply has three, each 120° after the last.',
+        sim: 'A sine wave (RMS voltage, frequency and phase angle) against neutral at 0 V, through a breaker that trips well past its rating. Three of them at 0°, −120° and 120° drive a three-phase motor.',
+        uses: 'Mains-powered circuits: lamps, transformers, contactors and motors.',
+      },
+      example: 'motor-starter',
+    },
     letter: 'X',
     us: { values: { frequency: 60 } },
     category: 'sources',

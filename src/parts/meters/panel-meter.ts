@@ -40,6 +40,14 @@ export const defs: PartDefs<'panelMeter'> = {
   // indicating instrument with a pointer); + is pin 0.
   panelMeter: {
     name: 'Panel meter',
+    info: {
+      summary: 'A moving-coil meter: its needle shows the DC or AC voltage across it against its full scale.',
+      about: {
+        how: 'A moving-coil meter: the current through its coil turns a needle against a spring.',
+        sim: 'Its needle shows the DC (average) or AC (RMS) voltage across it against its full scale, damped like a real movement, and pegs past either end; it survives some overload, not a sustained several times full scale.',
+        uses: 'Showing a voltage or level on a panel, at a glance.',
+      },
+    },
     letter: 'P',
     us: { letter: 'M' },
     category: 'meters',

@@ -14,6 +14,15 @@ export interface PartProps {
 export const defs: PartDefs<'resistor'> = {
   resistor: {
     name: 'Resistor',
+    info: {
+      summary: 'Limits current in proportion to the voltage across it (Ohm’s law) and heats with the power it takes; burns out past its rating.',
+      about: {
+        how: 'A component that resists current: the current through it is the voltage across it divided by its resistance (Ohm’s law), and the power it takes turns into heat.',
+        sim: 'An ideal resistance that heats with the power it dissipates and burns out past its power rating. With Settings › Real spread chosen, each one is a little off its marked value, within its tolerance, as real ones are.',
+        uses: 'Limiting current (for example an LED’s), dividing voltages, pulling inputs up or down, and setting the timing of RC circuits.',
+      },
+      example: '555-blinker',
+    },
     letter: 'R',
     us: {
       draw: () => `

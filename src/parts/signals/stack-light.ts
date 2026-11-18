@@ -43,6 +43,14 @@ export const defs: PartDefs<'stackLight'> = {
   // Red, amber and green lamps stacked, each from its pin to a common bus.
   stackLight: {
     name: 'Stack light',
+    info: {
+      summary: 'A tower of red, amber and green lamps on a common pin, showing a machine’s status.',
+      about: {
+        how: 'A tower of coloured lamps on a machine: green for running, amber for attention, red for a fault.',
+        sim: 'Three lamps from their pins to a common pin, each lit by its own average power.',
+        uses: 'Machine and process status signalling.',
+      },
+    },
     letter: 'P',
     us: { letter: 'DS' },
     category: 'signals',

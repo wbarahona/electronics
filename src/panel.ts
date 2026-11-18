@@ -2,6 +2,9 @@ import { PARTS, applyPreset, canReset, isChoiceSpec, isModified, resetValues, is
 import type { Editor, Live } from './editor.ts';
 import type { Circuit } from './model.ts';
 import { onLanguage, t } from './i18n/index.ts';
+import { partAbout, partSummary } from './i18n/parts.ts';
+import { EXAMPLES } from './examples/index.ts';
+import type { PartAbout } from './parts/defs.ts';
 import { refText } from './norm.ts';
 import { MODELS } from './sim/models.ts';
 import type { Part, PropValue } from './types.ts';
@@ -20,6 +23,8 @@ const NO_FAULTS = new Set(['ground', 'netLabel', 'terminal', 'scopeProbe', 'modu
 // sits in the action area at the bottom.
 // Shown while exactly one part is selected; its close button, or Esc from
 // inside it, deselects the part (an open dropdown takes the Esc first).
+const ABOUT_KEY = 'ampage:about-open'; // whether About this part is open (this browser)
+
 export function createPanel(
   el: HTMLElement,
   circuit: Circuit,
@@ -31,6 +36,7 @@ export function createPanel(
     newer: (id: string) => number | null; // the version my modules has, if newer
     updateModule: (id: string) => void;
   },
+  openExample: (id: string) => void,
 ) {
   let current: string | null = null;
 
@@ -292,6 +298,16 @@ export function createPanel(
     head.append(heading, close);
     const body = document.createElement('div');
     body.className = 'props-body';
+    // What it is, in a sentence, and a little more under About this part.
+    const summary = partSummary(c.type);
+    if (summary) {
+      const p = document.createElement('p');
+      p.className = 'props-summary';
+      p.textContent = summary;
+      body.append(p);
+    }
+    const about = partAbout(c.type);
+    if (about) body.append(aboutSection(c, about));
     body.append(
       ...(c.broken ? [brokenNotice(c)] : []),
       ...(PARTS[c.type].gauge ? [chargeRow(c)] : []),
@@ -342,6 +358,57 @@ export function createPanel(
     markModified(c);
     setOpen(true);
     showLive();
+  }
+
+  // About this part: how it works, how Ampage simulates it, what it's used
+  // for, the example that shows it, and (until an engineer has checked it)
+  // that it's a draft. Open or shut as last left (in this browser).
+  function aboutSection(c: Part, about: PartAbout) {
+    const info = PARTS[c.type].info!;
+    const details = document.createElement('details');
+    details.className = 'props-about';
+    try {
+      details.open = localStorage.getItem(ABOUT_KEY) === 'open';
+    } catch {
+      // no storage here: it starts shut
+    }
+    details.addEventListener('toggle', () => {
+      try {
+        localStorage.setItem(ABOUT_KEY, details.open ? 'open' : 'shut');
+      } catch {
+        // no storage here
+      }
+    });
+    const summary = document.createElement('summary');
+    summary.innerHTML = '<md-icon>arrow_drop_down</md-icon>';
+    summary.append(t('About this part'));
+    details.append(summary);
+    for (const [title, text] of [
+      ['How it works', about.how],
+      ['In Ampage', about.sim],
+      ['Used for', about.uses],
+    ]) {
+      const h = document.createElement('h3');
+      h.textContent = t(title);
+      const p = document.createElement('p');
+      p.textContent = text;
+      details.append(h, p);
+    }
+    const example = EXAMPLES.find((e) => e.id === info.example);
+    if (example) {
+      const open = document.createElement('md-text-button');
+      open.innerHTML = '<md-icon slot="icon">play_circle</md-icon>';
+      open.append(t('Open the {name} example', { name: t(example.title) }));
+      open.addEventListener('click', () => openExample(example.id));
+      details.append(open);
+    }
+    if (!info.reviewed) {
+      const draft = document.createElement('p');
+      draft.className = 'props-draft';
+      draft.textContent = t('Draft: not yet checked by an engineer.');
+      details.append(draft);
+    }
+    return details;
   }
 
   // How full an energy store is, kept live by showLive(); batteries also get a

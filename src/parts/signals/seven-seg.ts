@@ -31,6 +31,14 @@ export const defs: PartDefs<'sevenSeg'> = {
   // Pins: segments a–g and the dot (dp), then the common pin.
   sevenSeg: {
     name: '7-segment display',
+    info: {
+      summary: 'Seven LED segments and a dot on a common pin: shows a digit, driven by a decoder like the CD4511.',
+      about: {
+        how: 'Seven bar-shaped LEDs (a to g) and a dot, arranged so lighting the right ones shows any digit 0 to 9.',
+        sim: 'Eight LEDs on a common cathode or anode, in the chosen colour; each segment lights with its current.',
+        uses: 'Clocks, counters and readouts, usually through a decoder such as the CD4511.',
+      },
+    },
     letter: 'P',
     us: { letter: 'DS' },
     category: 'signals',

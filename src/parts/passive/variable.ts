@@ -29,6 +29,14 @@ export const defs: PartDefs<'potentiometer' | 'rheostat'> = {
   // at pin 0, 100 at pin 1.
   potentiometer: {
     name: 'Potentiometer',
+    info: {
+      summary: 'A resistive track with a sliding wiper: a variable voltage divider, set with its slider.',
+      about: {
+        how: 'A resistive track with a wiper that slides along it, splitting the track into two resistances: a voltage divider you can adjust.',
+        sim: 'The track between its end pins, and the wiper (third pin) at the position set with its slider. It heats with the power in the track and burns out past its rating.',
+        uses: 'Volume and level controls, setting a reference voltage, adjusting thresholds.',
+      },
+    },
     letter: 'R',
     us: {
       draw: () => `
@@ -54,6 +62,15 @@ export const defs: PartDefs<'potentiometer' | 'rheostat'> = {
   // Resistance between the pins is `position` % of the maximum.
   rheostat: {
     name: 'Variable resistor',
+    info: {
+      summary: 'A resistor whose value you set with a slider, to adjust a current or a level.',
+      about: {
+        how: 'A resistor with an adjustable value: a potentiometer used with only two of its connections.',
+        sim: 'A resistance set by its slider between zero and its full value, heating with the power it takes.',
+        uses: 'Adjusting a current, trimming a timing or a threshold.',
+      },
+      example: 'thermostat',
+    },
     letter: 'R',
     us: {
       draw: () => `

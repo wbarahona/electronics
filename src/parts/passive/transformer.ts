@@ -100,6 +100,15 @@ export const defs: PartDefs<'transformer'> = {
   // right. The windings are isolated from each other.
   transformer: {
     name: 'Transformer',
+    info: {
+      summary: 'Two coupled windings: steps an AC voltage up or down by its turns ratio and isolates the two sides; DC doesn’t pass.',
+      about: {
+        how: 'Two windings on one core: an alternating current in one makes an alternating voltage in the other, scaled by the ratio of their turns. The two sides aren’t connected.',
+        sim: 'Two coupled inductors, with the primary’s inductance and resistance, the turns ratio and how tightly they’re coupled. Only changing current is transferred: DC on the primary just heats it.',
+        uses: 'Stepping the mains down for electronics, doorbells, and isolating circuits.',
+      },
+      example: 'doorbell',
+    },
     letter: 'T',
     category: 'passive',
     group: 'Transformers',

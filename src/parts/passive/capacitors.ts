@@ -49,6 +49,14 @@ function capacitor<P extends { capacitance: number; ratedVoltage: number }>(
 export const defs: PartDefs<'capacitor' | 'electrolytic'> = {
   capacitor: {
     name: 'Capacitor',
+    info: {
+      summary: 'Stores charge: blocks DC once charged, and passes AC more easily as the frequency rises.',
+      about: {
+        how: 'Two plates separated by an insulator. Current flows only while it charges or discharges, so a steady DC voltage stops it but changing voltages pass through it.',
+        sim: 'An ideal capacitance, charging and discharging in time. Past its rated voltage it’s overstressed and fails.',
+        uses: 'Decoupling supply rails, coupling AC signals, filters, and timing with a resistor.',
+      },
+    },
     letter: 'C',
     us: {
       draw: () => `
@@ -72,6 +80,15 @@ export const defs: PartDefs<'capacitor' | 'electrolytic'> = {
   // Polarised: pin 0 is +. The + plate is drawn hollow (DIN EN 60617).
   electrolytic: {
     name: 'Electrolytic cap',
+    info: {
+      summary: 'A large polarised capacitor for smoothing and timing; connected the wrong way round, it fails.',
+      about: {
+        how: 'A capacitor with a very large capacitance for its size, made with a chemical layer that only works one way round.',
+        sim: 'A capacitance that fails if its voltage goes more than about a volt the wrong way, or past its rated voltage. Its marked capacitance can be off by its tolerance, as real ones often are by 20 %.',
+        uses: 'Smoothing a rectified supply, storing energy, and long time constants.',
+      },
+      example: 'bridge-rectifier',
+    },
     letter: 'C',
     us: {
       draw: () => `

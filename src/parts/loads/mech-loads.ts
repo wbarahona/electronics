@@ -68,6 +68,14 @@ const label = (vertical: boolean): [number, number, 'start'] => (vertical ? [24,
 export const defs: PartDefs<LoadType> = {
   conveyor: {
     name: 'Conveyor',
+    info: {
+      summary: 'A mechanical load with a steady pull, docked on a motor’s shaft: it holds a motor that can’t beat it stalled.',
+      about: {
+        how: 'A belt that the motor pulls against a steady force, whatever its speed.',
+        sim: 'A constant load torque (as a share of the motor’s rated torque) and inertia; a motor that can’t beat it is held stalled. Dock it on a motor’s shaft by placing it there.',
+        uses: 'Testing a motor at a fixed load, and seeing it stall when overloaded.',
+      },
+    },
     letter: 'G',
     category: 'loads',
     group: 'Mechanical',
@@ -79,6 +87,14 @@ export const defs: PartDefs<LoadType> = {
   },
   pump: {
     name: 'Pump',
+    info: {
+      summary: 'A mechanical load docked on a motor’s shaft, whose torque grows with the speed squared, as a pump’s or a fan’s does.',
+      about: {
+        how: 'A load whose torque grows with the square of its speed, as a pump’s or a fan’s does: hard to turn fast, easy to turn slowly.',
+        sim: 'Its torque at rated speed (as a share of the motor’s rated torque) scaled by speed squared, plus its inertia. Dock it on a motor’s shaft by placing it there.',
+        uses: 'Seeing how a motor settles with a fan or pump load.',
+      },
+    },
     letter: 'G',
     category: 'loads',
     group: 'Mechanical',
@@ -90,6 +106,14 @@ export const defs: PartDefs<LoadType> = {
   },
   flywheel: {
     name: 'Flywheel',
+    info: {
+      summary: 'A heavy wheel on a motor’s shaft: no load torque, only inertia, so the motor takes longer to speed up and keeps turning when switched off.',
+      about: {
+        how: 'A heavy wheel that stores energy in its rotation.',
+        sim: 'Pure inertia (a multiple of the motor’s own rotor), with no load torque: the motor speeds up and slows down more slowly.',
+        uses: 'Seeing the effect of inertia on starting and running down.',
+      },
+    },
     letter: 'C',
     category: 'loads',
     group: 'Mechanical',

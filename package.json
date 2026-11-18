@@ -14,6 +14,7 @@
     "app": "tauri dev",
     "app:build": "tauri build",
     "symbols": "node scripts/symbols.mjs",
+    "i18n:check": "node scripts/i18n-check.mjs",
     "og-image": "node scripts/og-image.mjs"
   },
   "devDependencies": {

@@ -15,6 +15,14 @@ export const defs: PartDefs<'ground'> = {
   // The common 0 V (DIN EN 60617 earth symbol). Carries no reference.
   ground: {
     name: 'Ground',
+    info: {
+      summary: 'The circuit’s common 0 V reference; every ground symbol is the same node.',
+      about: {
+        how: 'The point every voltage in a circuit is measured from: 0 V. In real equipment it’s often connected to the chassis or to earth.',
+        sim: 'Every Ground symbol is one node held at 0 V. A separate circuit without one is still given a reference, so it always has a solution.',
+        uses: 'The common return of a circuit, and the reference for measuring voltages and logic levels.',
+      },
+    },
     letter: 'X',
     category: 'sources',
     group: 'Reference',

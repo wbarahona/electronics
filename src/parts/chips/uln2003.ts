@@ -87,6 +87,14 @@ export const defs: PartDefs<'uln2003'> = {
   // (16–10) down to GND; each output has a flyback diode to COM (pin 9).
   uln2003: {
     name: 'ULN2003 driver',
+    info: {
+      summary: 'Seven Darlington drivers that let logic switch relays, lamps or motors, with flyback diodes built in.',
+      about: {
+        how: 'Seven Darlington transistor switches in one chip, each able to sink a few hundred milliamps, with diodes to absorb inductive kicks.',
+        sim: 'An input above about 1.6 V turns its channel on, sinking its output to GND with about a volt across it; each output has a flyback diode to COM (connect COM to the load’s supply).',
+        uses: 'Driving relays, lamps, solenoids and stepper motors from logic.',
+      },
+    },
     letter: 'K',
     us: { letter: 'U' },
     category: 'chips',

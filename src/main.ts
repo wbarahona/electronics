@@ -28,6 +28,7 @@ import { showVersion } from './version.ts';
 import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
 import { language, onLanguage, t } from './i18n/index.ts';
+import { loadPartTexts } from './i18n/parts.ts';
 import { onNorm, refText } from './norm.ts';
 import { fromShown, onDecimalMark, shownUnit, toShown } from './units.ts';
 import { createEngine } from './sim/engine.ts';
@@ -73,6 +74,8 @@ showVersion();
 // Settings first: the theme colours everything else, and the language
 // translates index.html before anything is added to it.
 const settings = createSettings(byId('settings-dialog'));
+// (The parts' descriptions in the language just set; again on each change.)
+void loadPartTexts();
 
 const board = createBoard(byId<SVGSVGElement>('board'));
 const circuit = createCircuit();
@@ -337,7 +340,7 @@ const panel = createPanel(byId('props'), shown, editor, {
   saveModule: (id) => void saveToLibrary(id),
   newer: (id) => newerFor(id)?.version ?? null,
   updateModule: (id) => updateFromLibrary(id),
-});
+}, (id) => gallery.openExample(id));
 
 // Make the selected frame a module, saying why not or what had to give.
 function makeModule() {

@@ -97,13 +97,83 @@ function gateModel(fn: (a: boolean, b: boolean) => boolean, inputs: 1 | 2 = 2): 
 }
 
 export const defs: PartDefs<'and' | 'or' | 'not' | 'nand' | 'nor' | 'xor' | 'xnor'> = {
-  and: gate('AND', '&amp;', false, 2, 'and'),
-  or: gate('OR', '≥1', false, 2, 'or'),
-  not: gate('NOT', '1', true, 1, 'not'),
-  nand: gate('NAND', '&amp;', true, 2, 'and'),
-  nor: gate('NOR', '≥1', true, 2, 'or'),
-  xor: gate('XOR', '=1', false, 2, 'xor'),
-  xnor: gate('XNOR', '=1', true, 2, 'xor'),
+  and: {
+    ...gate('AND', '&amp;', false, 2, 'and'),
+    info: {
+      summary: 'Logic AND: its output is 1 only when both inputs are 1.',
+      about: {
+        how: 'A logic gate whose output is 1 only when all its inputs are 1.',
+        sim: 'Logic gates run on a built-in 5 V supply against 0 V: inputs read 1 above 55 % of it and 0 below 45 % (keeping their last level between), barely loading the signal; outputs drive real loads through 25 Ω. Each gate switches one step after its inputs, as real gates have a delay.',
+        uses: 'Combining conditions: this AND that.',
+      },
+    },
+  },
+  or: {
+    ...gate('OR', '≥1', false, 2, 'or'),
+    info: {
+      summary: 'Logic OR: its output is 1 when either input is 1, or both.',
+      about: {
+        how: 'A logic gate whose output is 1 when any input is 1.',
+        sim: 'As the AND gate: a built-in 5 V logic supply, inputs with hysteresis, 25 Ω outputs, and a one-step delay.',
+        uses: 'Combining conditions: this OR that.',
+      },
+    },
+  },
+  not: {
+    ...gate('NOT', '1', true, 1, 'not'),
+    info: {
+      summary: 'Logic NOT (an inverter): its output is the opposite of its input.',
+      about: {
+        how: 'A logic gate with one input whose output is always the opposite.',
+        sim: 'As the AND gate: a built-in 5 V logic supply, inputs with hysteresis, a 25 Ω output, and a one-step delay. Chain an odd number into a loop and it oscillates.',
+        uses: 'Inverting a signal, and ring oscillators.',
+      },
+    },
+  },
+  nand: {
+    ...gate('NAND', '&amp;', true, 2, 'and'),
+    info: {
+      summary: 'Logic NAND: its output is 0 only when both inputs are 1, the opposite of AND.',
+      about: {
+        how: 'A logic gate whose output is 0 only when all its inputs are 1: AND followed by NOT. Any logic can be built from NAND gates alone.',
+        sim: 'As the AND gate: a built-in 5 V logic supply, inputs with hysteresis, 25 Ω outputs, and a one-step delay.',
+        uses: 'Latches, and building other gates.',
+      },
+    },
+  },
+  nor: {
+    ...gate('NOR', '≥1', true, 2, 'or'),
+    info: {
+      summary: 'Logic NOR: its output is 1 only when both inputs are 0, the opposite of OR.',
+      about: {
+        how: 'A logic gate whose output is 1 only when all its inputs are 0: OR followed by NOT.',
+        sim: 'As the AND gate: a built-in 5 V logic supply, inputs with hysteresis, 25 Ω outputs, and a one-step delay.',
+        uses: 'Set–reset latches, and building other gates.',
+      },
+    },
+  },
+  xor: {
+    ...gate('XOR', '=1', false, 2, 'xor'),
+    info: {
+      summary: 'Logic XOR: its output is 1 when its inputs differ.',
+      about: {
+        how: 'A logic gate whose output is 1 when its inputs differ.',
+        sim: 'As the AND gate: a built-in 5 V logic supply, inputs with hysteresis, 25 Ω outputs, and a one-step delay.',
+        uses: 'Adders, parity, and comparing two bits.',
+      },
+    },
+  },
+  xnor: {
+    ...gate('XNOR', '=1', true, 2, 'xor'),
+    info: {
+      summary: 'Logic XNOR: its output is 1 when its inputs are the same.',
+      about: {
+        how: 'A logic gate whose output is 1 when its inputs are the same.',
+        sim: 'As the AND gate: a built-in 5 V logic supply, inputs with hysteresis, 25 Ω outputs, and a one-step delay.',
+        uses: 'Equality checks.',
+      },
+    },
+  },
 };
 
 export const models: ModelDefs<'and' | 'or' | 'not' | 'nand' | 'nor' | 'xor' | 'xnor'> = {

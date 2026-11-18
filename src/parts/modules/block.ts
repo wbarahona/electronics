@@ -199,6 +199,14 @@ export const defs: PartDefs<'module'> = {
   // EN 81346-2 class A (an assembly), as under ASME Y14.44.
   module: {
     name: 'Module',
+    info: {
+      summary: 'A copy of a module: a section of a circuit made into one block; double-click it to look inside.',
+      about: {
+        how: 'A section of a circuit made into one block with pins, placed as often as you like; every copy is the same module.',
+        sim: 'Each copy runs its own copy of the parts inside, with its own readings and switch positions. Double-click to look inside; Edit module changes every copy.',
+        uses: 'Reusing sub-circuits, and keeping big drawings readable.',
+      },
+    },
     letter: 'A',
     category: 'modules',
     pins: (p) => blockLayout(p).pins,

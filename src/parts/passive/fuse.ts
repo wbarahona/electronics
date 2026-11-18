@@ -15,6 +15,14 @@ const R_FUSE = 0.01;
 export const defs: PartDefs<'fuse'> = {
   fuse: {
     name: 'Fuse',
+    info: {
+      summary: 'Nearly a wire until the current goes well past its rating; then it blows and opens the circuit.',
+      about: {
+        how: 'A thin wire that melts when too much current flows through it, protecting the rest of the circuit.',
+        sim: 'Nearly a wire until it carries well over its rating; then it heats and blows within moments, and opens the circuit. Replace it from its panel.',
+        uses: 'Protecting supplies, wiring and parts from short circuits and overloads.',
+      },
+    },
     letter: 'F',
     us: {
       draw: () => `

@@ -125,6 +125,15 @@ export const defs: PartDefs<'ne555'> = {
   // NE555 timer, pins in datasheet order 1–8.
   ne555: {
     name: '555 timer',
+    info: {
+      summary: 'A timer chip: an oscillator (astable) or a one-shot pulse (monostable), timed by resistors and a capacitor.',
+      about: {
+        how: 'A timer chip: two comparators and a flip-flop that charge and discharge a capacitor between a third and two thirds of the supply.',
+        sim: 'A behavioural 555 on its own supply pins: comparators at 1/3 and 2/3 of VCC, the discharge transistor, reset, and an output that drops about 1.7 V from VCC when high. Its readout shows the frequency it runs at.',
+        uses: 'Blinkers, tone generators, timers and PWM.',
+      },
+      example: '555-blinker',
+    },
     letter: 'K',
     us: { letter: 'U' },
     category: 'chips',

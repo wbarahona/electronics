@@ -33,6 +33,14 @@ export const defs: PartDefs<'solenoid'> = {
   // when pulled.
   solenoid: {
     name: 'Solenoid',
+    info: {
+      summary: 'A coil with a plunger that pulls in once its current reaches its rating, on AC or DC.',
+      about: {
+        how: 'A coil around a moveable iron plunger: current through the coil pulls the plunger in.',
+        sim: 'A coil (its resistance from rated voltage and current, plus its inductance). The plunger pulls in at three quarters of its rated current and drops out below 40 %, judged by RMS on AC. It overheats if overdriven.',
+        uses: 'Door locks, valves, and pushing or pulling things on command.',
+      },
+    },
     letter: 'M',
     // US: a coil with its plunger (core) above, out at rest and in when pulled.
     us: {

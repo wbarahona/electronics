@@ -36,6 +36,15 @@ export const defs: PartDefs<'ntc'> = {
   // NTC thermistor: resistance falls as it warms (B-parameter model).
   ntc: {
     name: 'NTC thermistor',
+    info: {
+      summary: 'A thermistor whose resistance falls as it warms: senses the temperature around it, including heaters and hot parts nearby.',
+      about: {
+        how: 'A thermistor with a negative temperature coefficient: its resistance falls steeply as it warms.',
+        sim: 'Its resistance follows its temperature by the B-parameter equation. It feels the ambient temperature and hot parts nearby, and its own current warms it a little too.',
+        uses: 'Measuring temperature, thermostats, and limiting inrush current.',
+      },
+      example: 'thermostat',
+    },
     letter: 'R',
     us: {
       letter: 'RT',

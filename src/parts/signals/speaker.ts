@@ -54,6 +54,14 @@ export const defs: PartDefs<'speaker'> = {
   // Loudspeaker (DIN: magnet and cone).
   speaker: {
     name: 'Speaker',
+    info: {
+      summary: 'A loudspeaker: plays the AC part of the voltage across it, at that signal’s frequency.',
+      about: {
+        how: 'A coil on a cone in a magnet’s field: a changing current moves the cone, which makes sound.',
+        sim: 'A resistance (its impedance) that plays the AC part of the voltage across it, at that signal’s own frequency, as loud as its power against its rating. You hear it while the simulation runs.',
+        uses: 'Sound from oscillators, amplifiers and audio circuits.',
+      },
+    },
     letter: 'P',
     us: { letter: 'LS' },
     category: 'signals',

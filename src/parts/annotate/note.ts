@@ -50,6 +50,14 @@ const colorOf = (p: PropsByType['note']) => (THEMES.find((t) => t.id === p.color
 export const defs: PartDefs<'note'> = {
   note: {
     name: 'Note',
+    info: {
+      summary: 'A sticky note on the board, to explain a circuit; a part’s reference in braces ({R1}) follows the drawing standard.',
+      about: {
+        how: 'A note on the drawing, to explain what a circuit does.',
+        sim: 'Not part of the circuit. A reference in braces, like {R1}, shows as that part’s reference in the drawing standard in use.',
+        uses: 'Explaining circuits and examples.',
+      },
+    },
     letter: 'N',
     category: 'annotate',
     pins: [],

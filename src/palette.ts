@@ -5,6 +5,7 @@ import type { Editor } from './editor.ts';
 import { onLanguage, t } from './i18n/index.ts';
 import { onNorm } from './norm.ts';
 import { rememberPart } from './recent.ts';
+import { partSummary } from './i18n/parts.ts';
 import { track } from './analytics.ts';
 import { fromControl } from './keys.ts';
 import type { PartType, Props, PropsByType } from './types.ts';
@@ -48,6 +49,10 @@ export function icon(type: PartType, props?: Props): { box: string; width: numbe
   iconCache.set(key, result);
   return result;
 }
+
+// A part's tooltip in a list of parts: what it is (or, for one without a
+// description, how to place it).
+export const partTooltip = (type: PartType, hint: string) => partSummary(type) || hint;
 
 // A module in the Modules tray (from the library): its block's values, to
 // draw and drag it, and how to place it and offer its menu.
@@ -125,7 +130,7 @@ export function createPalette(
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'palette-item';
-    btn.title = t('Drag {part} onto the board', { part: t(part.name) });
+    btn.title = partTooltip(type, t('Drag {part} onto the board', { part: t(part.name) }));
     btn.innerHTML = `
       <md-focus-ring></md-focus-ring>
       <md-ripple></md-ripple>

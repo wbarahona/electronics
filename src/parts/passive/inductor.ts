@@ -14,6 +14,14 @@ export const defs: PartDefs<'inductor'> = {
   // IEC coil: four half-turns. `resistance` is the winding's own resistance.
   inductor: {
     name: 'Inductor',
+    info: {
+      summary: 'A coil that resists changes in current: passes DC, opposes AC more as the frequency rises, and kicks back when switched off.',
+      about: {
+        how: 'A coil of wire whose magnetic field stores energy. It resists any change in current: suddenly interrupted, it produces a high voltage spike.',
+        sim: 'An inductance in series with its winding resistance; the current through it changes only gradually, and it heats with the current past its rating.',
+        uses: 'Filters, chokes in power supplies, and storing energy in switching converters.',
+      },
+    },
     letter: 'R',
     us: { letter: 'L' },
     category: 'passive',

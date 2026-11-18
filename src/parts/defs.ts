@@ -27,7 +27,8 @@ import type { PartType, Point, Props, PropsByType } from '../types.ts';
 // `labelAt` places it exactly, as [x, y, text-anchor] in screen space for the
 // part lying horizontally or vertically. Parts that can be mounted on a module
 // block's front panel as more than a lamp have `onPanel`: how they look there
-// (the display without its pins, lit the same way as on the board).
+// (the display without its pins, lit the same way as on the board). `info`
+// describes the part to the user (see PartInfo).
 
 export const LIGHT_COLORS = {
   warm: '#ffc94d', // a plain filament lamp
@@ -171,6 +172,27 @@ export interface PartDef<P> {
   draw: (p: P, broken: boolean) => string;
   us?: UsDef<P>;
   onPanel?: (p: P) => PanelLook;
+  info?: PartInfo;
+}
+
+// What a part is, for the user: `summary`, one plain sentence (in the tray's
+// and search's tooltips and at the top of its panel), and `about`, a little
+// more in its panel's About this part: how it works, how Ampage simulates it
+// (and where that stops short of the real thing), and what it's used for;
+// `example` is the example circuit (src/examples) that shows it. In English
+// here; other languages in src/i18n/parts/. A description is a draft until an
+// engineer has checked it (`reviewed`); `npm run i18n:check` lists the drafts.
+export interface PartInfo {
+  summary: string;
+  about?: PartAbout;
+  example?: string;
+  reviewed?: boolean;
+}
+
+export interface PartAbout {
+  how: string;
+  sim: string;
+  uses: string;
 }
 
 // A part as it looks on a front panel, centred on (0, 0): its markup and how
@@ -216,6 +238,7 @@ export interface AnyPartDef {
   draw: (p: Props, broken: boolean) => string;
   us?: UsDef<Props>;
   onPanel?: (p: Props) => PanelLook;
+  info?: PartInfo;
 }
 
 // Definitions for the part types K, each checked against its values.

@@ -116,9 +116,39 @@ function flipFlopModel(
 }
 
 export const defs: PartDefs<'dff' | 'jkff' | 'tff'> = {
-  dff: flipFlop('D flip-flop', 'D', [['1D', -20], ['C1', 20]]),
-  jkff: flipFlop('JK flip-flop', 'JK', [['1J', -20], ['C1', 0], ['1K', 20]]),
-  tff: flipFlop('T flip-flop', 'T', [['1T', -20], ['C1', 20]]),
+  dff: {
+    ...flipFlop('D flip-flop', 'D', [['1D', -20], ['C1', 20]]),
+    info: {
+      summary: 'Stores its D input at each rising clock edge; S and R set or reset it at once.',
+      about: {
+        how: 'A memory for one bit: at each rising clock edge it takes the value at D and holds it until the next.',
+        sim: 'Updates on the rising edge of C; its asynchronous S and R set or reset it at once (R wins if both). Logic levels as the gates’; it doesn’t see an edge at power-up.',
+        uses: 'Registers, synchronising signals, dividers and shift registers.',
+      },
+    },
+  },
+  jkff: {
+    ...flipFlop('JK flip-flop', 'JK', [['1J', -20], ['C1', 0], ['1K', 20]]),
+    info: {
+      summary: 'At each rising clock edge J sets it, K resets it, and both together toggle it; S and R act at once.',
+      about: {
+        how: 'A flip-flop that sets with J, resets with K, and toggles with both at each rising clock edge.',
+        sim: 'As the D flip-flop: rising-edge clock, asynchronous S and R (R wins), logic levels as the gates’.',
+        uses: 'Counters and state machines.',
+      },
+    },
+  },
+  tff: {
+    ...flipFlop('T flip-flop', 'T', [['1T', -20], ['C1', 20]]),
+    info: {
+      summary: 'Toggles its output at each rising clock edge while T is 1: divides a clock by two.',
+      about: {
+        how: 'A flip-flop that changes state at each rising clock edge while T is 1, halving the clock’s frequency.',
+        sim: 'As the D flip-flop: rising-edge clock, asynchronous S and R (R wins), logic levels as the gates’.',
+        uses: 'Frequency dividers and ripple counters.',
+      },
+    },
+  },
 };
 
 export const models: ModelDefs<'dff' | 'jkff' | 'tff'> = {

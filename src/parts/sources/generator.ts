@@ -15,6 +15,15 @@ export const defs: PartDefs<'generator'> = {
   // terminal that goes positive first.
   generator: {
     name: 'AC generator',
+    info: {
+      summary: 'A sine-wave AC source, set by its RMS voltage and frequency; pin 0 goes positive first.',
+      about: {
+        how: 'A source of alternating voltage that swings smoothly between positive and negative, like the mains or a signal generator.',
+        sim: 'A sine wave set by its RMS voltage, frequency and starting phase; pin 0 goes positive first. Readouts of AC parts show RMS and average values.',
+        uses: 'Feeding transformers, filters and rectifiers, and testing how a circuit responds to AC.',
+      },
+      example: 'rgb-rainbow',
+    },
     letter: 'G',
     us: { values: { frequency: 60 } },
     category: 'sources',

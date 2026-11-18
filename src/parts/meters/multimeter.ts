@@ -24,6 +24,15 @@ export const defs: PartDefs<'voltmeter' | 'ammeter'> = {
   // Reads the voltage from + to COM: almost no current drawn.
   voltmeter: {
     name: 'Voltmeter',
+    info: {
+      summary: 'Measures the voltage across it (DC, or AC as RMS) while drawing almost no current: connect it across a part.',
+      about: {
+        how: 'Measures the voltage between its two leads. Connected across a part, it should draw as little current as possible.',
+        sim: 'A 10 MΩ input, reading DC or AC (RMS) on its display; switch between them on its tab. It’s rated to 1000 V.',
+        uses: 'Measuring voltages across parts and supplies.',
+      },
+      example: 'bridge-rectifier',
+    },
     letter: 'P',
     us: { letter: 'M' },
     category: 'meters',
@@ -42,6 +51,14 @@ export const defs: PartDefs<'voltmeter' | 'ammeter'> = {
   // dropped. An internal fuse protects it.
   ammeter: {
     name: 'Ammeter',
+    info: {
+      summary: 'Measures the current through it (DC, or AC as RMS): connect it in series. Its internal fuse blows past 10 A.',
+      about: {
+        how: 'Measures the current flowing through it, so it must be connected in series, in the path of the current.',
+        sim: 'A 0.05 Ω shunt, reading DC or AC (RMS) on its display. Its internal fuse blows past 10 A, as a real meter’s does when connected across a supply by mistake.',
+        uses: 'Measuring the current a part or circuit draws.',
+      },
+    },
     letter: 'P',
     us: { letter: 'M' },
     category: 'meters',

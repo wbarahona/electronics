@@ -31,6 +31,15 @@ const BATTERY_PRESETS: Preset<PropsByType['battery']>[] = [
 export const defs: PartDefs<'battery'> = {
   battery: {
     name: 'Battery',
+    info: {
+      summary: 'A DC source with internal resistance: it drains as it delivers current, its voltage sagging as its charge runs down.',
+      about: {
+        how: 'A chemical cell turns stored chemical energy into a DC voltage. Some of that voltage is lost inside it as it delivers current, the more the harder it works.',
+        sim: 'A voltage behind its internal resistance. Its charge (in Ah) runs down with the current it delivers, and its voltage follows a discharge curve, falling off near empty; Recharge refills it. Past its max current it overheats.',
+        uses: 'Portable circuits, backup power, and anything that needs a steady DC supply away from the mains.',
+      },
+      example: '555-blinker',
+    },
     letter: 'G',
     us: { letter: 'BT' },
     category: 'sources',

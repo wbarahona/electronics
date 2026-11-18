@@ -10,6 +10,12 @@ export function createGallery(dialog: MdDialog, open: (text: string, name: strin
   const list = dialog.querySelector<HTMLElement>('.gallery-list')!;
   dialog.querySelector('.gallery-close')!.addEventListener('click', () => dialog.close());
 
+  // Open an example (as picking its card does).
+  async function openExample(example: Example) {
+    track(`example/${example.id}`);
+    open(await example.load(), `${t(example.title)}.ampage`);
+  }
+
   function card(example: Example) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -24,10 +30,9 @@ export function createGallery(dialog: MdDialog, open: (text: string, name: strin
       </span>`;
     button.querySelector('.gallery-title')!.textContent = t(example.title);
     button.querySelector('.gallery-description')!.textContent = t(example.description);
-    button.addEventListener('click', async () => {
+    button.addEventListener('click', () => {
       dialog.close();
-      track(`example/${example.id}`);
-      open(await example.load(), `${t(example.title)}.ampage`);
+      void openExample(example);
     });
     return button;
   }
@@ -36,5 +41,12 @@ export function createGallery(dialog: MdDialog, open: (text: string, name: strin
   render();
   onLanguage(render);
 
-  return { open: () => dialog.show() };
+  return {
+    open: () => dialog.show(),
+    // (From a part's About this part.)
+    openExample: (id: string) => {
+      const example = EXAMPLES.find((e) => e.id === id);
+      if (example) void openExample(example);
+    },
+  };
 }

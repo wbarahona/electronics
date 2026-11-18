@@ -132,6 +132,14 @@ export const defs: PartDefs<'tube' | 'ballast' | 'starter'> = {
   // the right; the arc runs between them.
   tube: {
     name: 'Fluorescent tube',
+    info: {
+      summary: 'A fluorescent tube: two filaments and an arc that strikes at high voltage; it needs a ballast and a starter.',
+      about: {
+        how: 'A glass tube of gas with a filament at each end. Once the gas breaks down, an arc conducts through it and the coating glows.',
+        sim: 'Two filaments and an arc between them that strikes past its strike voltage and then runs at about its arc voltage. It needs a ballast to limit the current and a starter to preheat it.',
+        uses: 'Classic fluorescent lighting with a choke and a starter.',
+      },
+    },
     letter: 'E',
     us: { letter: 'DS' },
     category: 'loads',
@@ -153,6 +161,14 @@ export const defs: PartDefs<'tube' | 'ballast' | 'starter'> = {
   // The tube's choke: a coil on an iron core.
   ballast: {
     name: 'Ballast',
+    info: {
+      summary: 'A choke in series with a fluorescent tube: limits its current, and gives the kick that strikes the arc.',
+      about: {
+        how: 'An inductor in series with a fluorescent tube. It limits the tube’s current and, when the starter opens, gives the voltage kick that strikes the arc.',
+        sim: 'An inductance with its winding resistance, sized for its tube.',
+        uses: 'The choke of a fluorescent light.',
+      },
+    },
     letter: 'R',
     us: { letter: 'L' },
     category: 'loads',
@@ -170,6 +186,14 @@ export const defs: PartDefs<'tube' | 'ballast' | 'starter'> = {
   // Glow starter: a bimetal contact inside a small glow lamp.
   starter: {
     name: 'Starter',
+    info: {
+      summary: 'A glow starter: preheats a fluorescent tube’s filaments, then opens so the ballast can strike the arc.',
+      about: {
+        how: 'A small glow lamp with a bimetal contact. Its glow warms the bimetal until it closes and preheats the tube’s filaments; then it cools and opens, and the ballast’s kick strikes the tube.',
+        sim: 'Glows (drawing a little current) when there’s enough voltage across it, warming its bimetal until it closes, then cools and opens again: the full start cycle of a fluorescent light.',
+        uses: 'Starting a fluorescent tube.',
+      },
+    },
     letter: 'S',
     category: 'loads',
     group: 'Fluorescent',

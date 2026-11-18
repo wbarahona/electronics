@@ -331,6 +331,15 @@ export const defs: PartDefs<'motor'> = {
   // shaft turns (.reverse: counter-clockwise), its arrow pointing that way.
   motor: {
     name: 'Motor',
+    info: {
+      summary: 'A DC, single-phase or three-phase motor turning a load on its shaft; its speed and current follow the load, and it stalls if overloaded.',
+      about: {
+        how: 'Turns electrical power into rotation. A DC motor’s speed rises with its voltage and its current with its load; an induction (AC) motor turns a little slower than its supply’s rotating field, slipping more as its load grows.',
+        sim: 'Shaft mechanics with inertia and friction, driving a load docked on its shaft. DC: back-EMF and armature resistance. AC: slip, torque from the Kloss curve up to its breakdown torque, and current from an equivalent circuit, at the frequency measured at its terminals. Swap two phases (or DC polarity) to reverse it. Stalled, it overheats.',
+        uses: 'Fans, pumps, conveyors, machine drives; three-phase motors with contactors in industry.',
+      },
+      example: 'motor-starter',
+    },
     letter: 'M',
     // US (IEEE 315): the circle reads MOT; its class letter is B.
     us: { letter: 'B', draw: (p) => motorSymbol(p, 'MOT'), values: { ratedFrequency: 60 } },

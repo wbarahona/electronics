@@ -50,6 +50,14 @@ export const defs: PartDefs<'bicolorLed'> = {
   // (bottom) from pin 1.
   bicolorLed: {
     name: 'Bi-colour LED',
+    info: {
+      summary: 'Red and green LEDs back to back: red one way round, green the other, amber on AC.',
+      about: {
+        how: 'A red and a green LED connected back to back in one package: the direction of the current sets the colour.',
+        sim: 'Red lights when pin 0 is positive, green the other way; on AC both light by turns and it shows amber.',
+        uses: 'Two-state indicators (on/off, charge/full) with only two wires.',
+      },
+    },
     letter: 'P',
     us: { letter: 'D' },
     category: 'signals',

@@ -85,6 +85,15 @@ export const defs: PartDefs<'diode' | 'schottky' | 'zener'> = {
   // Pin 0 is the anode, pin 1 the cathode (the bar), as for the LED.
   diode: {
     name: 'Diode',
+    info: {
+      summary: 'Lets current through one way only, from anode to cathode, once past about 0.65 V: rectifies AC and blocks reverse voltage.',
+      about: {
+        how: 'A semiconductor junction that conducts forwards (anode to cathode) once past its forward voltage, and blocks the other way.',
+        sim: 'A junction with its forward voltage and max current, from its part number. Reverse voltage past its rating stresses it, and too much current either way burns it out.',
+        uses: 'Rectifying AC, protecting against reverse polarity, and absorbing a coil’s kick (flyback).',
+      },
+      example: 'bridge-rectifier',
+    },
     letter: 'R',
     us: { letter: 'D' },
     category: 'semiconductors',
@@ -102,6 +111,14 @@ export const defs: PartDefs<'diode' | 'schottky' | 'zener'> = {
   },
   schottky: {
     name: 'Schottky diode',
+    info: {
+      summary: 'A fast diode with a low forward drop (about 0.3 V), for power supplies and protection.',
+      about: {
+        how: 'A metal–semiconductor diode with a lower forward voltage and faster switching than an ordinary diode.',
+        sim: 'As the diode, with a forward voltage of about 0.3 V.',
+        uses: 'Efficient rectifiers, power supplies and protection.',
+      },
+    },
     letter: 'R',
     us: { letter: 'D' },
     category: 'semiconductors',
@@ -121,6 +138,15 @@ export const defs: PartDefs<'diode' | 'schottky' | 'zener'> = {
   // voltage and holds it there.
   zener: {
     name: 'Zener diode',
+    info: {
+      summary: 'A diode that, connected in reverse, holds a steady voltage across it: a simple voltage reference or regulator.',
+      about: {
+        how: 'A diode made to break down at a precise reverse voltage and hold it steady while current flows.',
+        sim: 'Forwards, an ordinary diode; reversed, it holds its zener voltage. It heats with the power it takes and fails past its rating.',
+        uses: 'Voltage references, simple regulators and overvoltage protection.',
+      },
+      example: 'bridge-rectifier',
+    },
     letter: 'R',
     us: { letter: 'D', values: { partNumber: '1N4733A' } },
     category: 'semiconductors',

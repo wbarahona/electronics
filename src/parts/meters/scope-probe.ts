@@ -17,6 +17,15 @@ export const defs: PartDefs<'scopeProbe'> = {
   // trace's colour.
   scopeProbe: {
     name: 'Scope probe',
+    info: {
+      summary: 'Feeds its point’s voltage to the oscilloscope, as its channel’s trace.',
+      about: {
+        how: 'Connects a point of the circuit to an oscilloscope, to see its voltage over time.',
+        sim: 'Its point’s voltage against 0 V, shown as its channel’s trace in the scope panel; it loads the point as a 10 MΩ scope input would.',
+        uses: 'Watching waveforms: ripple, oscillators, switching.',
+      },
+      example: 'bridge-rectifier',
+    },
     letter: 'P',
     us: { letter: 'TP' },
     category: 'meters',

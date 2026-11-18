@@ -40,6 +40,15 @@ export const defs: PartDefs<'changeover'> = {
   // throw 1 (top right) or, thrown, on throw 2 (bottom right).
   changeover: {
     name: 'Changeover switch',
+    info: {
+      summary: 'A switch that connects its common to one of two contacts: two-way switching, like a stairway light.',
+      about: {
+        how: 'A switch that connects its common terminal to one of two others.',
+        sim: 'Its common joined to one contact or the other; click its control to throw it.',
+        uses: 'Two-way light switching, selecting between two sources or signals.',
+      },
+      example: 'stairway-light',
+    },
     letter: 'S',
     category: 'switches',
     group: 'Toggle',

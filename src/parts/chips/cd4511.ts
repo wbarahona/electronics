@@ -42,6 +42,14 @@ export const defs: PartDefs<'cd4511'> = {
   // cathode display. Pins in DIP order 1–16.
   cd4511: {
     name: 'CD4511 decoder',
+    info: {
+      summary: 'A CMOS BCD-to-7-segment decoder: turns a 4-bit number into the segments of a common-cathode display.',
+      about: {
+        how: 'A CMOS chip that decodes a 4-bit binary number (BCD) into the seven segments of a digit, with a latch to hold it.',
+        sim: 'BCD inputs A–D, latch enable LE, lamp test and blanking (active low); its outputs a–g source current for a common-cathode display, so each segment still needs a resistor. Above 9 it blanks. Runs on its own VDD and VSS.',
+        uses: 'Driving 7-segment displays from counters.',
+      },
+    },
     letter: 'K',
     us: { letter: 'U' },
     category: 'chips',

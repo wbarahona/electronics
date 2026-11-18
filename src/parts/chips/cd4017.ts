@@ -32,6 +32,15 @@ export const defs: PartDefs<'cd4017'> = {
   // high output Q0 → Q9 → Q0; RST high returns to Q0; CO is high for 0–4.
   cd4017: {
     name: 'CD4017 counter',
+    info: {
+      summary: 'A CMOS decade counter: one of its ten outputs is high at a time, stepping on at each clock pulse.',
+      about: {
+        how: 'A CMOS decade counter: it lights one of ten outputs at a time, moving on at each clock pulse.',
+        sim: 'Each rising clock edge (with INH low) moves the one high output from Q0 to Q9 and round again; RST high returns it to Q0, and CO is high for 0–4. Runs on its own VDD and VSS.',
+        uses: 'Running lights, sequencers and dividing by ten.',
+      },
+      example: 'decade-counter',
+    },
     letter: 'K',
     us: { letter: 'U' },
     category: 'chips',

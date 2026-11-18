@@ -26,6 +26,14 @@ const TERMINALS_NEAR = '<circle class="dot-hollow" cx="-10" r="3" /><circle clas
 export const defs: PartDefs<'switch' | 'button' | 'buttonNC'> = {
   switch: {
     name: 'Switch',
+    info: {
+      summary: 'An on/off switch: click its control to open or close it.',
+      about: {
+        how: 'A contact that is either open or closed until you change it.',
+        sim: 'Open, or closed with a tiny resistance; its contacts heat past their rated current. Click its control on the board to flip it.',
+        uses: 'Turning circuits on and off, and setting inputs by hand.',
+      },
+    },
     letter: 'S',
     category: 'switches',
     group: 'Toggle',
@@ -50,6 +58,15 @@ export const defs: PartDefs<'switch' | 'button' | 'buttonNC'> = {
   // Normally-open push button: closed only while held down.
   button: {
     name: 'Push button (NO)',
+    info: {
+      summary: 'A push button that closes only while it’s held (normally open).',
+      about: {
+        how: 'A momentary switch: its contact closes only while you press it, and springs open again (normally open, NO).',
+        sim: 'Closed while held: press and hold its control on the board.',
+        uses: 'Start buttons, doorbells, and logic inputs.',
+      },
+      example: 'doorbell',
+    },
     letter: 'S',
     category: 'switches',
     group: 'Push buttons',
@@ -84,6 +101,15 @@ export const defs: PartDefs<'switch' | 'button' | 'buttonNC'> = {
   // the blade rests against a stop on the fixed contact; pressing lifts it off.
   buttonNC: {
     name: 'Push button (NC)',
+    info: {
+      summary: 'A push button that opens only while it’s held (normally closed): a stop button.',
+      about: {
+        how: 'A momentary switch whose contact is closed at rest and opens while you press it (normally closed, NC).',
+        sim: 'Open while held: press and hold its control on the board.',
+        uses: 'Stop buttons and safety circuits, which must break the circuit when pressed.',
+      },
+      example: 'motor-starter',
+    },
     letter: 'S',
     category: 'switches',
     group: 'Push buttons',

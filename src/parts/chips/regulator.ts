@@ -79,6 +79,15 @@ export const defs: PartDefs<'regulator'> = {
   // Fixed linear voltage regulator, 78xx family (7805 by default).
   regulator: {
     name: 'Voltage regulator',
+    info: {
+      summary: 'Holds its output at a set voltage (a 7805 at 5 V) as long as its input stays a couple of volts higher.',
+      about: {
+        how: 'A linear regulator: it holds its output at a fixed voltage by dropping the difference from its input, turning it into heat.',
+        sim: 'Holds OUT at its set voltage above GND while its input is at least its dropout voltage higher; below that the output follows the input. It heats with the power it drops and fails past its rating or max current.',
+        uses: 'A steady 5 V or 12 V supply from a higher, rougher one.',
+      },
+      example: 'enclosure-cooling',
+    },
     letter: 'T',
     us: { letter: 'U' },
     category: 'chips',
