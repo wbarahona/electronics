@@ -458,10 +458,11 @@ export function createEngine(circuit: Circuit) {
         v, i, p, vavg: 0, iavg: 0, vrms: 0, irms: 0, pavg: 0, heat: el.state.heat ?? 0, load: 0, ac: engine.ac,
         pins, pinV, state: el.state, extraRms: [],
       };
+      // (Averages first: AC parts judge their load by RMS values.)
+      average(el, r, dt);
       r.load = el.model.thermal && !el.broken ? el.model.thermal.load(r, el.props) : 0;
       if (el.model.thermal && !el.broken) r.celsius = thermalState(el, r.heat).celsius;
       r.level = el.model.level?.(r, el.props);
-      average(el, r, dt);
       engine.results.set(el.id, r);
     }
     // What flows into a block at each pin: what the parts inside it take from

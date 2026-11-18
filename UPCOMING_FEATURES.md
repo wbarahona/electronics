@@ -30,11 +30,6 @@ sheet frame and title block for printing, and modules: see
 
 ## Simulation depth
 
-- **AC motor slip model**: induction motors' speed from supply frequency and
-  load (slip), current and power factor following load, stalling past
-  breakdown torque; synchronous speed from the rated speed. DC motors and the
-  fan already run on shaft mechanics (src/sim/shared/shaft.ts); AC motors
-  still ramp to a fixed speed, so their losses and efficiency aren't shown.
 - **Frequency response (Bode plot)**: sweep a frequency through a filter or
   amplifier and plot gain and phase.
 - **DC sweep / I–V curve tracer**: plot a diode's, LED's or transistor's

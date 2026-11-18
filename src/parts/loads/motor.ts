@@ -22,7 +22,17 @@ export interface PartProps {
   // turns its set way (its start winding's connection fixes it).
   // `ratedSpeed` (rpm) and `ratedPower` (W) are at the shaft, at its rated
   // load. Its shaft (on top) drives a load docked onto it (see src/shaft.ts).
-  motor: { supply: MotorSupply; ratedVoltage: number; ratedPower: number; ratedSpeed: number; direction: MotorDirection };
+  // An AC motor's `ratedFrequency` (Hz) is its nameplate's; `breakdown` is the
+  // most torque it can give, as a multiple of its rated torque (pull-out).
+  motor: {
+    supply: MotorSupply;
+    ratedVoltage: number;
+    ratedPower: number;
+    ratedSpeed: number;
+    direction: MotorDirection;
+    ratedFrequency: number;
+    breakdown: number;
+  };
 }
 
 // --- Motors ------------------------------------------------------------------
@@ -35,33 +45,84 @@ export interface PartProps {
 // fast on little current, loaded it slows and draws more, and past 5× rated
 // torque a conveyor holds it stalled.
 //
-// AC: induction windings, a resistance and inductance in series whose values
-// slide with speed from locked rotor (a fifth of the running impedance, power
-// factor 0.4: the starting surge) to running (power factor 0.8). It runs up
-// over AC_SPIN_UP (longer with a heavy load's inertia) once its supply is
-// above AC_START of rated, and runs down below. (Its speed doesn't yet
-// depend on the load's torque.) Three-phase windings are in delta, one between each pair of
-// terminals; a three-phase motor runs only with all three lines present, and
-// turns the way its phase sequence drives it: swapped while running, it
-// brakes through standstill (drawing its starting surge) and runs up the
-// other way. Inductances are sized for 50 Hz.
+// AC: an induction motor. Its stator's field turns at the synchronous speed,
+// set by the supply's frequency (measured at its terminals) and its number of
+// poles (the fewest that put synchronous speed above its rated speed: 1400 rpm
+// at 50 Hz is a 4-pole motor, synchronous at 1500). The rotor lags the field
+// by its slip, and slip makes torque, along the Kloss curve through rated
+// torque at rated slip, rising to `breakdown` × rated, then falling to the
+// standstill (starting) torque; it scales with (V/f)², so a sagging supply
+// slows it and a weak one stalls it. Its shaft (as DC's) settles where that
+// torque meets the load's: unloaded it runs near synchronous speed, loaded it
+// slips more, and pulled past breakdown it stalls. Each winding is the
+// textbook equivalent circuit (stator, magnetizing reactance, rotor resistance
+// over slip), sized so that at rated slip it takes its rated power in at
+// power factor MOTOR_PF: light it draws mostly magnetizing current at a poor
+// power factor, stalled about five times rated current at a power factor
+// near 0.4, and its current follows its load in between. Three-phase windings
+// are in delta, one between each pair of terminals; a three-phase motor runs
+// only with all three lines present, and its field turns the way its phase
+// sequence drives it: swapped while running, the motor brakes against the
+// field (plugging, drawing heavy current) through standstill and runs up the
+// other way. A single-phase motor's field turns its set way (its start winding).
 const MOTOR_EFFICIENCY = 0.8;
 
 const MOTOR_PF = 0.8;
 
 const LOCKED_RATIO = 5;
 
-const LOCKED_PF = 0.4;
-
 const DC_INERTIA = 0.3; // s for rated torque to bring the bare rotor to rated speed
 
-const AC_SPIN_UP = 1; // s
-
-const AC_START = 0.7;
-
-const MOTOR_FREQ = 50;
+const AC_INERTIA = 0.4; // s, as DC_INERTIA
 
 const SEQUENCE_TAU = 0.02; // s, smoothing of the detected phase sequence
+
+const NO_SUPPLY = 0.25; // s without a zero crossing: the supply isn't alternating
+
+// The equivalent circuit per winding, in shares of its running impedance:
+// stator resistance and leakage, rotor leakage, magnetizing reactance.
+const [RS, XS, XR, XM] = [0.035, 0.092, 0.092, 2.5];
+
+// Its impedance with the rotor's resistance over slip `x` (Infinity: no slip).
+function equivalent(x: number): { r: number; x: number } {
+  if (!Number.isFinite(x)) return { r: RS, x: XS + XM };
+  // (x + j·XR) ∥ j·XM
+  const [nr, ni, dr, di] = [-XR * XM, x * XM, x, XR + XM];
+  const d2 = dr * dr + di * di;
+  return { r: RS + (nr * dr + ni * di) / d2, x: XS + (ni * dr - nr * di) / d2 };
+}
+
+// The rotor's resistance over slip at rated slip: where the circuit takes
+// rated power in (its admittance's real part, in these shares, is MOTOR_PF).
+const X_RATED = (() => {
+  let [lo, hi] = [0.01, 100];
+  for (let k = 0; k < 60; k++) {
+    const mid = Math.sqrt(lo * hi);
+    const { r, x } = equivalent(mid);
+    if (r / (r * r + x * x) > MOTOR_PF) lo = mid;
+    else hi = mid;
+  }
+  return Math.sqrt(lo * hi);
+})();
+
+// Its rated slip, from its rated speed and frequency (a rating at or above
+// two-pole synchronous speed is taken as 3 % below it).
+function ratedSlip(p: PropsByType['motor']): number {
+  const n = p.ratedSpeed;
+  let poles = 2;
+  while ((120 * p.ratedFrequency) / (poles + 2) > n) poles += 2;
+  const slip = 1 - n / ((120 * p.ratedFrequency) / poles);
+  return slip >= 0.01 ? slip : 0.03;
+}
+
+// Its torque at `slip` (share of rated torque, at rated voltage and frequency):
+// Kloss's 2·Tb / (s/sb + sb/s), through rated torque at rated slip.
+function klossTorque(p: PropsByType['motor'], slip: number): number {
+  if (slip === 0) return 0;
+  const tb = Math.max(1.1, p.breakdown);
+  const sb = ratedSlip(p) * (tb + Math.sqrt(tb * tb - 1));
+  return (2 * tb) / (slip / sb + sb / slip);
+}
 
 type MotorEl = Element<PropsByType['motor']>;
 
@@ -70,15 +131,14 @@ const dcRated = (p: PropsByType['motor']) => {
   return { current, r: p.ratedVoltage / (LOCKED_RATIO * current), emf: p.ratedVoltage * (1 - 1 / LOCKED_RATIO) };
 };
 
-// One winding's resistance and inductance at `speed` (0..1).
-function winding(p: PropsByType['motor'], speed: number) {
+// One winding's resistance and inductance at `slip` (1 at standstill), its
+// reactance as at its rated frequency.
+function winding(p: PropsByType['motor'], slip: number) {
   const phases = p.supply === 'AC 3~' ? 3 : 1;
   const z = (p.ratedVoltage ** 2 * phases * MOTOR_EFFICIENCY * MOTOR_PF) / p.ratedPower; // running |Z| per winding
-  const s = Math.min(1, Math.abs(speed));
-  const lockedZ = z / LOCKED_RATIO;
-  const r = lockedZ * LOCKED_PF + (z * MOTOR_PF - lockedZ * LOCKED_PF) * s;
-  const x = lockedZ * Math.sqrt(1 - LOCKED_PF ** 2) + (z * Math.sqrt(1 - MOTOR_PF ** 2) - lockedZ * Math.sqrt(1 - LOCKED_PF ** 2)) * s;
-  return { r, l: x / (2 * Math.PI * MOTOR_FREQ) };
+  const s = Math.abs(slip);
+  const { r, x } = equivalent(s < 1e-6 ? Infinity : (X_RATED * ratedSlip(p)) / s);
+  return { r: z * r, l: (z * x) / (2 * Math.PI * p.ratedFrequency) };
 }
 
 // The terminals each winding joins.
@@ -86,7 +146,7 @@ const motorWindings = (p: PropsByType['motor']): [number, number][] =>
   p.supply === 'AC 3~' ? [[0, 1], [1, 2], [2, 0]] : [[0, 1]];
 
 function windingCurrents(el: MotorEl, s: Stamper): number[] {
-  const { r, l } = winding(el.props, el.state.speed ?? 0);
+  const { r, l } = winding(el.props, el.state.slip ?? 1);
   const k = l / s.dt;
   return motorWindings(el.props).map(([a, b], w) => (s.v(el.nodes[a]) - s.v(el.nodes[b]) + k * (el.state.windings?.[w] ?? 0)) / (r + k));
 }
@@ -104,12 +164,6 @@ function motorCurrents(el: MotorEl, s: Stamper): number[] {
     pins[b] -= iw[w];
   });
   return pins;
-}
-
-// Torque a load takes at speed s (share of rated): see spin().
-function loadTorque(load: ShaftLoad | null, s: number): number {
-  if (!load || s === 0) return 0;
-  return load.kind === 'conveyor' ? load.torque : load.kind === 'pump' ? load.torque * s * s : 0;
 }
 
 // The shaft's motion over dt, against the load docked on it or, for a part
@@ -132,17 +186,24 @@ export const respondWith =
       ({ speed: next, load: held } = spin(speed, torque, DC_INERTIA, load, dt));
       el.state.output = shaftOutput(next, torque(next)) * p.ratedPower;
     } else {
-      const supply = Math.min(r.vrms, ...r.extraRms);
-      const target = supply >= AC_START * p.ratedVoltage ? (p.supply === 'AC 3~' ? phaseSequence(el, r, dt) : 1) : 0;
-      const tau = AC_SPIN_UP * (1 + (load?.inertia ?? 0));
-      next = speed + (target - speed) * (1 - Math.exp(-dt / tau));
-      held = loadTorque(load, next);
-      el.state.output = held * Math.abs(next) * p.ratedPower;
+      // The field's speed (share of rated speed, signed the way it turns) and
+      // strength from the supply as measured; the torque at each shaft speed
+      // from the slip there.
+      const field = p.supply === 'AC 3~' ? phaseSequence(el, r, dt) : 1;
+      const f = supplyFrequency(el, env.time, r, dt) / p.ratedFrequency;
+      const v = Math.min(r.vrms, ...r.extraRms) / p.ratedVoltage;
+      const sync = (field * f) / (1 - ratedSlip(p));
+      const flux = f > 0.05 ? (v / f) ** 2 : 0;
+      const slipAt = (s: number) => (sync === 0 ? 1 : (sync - s) / sync);
+      const torque = (s: number) => (sync === 0 ? 0 : Math.sign(sync) * flux * klossTorque(p, slipAt(s)));
+      ({ speed: next, load: held } = spin(speed, torque, AC_INERTIA, load, dt));
+      el.state.slip = slipAt(next);
+      el.state.output = shaftOutput(next, torque(next)) * p.ratedPower;
     }
     el.state.speed = next;
     el.state.energy = (el.state.energy ?? 0) + r.p * dt;
     if (shaft) {
-      const inertia = p.supply === 'DC' ? DC_INERTIA : AC_SPIN_UP;
+      const inertia = p.supply === 'DC' ? DC_INERTIA : AC_INERTIA;
       shaft.state.shaft = loadState(shaft.state.shaft, shaft.load, next * sense(p), held, inertia, p.ratedPower, p.ratedSpeed, dt);
     }
     return false;
@@ -175,6 +236,23 @@ function phaseSequence(el: MotorEl, r: Result, dt: number): number {
   return sequence >= 0 ? 1 : -1;
 }
 
+// The supply's frequency at an AC motor's terminals (Hz): from the time
+// between upward zero crossings of its first winding's voltage (found between
+// steps), held between crossings; until the first full cycle, its rated
+// frequency; 0 once there's been no crossing for NO_SUPPLY (DC, or none).
+function supplyFrequency(el: MotorEl, time: number, r: Result, dt: number): number {
+  const v = r.pinV[0] - r.pinV[1];
+  const was = el.state.last ?? v;
+  el.state.last = v;
+  if (was < 0 && v >= 0) {
+    const at = time - (dt * v) / (v - was);
+    if (el.state.crossAt !== undefined && at > el.state.crossAt) el.state.hz = 1 / (at - el.state.crossAt);
+    el.state.crossAt = at;
+  }
+  if (time - (el.state.crossAt ?? 0) > NO_SUPPLY) el.state.hz = 0;
+  return el.state.hz ?? el.props.ratedFrequency;
+}
+
 // Rated line current, for judging overload.
 const motorRatedCurrent = (p: PropsByType['motor']) =>
   p.supply === 'DC'
@@ -190,7 +268,7 @@ export const motorModel: ModelDef<PropsByType['motor']> = {
       s.current(el.nodes[0], el.nodes[1], (-emf * (el.state.speed ?? 0)) / r);
       return;
     }
-    const { r, l } = winding(el.props, el.state.speed ?? 0);
+    const { r, l } = winding(el.props, el.state.slip ?? 1);
     const k = l / s.dt;
     const g = 1 / (r + k);
     motorWindings(el.props).forEach(([a, b], w) => {
@@ -215,21 +293,21 @@ export const motorModel: ModelDef<PropsByType['motor']> = {
     const input = p.supply === 'DC' ? r.p : r.pavg;
     // (Below a thousandth of its rating, it's rounding: show none.)
     const output = Math.abs(r.state.output ?? 0) < 1e-3 * p.ratedPower ? 0 : (r.state.output ?? 0);
+    const ac = p.supply !== 'DC';
+    // How far it lags its field (only while there's one).
+    const slip = ac && (r.state.hz ?? 0) > 0 && r.vrms > 0.05 * p.ratedVoltage ? r.state.slip : undefined;
     return [
       ['Speed', `${Math.round(Math.abs(speed) * p.ratedSpeed)} rpm`],
       ['Turning', turn > 0 ? 'clockwise' : turn < 0 ? 'counter-clockwise' : 'stopped'],
+      ...(ac ? ([['Supply', `${fmt(r.state.hz ?? 0, 'Hz')}`]] as [string, string][]) : []),
+      ...(slip !== undefined ? ([['Slip', `${(slip * 100).toFixed(1)} %`]] as [string, string][]) : []),
       ['Current', p.supply === 'DC' ? fmt(Math.abs(r.i), 'A') : `${fmt(r.irms, 'A')} rms`],
       ['Power', p.supply === 'DC' ? fmt(Math.abs(input), 'W') : `${fmt(Math.abs(input), 'W')} avg`],
       ['Shaft power', fmt(output, 'W')],
-      // What doesn't reach the shaft heats the motor: its windings' I²R and
-      // friction. (An AC motor's current doesn't follow its load yet, so its
-      // losses can't be told apart.)
-      ...(p.supply === 'DC'
-        ? ([
-            ['Losses (heat)', fmt(Math.max(0, input - output), 'W')],
-            ['Efficiency', input > 1e-3 * p.ratedPower && output > 0 ? `${Math.round((100 * output) / input)} %` : '–'],
-          ] as [string, string][])
-        : []),
+      // What doesn't reach the shaft heats the motor: its windings' losses and
+      // friction.
+      ['Losses (heat)', fmt(Math.max(0, input - output), 'W')],
+      ['Efficiency', input > 1e-3 * p.ratedPower && output > 0 ? `${Math.round((100 * output) / input)} %` : '–'],
       ['Energy used', fmt(r.state.energy ?? 0, 'J')],
     ];
   },
@@ -255,7 +333,7 @@ export const defs: PartDefs<'motor'> = {
     name: 'Motor',
     letter: 'M',
     // US (IEEE 315): the circle reads MOT; its class letter is B.
-    us: { letter: 'B', draw: (p) => motorSymbol(p, 'MOT') },
+    us: { letter: 'B', draw: (p) => motorSymbol(p, 'MOT'), values: { ratedFrequency: 60 } },
     category: 'loads',
     group: 'Motors',
     pins: (p) => [{ x: -40, y: 0 }, { x: 40, y: 0 }, ...(p.supply === 'AC 3~' ? [{ x: 0, y: 40 }] : [])],
@@ -265,6 +343,8 @@ export const defs: PartDefs<'motor'> = {
       ratedPower: { label: 'Rated power', unit: 'W', value: 10, min: 0.01 },
       ratedSpeed: { label: 'Rated speed', unit: 'rpm', value: 3000, min: 1 },
       direction: { label: 'Direction', value: 'Clockwise', options: ['Clockwise', 'Counter-clockwise'] },
+      ratedFrequency: { label: 'Rated frequency (AC)', unit: 'Hz', value: 50, min: 1, max: 400 },
+      breakdown: { label: 'Breakdown torque (AC, × rated)', unit: '', value: 2.5, min: 1.2, max: 5, slider: { min: 1.2, max: 5, step: 0.1 } },
     },
     tag: (p) => `${formatSI(p.ratedVoltage, 'V')} ${formatSI(p.ratedPower, 'W')}`,
     labelAt: motorLabel,

@@ -55,6 +55,8 @@ export interface PartState {
   segV?: number[]; // a display's segment junction voltages at the last iteration
   energized?: boolean; // a relay's coil has pulled in; a sounder is sounding
   speed?: number; // a motor's speed, 1 = rated (negative: turning backwards)
+  slip?: number; // an AC motor's slip behind its field (1 at standstill) and the
+  hz?: number; //   supply frequency it measured (with crossAt and last, as a speaker's)
   temp?: number; // a heater's element temperature, 1 = at rated power
   crossAt?: number; // a speaker's last upward zero crossing (s), the period
   span?: number; //   it measured, and its signal (AC part) at the last step
