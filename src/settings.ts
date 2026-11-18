@@ -40,6 +40,7 @@ interface Settings {
   burnOut: boolean; // overloaded parts fail
   temperatures: boolean; // ambient temperature, heat between parts, fans cooling
   autoRun: boolean; // start running when a circuit is opened
+  analytics: boolean; // count anonymous usage (the published web version only, see src/analytics.ts)
 }
 
 // The choices each setting allows (true/false ones are checked as booleans).
@@ -53,6 +54,7 @@ const CHOICES: Partial<Record<keyof Settings, readonly string[]>> = {
 };
 const DEFAULTS: Settings = { language: browserLanguage(), theme: 'green', mode: 'system', norm: 'eu', openView: 'fit', tolerances: false, readout: true, tips: true,
   decimal: 'auto', grid: 'lines', flow: 'conventional', flowDots: true, heatHaze: false, sound: true, burnOut: true, temperatures: true, autoRun: false,
+  analytics: true,
 };
 
 function load(): Settings {
@@ -327,6 +329,9 @@ export function createSettings(dialog: MdDialog) {
     },
     get autoRun() {
       return settings.autoRun;
+    },
+    get analytics() {
+      return settings.analytics;
     },
     onChange: (listener: () => void) => listeners.push(listener),
   };

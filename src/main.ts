@@ -27,7 +27,7 @@ import { createTooltips } from './tooltip.ts';
 import { showVersion } from './version.ts';
 import { createZoom } from './zoom.ts';
 import { fromControl } from './keys.ts';
-import { onLanguage, t } from './i18n/index.ts';
+import { language, onLanguage, t } from './i18n/index.ts';
 import { onNorm, refText } from './norm.ts';
 import { fromShown, onDecimalMark, shownUnit, toShown } from './units.ts';
 import { createEngine } from './sim/engine.ts';
@@ -39,6 +39,7 @@ import { PANEL_SCALES, adoptVersion, blockAt, blockValues, canMount, editCopy, e
 import { library, newLibraryId, type LibModule } from './library.ts';
 import { builtinModules } from './builtin-modules/index.ts';
 import { createModuleManager } from './module-manager.ts';
+import { analyticsAvailable, setAnalytics, track } from './analytics.ts';
 import { confirmDialog, promptDialog } from './confirm.ts';
 import type { TrayGroup } from './palette.ts';
 import { isApp, openTextFile, saveFile } from './platform.ts';
@@ -340,6 +341,7 @@ const panel = createPanel(byId('props'), shown, editor, {
 
 // Make the selected frame a module, saying why not or what had to give.
 function makeModule() {
+  track('module/make');
   const said = editor.makeModule();
   if (said) showToast(t(said.message, { count: String(said.count ?? 0) }));
 }
@@ -477,6 +479,8 @@ function placeFromLibrary(m: LibModule, x: number, y: number, rotation: number) 
     return;
   }
   const target = editing?.circuit ?? circuit;
+  // (A built-in one by name; mine only as mine: their names are the user's.)
+  track(`module/place/${m.id.startsWith('builtin-') ? m.id.slice(8) : 'mine'}`);
   const id = fromLibrary(target, m);
   editor.add('module', x, y, rotation, blockValues(target.modules.find((d) => d.id === id)!));
 }
@@ -1108,3 +1112,11 @@ Promise.race([document.fonts.ready, new Promise((done) => setTimeout(done, 2000)
   setTimeout(() => splash?.remove(), 500); // in case the transition never runs
 });
 
+
+// Anonymous usage counts (the published web version only; see src/analytics.ts),
+// as Settings say: the visit, and which language and drawing standard are in use.
+byId('settings-dialog').querySelector<HTMLElement>('.settings-analytics')!.hidden = !analyticsAvailable;
+setAnalytics(settings.analytics);
+settings.onChange(() => setAnalytics(settings.analytics));
+track(`language/${language()}`);
+track(`norm/${settings.norm}`);

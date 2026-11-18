@@ -63,6 +63,15 @@ The builds aren't code-signed yet, so your system warns you once:
 - **Files**: save and open circuits as `.ampage` files (JSON inside; older `.json`
   files still open), which the desktop app opens on double-click; autosaves in the browser
 
+## Privacy
+
+The web version at GitHub Pages counts anonymous usage with
+[GoatCounter](https://www.goatcounter.com): visits, and which parts, examples
+and features are used (a part's type, an example's name, Run; never what's in a
+circuit). No cookies and nothing about you; browsers that ask not to be
+tracked aren't, and it can be turned off in Settings › Misc › Usage. The
+desktop app, local builds and forks send nothing.
+
 ## Getting started
 
 Requires Node.js 20.19+ or 22.12+.

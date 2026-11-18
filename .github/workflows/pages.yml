@@ -39,7 +39,11 @@ jobs:
 
       - run: npm ci
 
+      # Anonymous usage counts (src/analytics.ts): only this repository's own
+      # site counts, so a fork's Pages build sends nothing.
       - name: Build for /${{ github.event.repository.name }}/
+        env:
+          VITE_GOATCOUNTER: ${{ github.repository == 'wbarahona/electronics' && 'https://wbarahona.goatcounter.com/count' || '' }}
         run: |
           npx tsc
           npx vite build --base=/${{ github.event.repository.name }}/

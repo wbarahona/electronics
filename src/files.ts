@@ -2,6 +2,7 @@ import { onLanguage, t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
 import { confirmDialog, promptDialog } from './confirm.ts';
+import { track } from './analytics.ts';
 import { isApp, onOpenedFiles, openCircuitFile, saveCircuitFile, saveFile, setWindowTitle, type CircuitFile } from './platform.ts';
 import type { Circuit } from './model.ts';
 
@@ -134,6 +135,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   }
 
   async function openFile() {
+    track('file/open');
     if (!(await replaceOk())) return;
     if (isApp) {
       try {
@@ -184,6 +186,7 @@ export function createFileActions(root: HTMLElement, { circuit, getView, load, r
   }
 
   async function save() {
+    track('file/save');
     // No file behind it yet: its name first.
     const fileless = isApp ? !path : picker.showSaveFilePicker ? !handle : untitled;
     if (fileless && !(await nameIt())) return;

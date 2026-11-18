@@ -1,5 +1,6 @@
 import type { MdDialog } from '@material/web/dialog/dialog.js';
 import { EXAMPLES, type Example } from './examples/index.ts';
+import { track } from './analytics.ts';
 import { onLanguage, t } from './i18n/index.ts';
 
 // The example gallery: an M3 dialog of cards, one per example circuit;
@@ -25,6 +26,7 @@ export function createGallery(dialog: MdDialog, open: (text: string, name: strin
     button.querySelector('.gallery-description')!.textContent = t(example.description);
     button.addEventListener('click', async () => {
       dialog.close();
+      track(`example/${example.id}`);
       open(await example.load(), `${t(example.title)}.ampage`);
     });
     return button;

@@ -3,6 +3,7 @@ import type { MdFilledTonalButton } from '@material/web/button/filled-tonal-butt
 import { onLanguage, t } from './i18n/index.ts';
 import { fromControl } from './keys.ts';
 import { formatSI } from './units.ts';
+import { track } from './analytics.ts';
 
 // Simulated seconds per real second, slowest first.
 const SPEEDS = [
@@ -60,8 +61,14 @@ export function createControls(root: HTMLElement) {
     render();
   }
 
+  let ran = false; // counted the first run of the session (src/analytics.ts)
+
   function toggle() {
     state.running = !state.running;
+    if (state.running && !ran) {
+      ran = true;
+      track('run');
+    }
     render();
   }
 

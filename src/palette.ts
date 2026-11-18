@@ -5,6 +5,7 @@ import type { Editor } from './editor.ts';
 import { onLanguage, t } from './i18n/index.ts';
 import { onNorm } from './norm.ts';
 import { rememberPart } from './recent.ts';
+import { track } from './analytics.ts';
 import { fromControl } from './keys.ts';
 import type { PartType, Props, PropsByType } from './types.ts';
 
@@ -351,6 +352,7 @@ export function createPalette(
     else {
       editor.add(type, x, y, rotation);
       rememberPart(type);
+      track(`part/${type}`);
     }
   }
 
