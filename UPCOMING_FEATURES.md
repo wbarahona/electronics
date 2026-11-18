@@ -29,7 +29,7 @@ sheet frame and title block for printing):
   builds the nets (ids prefixed per copy, e.g. `A1/K6`), so the solver,
   thermal model and readouts stay as they are. Agreed steps:
   1. **Terminal** part (built: Sources › Reference): the module's pins.
-  2. **Make module from frame**: the Terminals on its edge become the block's
+  2. **Make module from frame** (built: frame panel and right-click menu): the Terminals on its edge become the block's
      pins (named after them, on the side they sat). Net labels inside are
      local to each copy; rails and grounds stay global. The block is a compact
      box with its title, only as big as its pins need; copies are -A1, -A2…
@@ -37,7 +37,8 @@ sheet frame and title block for printing):
      circuit file (a `modules` section, file VERSION 2), so a circuit opens
      anywhere without the library. Every copy is identical (no per-copy
      settings yet).
-  3. **Step inside a copy**: double-click opens it in place with a path bar
+  3. **Step inside a copy** (built; looking and operating only, editing the
+     definition still to come): double-click opens it in place with a path bar
      (`Circuit › -A1 Controller`); the simulation keeps running, its
      readouts are live and its buttons work; Back / Esc returns to the same
      pan and zoom. A collapsed block's heat sits at the block's position.

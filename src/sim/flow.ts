@@ -51,9 +51,11 @@ export function wireCurrents(circuit: Circuit, nets: Nets, results: Map<string, 
   }
 
   const currents = new Map<string, number>();
-  for (const [n, netEdges] of byNet) {
+  for (const netEdges of byNet.values()) {
     // Node potentials within the net, with its first point as the reference.
-    const keys = nets.nets[n];
+    // Only points on the board's own wires and links: a module block's net
+    // also holds the points inside it, which its pin stands for here.
+    const keys = [...new Set(netEdges.flatMap((e) => [e.a, e.b]))];
     const index = new Map(keys.slice(1).map((k, i): [string, number] => [k, i]));
     const size = index.size;
     const A = Array.from({ length: size }, () => new Float64Array(size));

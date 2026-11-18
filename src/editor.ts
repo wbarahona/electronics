@@ -4,6 +4,7 @@ import { LIGHT_COLORS, PARTS, defaults, mixedLight, hitOf, keepUpright, pinNames
 import { fromControl } from './keys.ts';
 import { FRAME_MIN, frameSize, type Corner } from './parts/annotate/frame.ts';
 import type { Circuit } from './model.ts';
+import { makeModule } from './modules.ts';
 import { buildNets, keyOf, pinKey, type Nets } from './nets.ts';
 import { dockSpot, dockings, hasShaft, isShaftLoad } from './shaft.ts';
 import { isPart, isWire, type End, type Joint, type Part, type PartType, type Point, type Props, type PropValue, type Wire } from './types.ts';
@@ -118,6 +119,19 @@ export interface EditorEvents {
   onPropChange?: (id: string) => void;
   // On a right-click, after the selection is updated.
   onContextMenu?: (clientX: number, clientY: number, at: Point) => void;
+  // Double-clicking a module block: step inside it.
+  onEnterModule?: (id: string) => void;
+  // Esc with nothing to cancel or deselect while inside a module: step out.
+  onLeaveModule?: () => void;
+}
+
+// What the editor shows can be the inside of a module block (see insideOf in
+// src/modules.ts) rather than the circuit itself: `root` is the whole circuit,
+// whose nets the simulator uses, and `locked` says the parts shown can be
+// looked at and operated (buttons, switches) but not moved, wired or edited.
+export interface EditorScope {
+  root: Circuit;
+  locked: () => boolean;
 }
 
 export type Editor = ReturnType<typeof createEditor>;
@@ -178,8 +192,10 @@ function svgEl<K extends keyof SVGElementTagNameMap>(name: K, className: string,
   return el;
 }
 
-export function createEditor(board: Board, circuit: Circuit, events: EditorEvents = {}) {
-  const { onSelect = () => {}, onChange = () => {}, onPropChange = () => {}, onContextMenu = () => {} } = events;
+export function createEditor(board: Board, circuit: Circuit, events: EditorEvents = {}, scope?: EditorScope) {
+  const { onSelect = () => {}, onChange = () => {}, onPropChange = () => {}, onContextMenu = () => {}, onEnterModule = () => {}, onLeaveModule = () => {} } = events;
+  const root = scope?.root ?? circuit;
+  const locked = scope?.locked ?? (() => false);
   const { svg, world } = board;
   // Frames lie under everything; wires sit under joints, joints under parts,
   // so pins stay clickable.
@@ -225,7 +241,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   let resize: { id: number; f: Part<'frame'>; corner: Corner; box: Box } | null = null;
   let wiringClickAt = -Infinity; // time of the last click used by wiring
   let lit: string | null = null; // wire highlighted as the place a dragged part will drop into
-  let nets = buildNets(circuit);
+  let nets = buildNets(root);
 
   // One soft radial gradient per light colour, fading out to transparent, and
   // a mask fading any shape out the same way from its centre (for light whose
@@ -663,6 +679,20 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     setSelected(ids);
   }
 
+  // Make the selected frame's contents a module (see makeModule), its block
+  // selected in their place. Returns what to tell the user: why it couldn't,
+  // or the wires it had to cut; null when all went well.
+  function makeModuleOfSelection(): { message: string; count?: number } | null {
+    if (locked()) return null;
+    const [f, ...rest] = selectedNodes();
+    if (!isFrame(f) || rest.length) return null;
+    const made = makeModule(circuit, f);
+    if ('error' in made) return { message: made.error };
+    reload();
+    setSelected([made.block.id]);
+    return made.cut ? { message: 'Made a module; {count} wires crossed the frame’s edge without a terminal and were cut.', count: made.cut } : null;
+  }
+
   // Pins that touch are connected (nets join them by position), but only
   // until one of the parts moves. So before parts move, each of their pins
   // touching a pin or joint that stays put gets a real wire to it (of no
@@ -711,6 +741,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   // A new part dropped onto a wire is embedded in it.
   function add(type: PartType, x: number, y: number, rotation = 0) {
+    if (locked()) return;
     highlight(null);
     const spot = findSpot(type, { x, y }, rotation);
     const dock = dockFor(type, { x, y });
@@ -771,7 +802,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // filled, open ones hollow; hovering a pin, joint or wire lights up its net.
 
   function refreshNets() {
-    nets = buildNets(circuit);
+    nets = buildNets(root);
     showNet(null);
     for (const c of circuit.components) {
       for (const el of nodes.get(c.id)!.querySelectorAll<SVGElement>('.pin')) {
@@ -943,6 +974,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // Rotate the selection 90° clockwise about a grid point at its centre,
   // so a single part spins in place and every position stays on the grid.
   function rotateSelected() {
+    if (locked()) return;
     const list = withContents(selectedNodes());
     if (!list.length) return;
     if (!drag) bindTouchingPins(list);
@@ -983,6 +1015,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   // Deleting a part or joint also deletes the wires attached to it.
   function deleteSelected() {
+    if (locked()) return;
     drag = null;
     segDrag = null;
     highlight(null);
@@ -1111,6 +1144,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   svg.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || board.spaceHeld) return;
     if (!wiring) {
+      if (locked()) return;
       const end = endOf(e.target);
       if (!end) return;
       e.stopPropagation();
@@ -1148,6 +1182,14 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // that just finished a wire don't count, or ending on a wire would branch again.
   svg.addEventListener('dblclick', (e) => {
     if (wiring || board.spaceHeld || e.timeStamp - wiringClickAt < DOUBLE_CLICK_MS) return;
+    // Double-clicking a module block steps inside it.
+    const part = closestIn(e.target, '.part');
+    if (part && circuit.part(part.dataset.id!)?.type === 'module') {
+      setSelected([]);
+      onEnterModule(part.dataset.id!);
+      return;
+    }
+    if (locked()) return;
     const g = closestIn(e.target, '.wire');
     if (!g) return;
     startWire(tapOn(circuit.wire(g.dataset.id!)!, e), e, false);
@@ -1217,6 +1259,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const finger = e.pointerType === 'touch';
     if (!selected.has(id)) setSelected([id], !finger);
     inspectOnLift = finger ? { id: e.pointerId, moved: false } : null;
+    if (locked()) return; // inside a module: look, don't move
     if (g.classList.contains('wire')) {
       startSegmentDrag(circuit.wire(id)!, e, g);
       return;
@@ -1401,8 +1444,11 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       } else if (marquee) {
         setSelected(marquee.keep);
         endMarquee();
-      } else {
+      } else if (selected.size || !locked()) {
         setSelected([]);
+      } else {
+        e.preventDefault();
+        onLeaveModule();
       }
     }
   });
@@ -1492,12 +1538,14 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   }
 
   function cutSelected(): boolean {
+    if (locked()) return false;
     if (!copySelected()) return false;
     deleteSelected();
     return true;
   }
 
   function duplicateSelected() {
+    if (locked()) return;
     const copy = snapshot();
     if (copy) placeCopy(copy, nextTo(copy));
   }
@@ -1506,6 +1554,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   const nextTo = (copy: Copy): Point => ({ x: copy.center.x + 2 * GRID, y: copy.center.y + 2 * GRID });
 
   function paste(at: Point) {
+    if (locked()) return;
     if (clipboard) placeCopy(clipboard, at);
   }
 
@@ -1519,7 +1568,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       const c = circuit.add(p.type, p.x + dx, p.y + dy, p.rotation);
       const specs = PARTS[p.type].props;
       for (const [key, value] of Object.entries(structuredClone(p.props))) {
-        if (!specs[key].hidden) (c.props as Record<string, PropValue>)[key] = value;
+        if (!specs[key].hidden || specs[key].kept) (c.props as Record<string, PropValue>)[key] = value;
       }
       mountPart(c);
       return c;
@@ -1604,6 +1653,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     canPaste: () => !!clipboard,
     hasSelection: () => selected.size > 0,
     selectContents,
+    makeModule: makeModuleOfSelection,
     canSelectContents: () => {
       const [f, ...rest] = selectedNodes();
       return isFrame(f) && !rest.length;

@@ -10,7 +10,7 @@ import { formatNumber, fromShown, parseSI, shownTemps, shownUnit, toShown } from
 
 // Parts with nothing to fail: references and probes (and annotations, the
 // whole Annotate category, left out where the panel is built).
-const NO_FAULTS = new Set(['ground', 'netLabel', 'terminal', 'scopeProbe']);
+const NO_FAULTS = new Set(['ground', 'netLabel', 'terminal', 'scopeProbe', 'module']);
 
 // Side sheet for editing the selected part's values, built from M3 fields.
 // Laid out per M3 by window size (in CSS): a standard side sheet docked
@@ -20,7 +20,7 @@ const NO_FAULTS = new Set(['ground', 'netLabel', 'terminal', 'scopeProbe']);
 // sits in the action area at the bottom.
 // Shown while exactly one part is selected; its close button, or Esc from
 // inside it, deselects the part (an open dropdown takes the Esc first).
-export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Editor, 'refreshPart' | 'deselect'>) {
+export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Editor, 'refreshPart' | 'deselect'>, makeModule: () => void) {
   let current: string | null = null;
 
   // The scrim behind it when it's modal: a click there closes it.
@@ -299,6 +299,14 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
     const actions = document.createElement('div');
     actions.className = 'props-actions';
     actions.append(resetButton(c));
+    // A frame can become a module.
+    if (c.type === 'frame') {
+      const make = document.createElement('md-outlined-button');
+      make.innerHTML = `<md-icon slot="icon">category</md-icon>${t('Make module')}`;
+      make.title = t('Make what’s inside into a module; Terminals on the edge become its pins');
+      make.addEventListener('click', makeModule);
+      actions.append(make);
+    }
     el.replaceChildren(handle, head, body, actions);
     markModified(c);
     setOpen(true);

@@ -1,4 +1,5 @@
 import { PARTS, defaults, usLetterOf } from './components.ts';
+import type { ModuleDef } from './modules.ts';
 import type { End, Item, Joint, Part, PartType, Point, Wire } from './types.ts';
 
 export type Circuit = ReturnType<typeof createCircuit>;
@@ -25,11 +26,13 @@ export function createCircuit() {
   const components: Part[] = [];
   const wires: Wire[] = [];
   const joints: Joint[] = [];
+  const modules: ModuleDef[] = []; // the definitions of its module blocks (src/modules.ts)
 
   return {
     components,
     wires,
     joints,
+    modules,
     // The temperature around the circuit, °C (25 unless set): every part that
     // heats up runs this much plus its own rise, and sensors like the NTC
     // feel it. Saved with the circuit.
@@ -98,8 +101,9 @@ export function createCircuit() {
 
     // Replace everything with the given items (e.g. a loaded file). New ids
     // carry on after the highest one loaded.
-    load(parts: Part[], newJoints: Joint[], newWires: Wire[], ambient = AMBIENT): void {
+    load(parts: Part[], newJoints: Joint[], newWires: Wire[], ambient = AMBIENT, newModules: ModuleDef[] = []): void {
       this.ambient = ambient;
+      modules.splice(0, modules.length, ...newModules);
       components.splice(0, components.length, ...parts);
       joints.splice(0, joints.length, ...newJoints);
       wires.splice(0, wires.length, ...newWires);

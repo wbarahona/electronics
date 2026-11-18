@@ -2,6 +2,7 @@ import * as battery from './sources/battery.ts';
 import * as ground from './sources/ground.ts';
 import * as netLabel from './sources/net-label.ts';
 import * as terminal from './sources/terminal.ts';
+import * as block from './modules/block.ts';
 import * as generator from './sources/generator.ts';
 import * as rails from './sources/rails.ts';
 import * as resistor from './passive/resistor.ts';
@@ -108,6 +109,7 @@ export const DEFS: PartDefs<PartType> = {
   ...note.defs,
   ...textLabel.defs,
   ...frame.defs,
+  ...block.defs,
 };
 
 export const MODEL_DEFS: ModelDefs<PartType> = {
@@ -161,4 +163,5 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...note.models,
   ...textLabel.models,
   ...frame.models,
+  ...block.models,
 };

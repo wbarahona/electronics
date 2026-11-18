@@ -48,6 +48,7 @@ import type { PartProps as TransistorsProps } from './parts/semiconductors/trans
 import type { PartProps as NoteProps } from './parts/annotate/note.ts';
 import type { PartProps as TextLabelProps } from './parts/annotate/text-label.ts';
 import type { PartProps as FrameProps } from './parts/annotate/frame.ts';
+import type { PartProps as BlockProps } from './parts/modules/block.ts';
 
 // Shared shapes of the circuit data: what the editor draws, what gets copied
 // and pasted, and what the simulator reads.
@@ -117,7 +118,8 @@ export interface PropsByType
     TransistorsProps,
     NoteProps,
     TextLabelProps,
-    FrameProps {}
+    FrameProps,
+    BlockProps {}
 
 export interface LogicGate {
   supply: number;

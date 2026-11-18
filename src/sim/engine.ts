@@ -1,9 +1,10 @@
 import { pinsOf } from '../components.ts';
 import { AMBIENT, type Circuit } from '../model.ts';
 import { pinKey, type Nets } from '../nets.ts';
+import { flatten } from '../modules.ts';
 import { dockings } from '../shaft.ts';
 import { WALL_CONDUCTANCE, frameSize } from '../parts/annotate/frame.ts';
-import type { PropsByType } from '../types.ts';
+import type { Part, PropsByType } from '../types.ts';
 import { STOPPED } from './shared/shaft.ts';
 import { solve } from './linear.ts';
 import { actualProps } from './shared/tolerance.ts';
@@ -150,6 +151,12 @@ export function createEngine(circuit: Circuit) {
   const state = new Map<string, PartState>();
   // The load each motor's shaft drives: motor id → the load's element.
   const docked = new Map<string, Element>();
+  // Every part the simulator sees by id: the board's own, and the parts inside
+  // module blocks (see flatten), which for position (heat, light, air) sit
+  // where their block does.
+  let placed = new Map<string, Part>();
+  // Each module block's element and the elements inside it (blocks in it too).
+  let blocks: { el: Element; inside: Element[] }[] = [];
   const engine = {
     results: new Map<string, Result>(),
     error: null as string | null,
@@ -251,7 +258,9 @@ export function createEngine(circuit: Circuit) {
   function rebuild({ nets, netOf }: Nets) {
     nodeCount = nets.length;
     let next = nodeCount;
-    elements = circuit.components.map((c) => {
+    const flat = flatten(circuit);
+    placed = new Map(flat.parts.map(({ part, space, home }) => [part.id, space ? { ...part, x: home.x, y: home.y } : part]));
+    elements = flat.parts.map(({ part: c }) => {
       const model = MODELS[c.type];
       const branches = model.branches?.(c.props) ?? 0;
       if (!state.has(c.id)) state.set(c.id, {});
@@ -280,14 +289,20 @@ export function createEngine(circuit: Circuit) {
     // motor is out; a load on no shaft has no motion at all.
     docked.clear();
     const byId = new Map(elements.map((el) => [el.id, el]));
-    for (const [motor, load] of dockings(circuit.components)) docked.set(motor, byId.get(load)!);
+    // (Shafts and loads meet on the board, or inside the same block.)
+    const spaces = new Map<string, Part[]>();
+    for (const { part, space } of flat.parts) spaces.set(space, [...(spaces.get(space) ?? []), part]);
+    for (const parts of spaces.values()) for (const [motor, load] of dockings(parts)) docked.set(motor, byId.get(load)!);
     for (const [motor, load] of docked) {
       if (!load.state.shaft || byId.get(motor)!.open) load.state.shaft = { ...STOPPED, work: load.state.shaft?.work ?? 0 };
     }
     const onShaft = new Set(docked.values());
     for (const el of elements) if (el.model.shaftLoad && !onShaft.has(el)) delete el.state.shaft;
     refs = referenceNets();
-    for (const id of state.keys()) if (!circuit.get(id)) state.delete(id);
+    for (const id of state.keys()) if (!placed.has(id)) state.delete(id);
+    blocks = elements
+      .filter((el) => placed.get(el.id)!.type === 'module')
+      .map((el) => ({ el, inside: elements.filter((e) => e.id.startsWith(`${el.id}/`)) }));
     engine.dynamic = elements.some((el) => el.model.dynamic);
     engine.ac = elements.some((el) => el.model.alternating && !el.open);
     x = new Float64Array(size);
@@ -312,12 +327,12 @@ export function createEngine(circuit: Circuit) {
       return t;
     },
     light(el) {
-      const at = circuit.part(el.id);
+      const at = placed.get(el.id);
       if (!at) return 0;
       let light = 0;
       for (const other of elements) {
         const r = engine.results.get(other.id);
-        const from = circuit.part(other.id);
+        const from = placed.get(other.id);
         if (other === el || !other.model.brightness || !r || !from) continue;
         const d = Math.hypot(from.x - at.x, from.y - at.y);
         light += other.model.brightness(r, other.props) / (1 + (d / LIGHT_REACH) ** 2);
@@ -362,7 +377,7 @@ export function createEngine(circuit: Circuit) {
     const chosen = new Map<number, number>(); // circuit root -> reference net
     const battery = new Set<number>(); // circuits whose reference is a battery's −
     for (const el of elements) {
-      if (circuit.part(el.id)?.type === 'battery' && !chosen.has(find(el.nodes[1]))) {
+      if (placed.get(el.id)?.type === 'battery' && !chosen.has(find(el.nodes[1]))) {
         chosen.set(find(el.nodes[1]), el.nodes[1]);
         battery.add(find(el.nodes[1]));
       }
@@ -449,6 +464,16 @@ export function createEngine(circuit: Circuit) {
       average(el, r, dt);
       engine.results.set(el.id, r);
     }
+    // What flows into a block at each pin: what the parts inside it take from
+    // that pin's net.
+    for (const { el, inside } of blocks) {
+      const r = engine.results.get(el.id)!;
+      r.pins = el.nodes.map((n) => {
+        let i = 0;
+        for (const e of inside) e.nodes.forEach((m, k) => m === n && (i += engine.results.get(e.id)?.pins[k] ?? 0));
+        return i;
+      });
+    }
     engine.error = null;
     checkHeating();
     return true;
@@ -530,13 +555,13 @@ export function createEngine(circuit: Circuit) {
     // cross walls (a fan on a wall belongs to the box it's on).
     const home = new Map<string, Enclosure | null>();
     for (const el of elements) {
-      const at = circuit.part(el.id);
+      const at = placed.get(el.id);
       if (at && at.type !== 'frame') home.set(el.id, innermost(boxes, at));
     }
     const fans: Fan[] = [];
     for (const el of elements) {
       const r = engine.results.get(el.id);
-      const at = circuit.part(el.id);
+      const at = placed.get(el.id);
       if (!el.model.airflow || el.broken || !r || !at) continue;
       const { flow, diameter } = el.model.airflow(r, el.props);
       const strength = flow / FAN_FLOW;
@@ -551,7 +576,7 @@ export function createEngine(circuit: Circuit) {
     // warmth to its neighbours (the air carries it away) and takes in less.
     if (fans.length) {
       for (const el of elements) {
-        const at = circuit.part(el.id);
+        const at = placed.get(el.id);
         if (at) coolings.set(el.id, coolingAt(el, at, fans.filter((f) => home.get(f.id) === home.get(el.id))));
       }
     }
@@ -559,7 +584,7 @@ export function createEngine(circuit: Circuit) {
     for (const el of elements) {
       const thermal = el.model.thermal;
       const r = engine.results.get(el.id);
-      const at = circuit.part(el.id);
+      const at = placed.get(el.id);
       if (!thermal?.rise || el.broken || !r || !at) continue;
       // The heat it gives off (watts, following its power at the pace of its
       // thermal mass, so a heater just switched off still warms what's
@@ -573,7 +598,7 @@ export function createEngine(circuit: Circuit) {
     breathe(boxes, dt);
     Object.assign(air, { fans, boxes, sources, home });
     for (const el of elements) {
-      const at = circuit.part(el.id);
+      const at = placed.get(el.id);
       if (!at) continue;
       const cooling = coolings.get(el.id) ?? 1;
       const box = home.get(el.id);
@@ -611,7 +636,7 @@ export function createEngine(circuit: Circuit) {
   function enclosures(): Enclosure[] {
     const boxes: Enclosure[] = [];
     for (const el of elements) {
-      const c = circuit.part(el.id);
+      const c = placed.get(el.id);
       const p = c?.props as PropsByType['frame'];
       if (c?.type !== 'frame' || !p.enclosure) continue;
       const { w, h } = frameSize(p);
@@ -654,7 +679,7 @@ export function createEngine(circuit: Circuit) {
       b.el.state.exchange = b.exchange;
     }
     for (const el of elements) {
-      if (circuit.part(el.id)?.type === 'frame' && !boxes.some((b) => b.el === el)) delete el.state.air;
+      if (placed.get(el.id)?.type === 'frame' && !boxes.some((b) => b.el === el)) delete el.state.air;
     }
   }
 

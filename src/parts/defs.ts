@@ -38,7 +38,7 @@ export const LIGHT_COLORS = {
 
 export type LightColor = keyof typeof LIGHT_COLORS;
 
-export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters' | 'annotate';
+export type CategoryId = 'sources' | 'passive' | 'semiconductors' | 'digital' | 'chips' | 'signals' | 'loads' | 'switches' | 'meters' | 'annotate' | 'modules';
 
 // Groups shown as the clickable entries of the parts bar, in order: the way a
 // circuit is built (power, control, components, what it lights or drives, then
@@ -69,6 +69,9 @@ export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
 export interface FieldSpec {
   label: string;
   hidden?: boolean;
+  // A hidden value that is what the part is (a module block's definition),
+  // not state it manages: it comes along when the part is copied.
+  kept?: boolean;
 }
 
 export interface NumberSpec extends FieldSpec {

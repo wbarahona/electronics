@@ -4,7 +4,7 @@ import './material.ts';
 import { createBoard } from './board.ts';
 import { createAudio } from './audio.ts';
 import { createControls } from './controls.ts';
-import { AMBIENT, createCircuit } from './model.ts';
+import { AMBIENT, createCircuit, type Circuit } from './model.ts';
 import { createEditor, type Live } from './editor.ts';
 import { createBackdrop } from './backdrop.ts';
 import { createFileActions } from './files.ts';
@@ -34,7 +34,8 @@ import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
 import { createAirflow } from './airflow.ts';
 import { MODELS, type Result, type Sound, type Thermal } from './sim/models.ts';
-import { parse, serialize, type SavedCircuit } from './persist.ts';
+import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
+import { blockAt, insideOf } from './modules.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
 
@@ -64,6 +65,20 @@ const settings = createSettings(byId('settings-dialog'));
 
 const board = createBoard(byId<SVGSVGElement>('board'));
 const circuit = createCircuit();
+// What the board shows: the circuit, or the inside of a module block stepped
+// into (see enterModule). The editor, the hover readout and the panel look
+// through this; the simulation, files and undo always use the whole circuit.
+let shownCircuit: Circuit = circuit;
+const shown = new Proxy(circuit, {
+  get(_target, key) {
+    const v: unknown = Reflect.get(shownCircuit, key);
+    return typeof v === 'function' ? v.bind(shownCircuit) : v;
+  },
+  set: (_target, key, value) => Reflect.set(shownCircuit, key, value),
+});
+// The blocks stepped into, outermost first (ids as flatten gives them), each
+// with the view of the level above, to come back to.
+const path: { id: string; view: View }[] = [];
 const engine = createEngine(circuit);
 const airflow = createAirflow(board.world);
 
@@ -120,7 +135,7 @@ engine.onStep = (t) => {
 const readout = createReadout(
   byId('readout'),
   board.svg,
-  circuit,
+  shown,
   engine,
   (id) => currents.get(id),
 );
@@ -154,7 +169,7 @@ function showResults() {
   const smooth = controls.running;
   const live: Live = new Map();
   sounds = new Map();
-  for (const c of circuit.components) {
+  for (const c of shown.components) {
     const { brightness, thermal, reading, failure, active, reverse, tint, segments, light, sound, needle } = MODELS[c.type];
     const r = engine.results.get(c.id);
     const tone = r && sound && !c.broken ? sound(r, c.props) : null;
@@ -177,7 +192,7 @@ function showResults() {
   // (The board's class, not the legend: a circuit can load before that's set up.)
   if (board.svg.classList.contains('thermal')) airflow.update(engine);
   panel.showLive(live);
-  currents = nets ? wireCurrents(circuit, nets, engine.results) : new Map();
+  currents = nets ? wireCurrents(shown, nets, engine.results) : new Map();
   editor.setFlow(currents, smooth, settings.flow === 'electron');
   readout.refresh();
 }
@@ -188,14 +203,16 @@ const history = createHistory(byId('history-actions'), {
   capture: () => JSON.stringify(serialize(circuit)),
   restore(snapshot) {
     const data = parse(snapshot);
-    circuit.load(data.parts, data.joints, data.wires, data.ambient);
+    leaveModules();
+    circuit.load(data.parts, data.joints, data.wires, data.ambient, data.modules);
     editor.reload();
     showAmbient();
   },
 });
 
-const editor = createEditor(board, circuit, {
-  onSelect: (ids) => panel.show(ids.length === 1 ? ids[0] : null),
+const editor = createEditor(board, shown, {
+  // (Inside a module the parts are looked at, not set: no panel.)
+  onSelect: (ids) => panel.show(ids.length === 1 && !path.length ? ids[0] : null),
   onChange: (next) => {
     nets = next;
     airflow.reset();
@@ -206,20 +223,33 @@ const editor = createEditor(board, circuit, {
     history.changed();
   },
   onPropChange: () => panel.refresh(),
+  onEnterModule: enterModule,
+  onLeaveModule: () => leaveModule(),
   onContextMenu: (x, y, at) =>
     menu.open(x, y, [
-      { label: t('Cut'), icon: 'content_cut', shortcut: `${MOD}X`, enabled: editor.canCopy(), action: editor.cut },
+      { label: t('Cut'), icon: 'content_cut', shortcut: `${MOD}X`, enabled: editor.canCopy() && !path.length, action: editor.cut },
       { label: t('Copy'), icon: 'content_copy', shortcut: `${MOD}C`, enabled: editor.canCopy(), action: editor.copy },
-      { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste(), action: () => editor.paste(at) },
-      { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy(), action: editor.duplicate },
-      { label: t('Rotate'), icon: 'rotate_right', shortcut: 'R', enabled: editor.hasSelection(), action: editor.rotate },
-      ...(editor.canSelectContents() ? [{ label: t('Select contents'), icon: 'select_all', enabled: true, action: editor.selectContents }] : []),
+      { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste() && !path.length, action: () => editor.paste(at) },
+      { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy() && !path.length, action: editor.duplicate },
+      { label: t('Rotate'), icon: 'rotate_right', shortcut: 'R', enabled: editor.hasSelection() && !path.length, action: editor.rotate },
+      ...(editor.canSelectContents() && !path.length
+        ? [
+            { label: t('Select contents'), icon: 'select_all', enabled: true, action: editor.selectContents },
+            { label: t('Make module'), icon: 'category', enabled: true, action: makeModule },
+          ]
+        : []),
       'separator',
-      { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection(), danger: true, action: editor.deleteSelected },
+      { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection() && !path.length, danger: true, action: editor.deleteSelected },
     ]),
-});
+}, { root: circuit, locked: () => path.length > 0 });
 const menu = createMenu(byId('menu'), byId('menu-anchor'));
-const panel = createPanel(byId('props'), circuit, editor);
+const panel = createPanel(byId('props'), shown, editor, makeModule);
+
+// Make the selected frame a module, saying why not or what had to give.
+function makeModule() {
+  const said = editor.makeModule();
+  if (said) showToast(t(said.message, { count: String(said.count ?? 0) }));
+}
 const palette = createPalette(byId('palette'), byId('palette-tray'), board, editor);
 createSearch(byId('search'), palette);
 const controls = createControls(byId('sim-controls'));
@@ -237,13 +267,89 @@ function showToast(message: string) {
   }, 6000);
 }
 
+// --- Inside modules -------------------------------------------------------------
+// Double-clicking a module block steps inside it: the board shows its own
+// parts, live (their readouts are the simulation's, and its buttons and
+// switches work), with a path bar along the top to step back out, as does Esc.
+// The simulation carries on throughout; stepping out returns to the same pan
+// and zoom.
+const pathBar = byId('module-path');
+
+function showLevel() {
+  const id = path.at(-1)?.id;
+  shownCircuit = (id && insideOf(circuit, id)) || circuit;
+  files.quietly(() => editor.reload());
+  renderPath();
+}
+
+function enterModule(id: string) {
+  if (!insideOf(circuit, id)) {
+    showToast(t('This module’s definition isn’t in this circuit.'));
+    return;
+  }
+  path.push({ id, view: { x: board.view.x, y: board.view.y, scale: board.view.scale } });
+  panel.show(null);
+  showLevel();
+  board.fitAll();
+}
+
+function leaveModule(levels = 1) {
+  if (!path.length) return;
+  let view: View | undefined;
+  for (let k = 0; k < levels && path.length; k++) view = path.pop()!.view;
+  showLevel();
+  if (view) board.setView(view);
+}
+
+// Back to the whole circuit at once, as it's about to be replaced (a file
+// opened, an undo); the caller redraws.
+function leaveModules() {
+  if (!path.length) return;
+  board.setView(path[0].view);
+  path.length = 0;
+  shownCircuit = circuit;
+  renderPath();
+}
+
+// The path bar: back, then the circuit and each block stepped into, the
+// levels above clickable.
+function renderPath() {
+  pathBar.hidden = !path.length;
+  if (!path.length) {
+    pathBar.replaceChildren();
+    return;
+  }
+  const back = document.createElement('md-icon-button');
+  back.innerHTML = '<md-icon>arrow_back</md-icon>';
+  back.title = t('Back (Esc)');
+  back.addEventListener('click', () => leaveModule());
+  const crumb = (text: string, levels: number) => {
+    const el = document.createElement(levels ? 'button' : 'span');
+    el.className = 'module-crumb';
+    el.textContent = text;
+    if (levels) el.addEventListener('click', () => leaveModule(levels));
+    return el;
+  };
+  const items: HTMLElement[] = [crumb(t('Circuit'), path.length)];
+  path.forEach(({ id }, k) => {
+    const block = blockAt(circuit, id);
+    const sep = document.createElement('span');
+    sep.className = 'module-crumb-sep';
+    sep.textContent = '›';
+    const name = block ? `${refText(block)} ${(block.props as { title: string }).title}` : id;
+    items.push(sep, crumb(name, path.length - 1 - k));
+  });
+  pathBar.replaceChildren(back, ...items);
+}
+
 // Put a loaded (or empty) circuit on the board, with fresh simulation state.
 // An opened one (file, example, link) is fitted in view unless Settings ask
 // for the view saved with it; the autosave always comes back as it was left.
 function loadCircuit(data: SavedCircuit, opened = false) {
   // Another circuit (new, opened, an example): the simulation stops first.
   controls.pause();
-  circuit.load(data.parts, data.joints, data.wires, data.ambient);
+  leaveModules();
+  circuit.load(data.parts, data.joints, data.wires, data.ambient, data.modules);
   engine.reset();
   scope.clear();
   const fit = opened && settings.openView === 'fit' && circuit.components.length > 0;

@@ -1,13 +1,16 @@
 import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, isTextSpec, pinsOf, usLetterOf } from './components.ts';
 import { AMBIENT, freeRef, type Circuit } from './model.ts';
+import { modulesInUse, type ModuleDef } from './modules.ts';
 import type { End, Fault, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
 // A circuit as stored in a file (and in the browser's autosave): what was
 // built, not the live simulation, so capacitors load empty and parts cool.
 // Bump VERSION when the shape changes, and keep reading older versions.
+// Version 2 added module definitions; a file without modules is still
+// written as version 1, so older copies of the app keep opening it.
 
 export const FORMAT = 'electronics-circuit';
-export const VERSION = 1;
+export const VERSION = 2;
 
 export interface View extends Point {
   scale: number;
@@ -19,19 +22,22 @@ export interface SavedCircuit {
   parts: Part[];
   joints: Joint[];
   wires: Wire[];
+  modules?: ModuleDef[]; // the definitions its module blocks use (version 2)
   name?: string; // the circuit's name as typed (its file name has dashes for spaces)
   ambient?: number; // °C around the circuit; 25 when left out (files from before)
   view?: View;
 }
 
 export function serialize(circuit: Circuit, view?: View, name?: string): SavedCircuit {
+  const modules = modulesInUse(circuit.components, circuit.modules);
   return structuredClone({
     format: FORMAT,
-    version: VERSION,
+    version: modules.length ? 2 : 1,
     ...(name ? { name } : {}),
     parts: circuit.components,
     joints: circuit.joints,
     wires: circuit.wires,
+    ...(modules.length ? { modules } : {}),
     ...(circuit.ambient !== AMBIENT ? { ambient: circuit.ambient } : {}),
     view,
   });
@@ -53,7 +59,24 @@ export function parse(text: string): SavedCircuit {
     throw new Error('This circuit was saved by a newer version of the app.');
   }
 
-  const parts = list(d.parts, 'parts').map((p, i) => readPart(obj(p, `part ${i + 1}`)));
+  const { parts, joints, wires } = readNetwork(d);
+  const modules = list(d.modules, 'modules').map((m, i) => readModule(obj(m, `module ${i + 1}`)));
+
+  let view: View | undefined;
+  if (d.view !== undefined) {
+    const v = obj(d.view, 'view');
+    view = { x: num(v.x, 'view x'), y: num(v.y, 'view y'), scale: num(v.scale, 'view scale') };
+  }
+  // An ambient temperature outside what parts are rated for is a damaged file:
+  // the default.
+  const ambient = typeof d.ambient === 'number' && d.ambient >= -40 && d.ambient <= 150 ? d.ambient : AMBIENT;
+  const name = typeof d.name === 'string' && d.name.trim() ? d.name.trim().slice(0, 80) : undefined;
+  return { format: FORMAT, version: VERSION, ...(name ? { name } : {}), parts, joints, wires, modules, ambient, view };
+}
+
+// The parts, joints and wires of `src` (a file, or a module inside one).
+function readNetwork(src: Record<string, unknown>, what = ''): { parts: Part[]; joints: Joint[]; wires: Wire[] } {
+  const parts = list(src.parts, `${what}parts`).map((p, i) => readPart(obj(p, `part ${i + 1}`)));
   // Saved before parts carried a US reference: each gets one now, with its EU
   // number where that is free (-R3, an inductor, becomes L3).
   const usRefs = new Set(parts.map((p) => p.usRef).filter(Boolean));
@@ -64,7 +87,7 @@ export function parse(text: string): SavedCircuit {
     p.usRef = /\d$/.test(same) && !usRefs.has(same) ? same : freeRef(letter, usRefs);
     usRefs.add(p.usRef);
   }
-  const joints = list(d.joints, 'joints').map((j, i) => {
+  const joints = list(src.joints, `${what}joints`).map((j, i) => {
     const o = obj(j, `joint ${i + 1}`);
     return { id: str(o.id, 'joint id'), x: num(o.x, 'joint x'), y: num(o.y, 'joint y') };
   });
@@ -82,7 +105,7 @@ export function parse(text: string): SavedCircuit {
     if (!part || !pinsOf(part.type, part.props)[pin]) throw new Error(`A wire ends at a missing pin (${String(o.part)}:${pin}).`);
     return { part: part.id, pin };
   };
-  const wires = list(d.wires, 'wires').map((w, i) => {
+  const wires = list(src.wires, `${what}wires`).map((w, i) => {
     const o = obj(w, `wire ${i + 1}`);
     return {
       id: str(o.id, 'wire id'),
@@ -91,17 +114,18 @@ export function parse(text: string): SavedCircuit {
       via: list(o.via, 'wire bends').map((p) => point(p, 'wire bend')),
     };
   });
+  return { parts, joints, wires };
+}
 
-  let view: View | undefined;
-  if (d.view !== undefined) {
-    const v = obj(d.view, 'view');
-    view = { x: num(v.x, 'view x'), y: num(v.y, 'view y'), scale: num(v.scale, 'view scale') };
-  }
-  // An ambient temperature outside what parts are rated for is a damaged file:
-  // the default.
-  const ambient = typeof d.ambient === 'number' && d.ambient >= -40 && d.ambient <= 150 ? d.ambient : AMBIENT;
-  const name = typeof d.name === 'string' && d.name.trim() ? d.name.trim().slice(0, 80) : undefined;
-  return { format: FORMAT, version: VERSION, ...(name ? { name } : {}), parts, joints, wires, ambient, view };
+// A module's definition: its own parts, joints and wires, and the Terminals
+// among its parts that are its pins.
+function readModule(o: Record<string, unknown>): ModuleDef {
+  const { parts, joints, wires } = readNetwork(o, 'module ');
+  const ports = list(o.ports, 'module pins').map((t) => {
+    if (!parts.some((p) => p.id === t && p.type === 'terminal')) throw new Error('A module pin isn’t one of its terminals.');
+    return t as string;
+  });
+  return { id: str(o.id, 'module id'), name: typeof o.name === 'string' ? o.name : 'Module', parts, joints, wires, ports };
 }
 
 function readPart(o: Record<string, unknown>): Part {

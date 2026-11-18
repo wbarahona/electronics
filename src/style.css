@@ -1018,6 +1018,12 @@ body.dragging * {
     9px var(--font-drawing);
 }
 
+/* A module block's name, along the top of its box. */
+.part .module-title {
+  font-size: 11px;
+  font-weight: 600;
+}
+
 /* Light from lamps and LEDs: --glow (0..1) is set from the simulation,
    --glow-color from the part. LEDs keep a faint tint of their colour when off. */
 .part .glow {
@@ -2198,6 +2204,72 @@ body.dragging * {
 /* Its legend: a small M3 card (surface container high, medium corners) in
    the board's top-left corner. The gradient matches the editor's colours;
    most parts reach their rating at two thirds of the way to failing. */
+/* Inside a module: where you are, and the way back out. An M3 floating bar
+   (surface container high, full corner shape, level 2 elevation) at the top
+   of the board; the levels above are text buttons in the primary colour, the
+   current one plain label-large text. */
+.module-path {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 16px 4px 4px;
+  border-radius: 9999px;
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.3),
+    0 2px 6px 2px rgb(0 0 0 / 0.15);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.module-path[hidden] {
+  display: none;
+}
+
+.module-crumb {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+button.module-crumb {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 9999px;
+  background: none;
+  color: var(--md-sys-color-primary);
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+button.module-crumb:hover {
+  background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
+}
+
+button.module-crumb:focus-visible {
+  outline: 3px solid var(--md-sys-color-secondary);
+  outline-offset: 2px;
+}
+
+span.module-crumb {
+  padding: 0 4px;
+}
+
+.module-crumb-sep {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
 .thermal-legend {
   position: absolute;
   top: 16px;
