@@ -1,9 +1,10 @@
 import { snap } from './board.ts';
 import { FRAME_MIN, frameSize } from './parts/annotate/frame.ts';
-import { encodePorts, type Side } from './parts/modules/block.ts';
+import { PARTS } from './components.ts';
+import { encodeLayout, encodePanel, encodePorts, type Layout, type Side } from './parts/modules/block.ts';
 import { createCircuit, type Circuit } from './model.ts';
 import { keyOf, pinKey } from './nets.ts';
-import type { End, Joint, Part, Point, Wire } from './types.ts';
+import type { End, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
 // Modules: a section of a circuit made into one reusable block. Its
 // definition (the parts, joints and wires inside, and which of its Terminals
@@ -20,7 +21,23 @@ export interface ModuleDef {
   wires: Wire[];
   ports: string[]; // the Terminals that are its pins, by part id, in pin order
   box?: Box; // its frame, where it's edited (made before it was kept: see boxOf)
+  face?: Face; // its block as laid out by hand (none: laid out automatically)
+  panel?: string[]; // the parts inside mounted on its block's face, by id
 }
+
+// A block face laid out by hand (Edit module's Face view): the box and title,
+// and where each pin sits, by its Terminal's id. Pins it doesn't place (added
+// since) take free spots on their frame side.
+export interface Face extends Layout {
+  pins: Record<string, { side: Side; at: number }>;
+  panel?: Record<string, Point>; // where its front-panel parts sit (others: in a row)
+}
+
+// Parts that can be mounted on a block's face, like the controls and pilot
+// lights on a panel door: those you operate (switches, buttons) and those that
+// light up as a single lamp.
+const PANEL_LAMPS: PartType[] = ['led', 'lamp', 'pilot', 'probe'];
+export const canMount = (type: PartType) => !!PARTS[type].actuator || PANEL_LAMPS.includes(type);
 
 export interface Box {
   x: number;
@@ -46,9 +63,57 @@ function portsOn(box: Box, parts: readonly Part[]): Port[] {
 }
 
 // The block's `ports` value: each pin's side and name (its Terminal's, or its
-// number).
-const portsValue = (ports: Port[]) =>
-  encodePorts(ports.map(({ c, side }, k) => [side, (c.props as { name: string }).name.trim() || String(k + 1)]));
+// number), and where the face puts it.
+const portsValue = (ports: Port[], face?: Face) =>
+  encodePorts(
+    ports.map(({ c, side }, k) => {
+      const name = (c.props as { name: string }).name.trim() || String(k + 1);
+      const at = face?.pins[c.id];
+      return at ? [at.side, name, at.at] : [side, name];
+    }),
+  );
+
+const layoutValue = (face?: Face) => encodeLayout(face ? { hw: face.hw, hh: face.hh, title: face.title } : null);
+
+// The block's `panel` value: its front-panel parts that are still there, and
+// where the face puts them.
+const panelValue = (ids: readonly string[] | undefined, parts: readonly Part[], face?: Face) =>
+  encodePanel(
+    (ids ?? [])
+      .filter((id) => parts.some((c) => c.id === id && canMount(c.type)))
+      .map((id) => {
+        const at = face?.panel?.[id];
+        return at ? [id, at.x, at.y] : [id];
+      }),
+  );
+
+// The block an edit (editCopy) would make now, as a block's values, with the
+// Terminal behind each pin: for the Face view. null without its frame.
+export function editedBlock(
+  def: ModuleDef,
+  edit: Circuit,
+  frameId: string,
+  face?: Face,
+  panel = def.panel,
+): { props: PropsOf<'module'>; ids: string[] } | null {
+  const frame = edit.part(frameId) as Part<'frame'> | undefined;
+  if (!frame) return null;
+  const parts = edit.components.filter((c) => c.type !== 'frame');
+  const ports = portsOn(frameBox(frame), parts);
+  return {
+    props: {
+      module: def.id,
+      title: frame.props.text.trim() || 'Module',
+      ports: portsValue(ports, face),
+      layout: layoutValue(face),
+      panel: panelValue(panel, parts, face),
+      settings: '',
+    },
+    ids: ports.map((p) => p.c.id),
+  };
+}
+
+type PropsOf<T extends PartType> = Part<T>['props'];
 
 const frameBox = (frame: Part<'frame'>): Box => ({ x: frame.x, y: frame.y, ...frameSize(frame.props) });
 
@@ -129,8 +194,17 @@ export function editCopy(def: ModuleDef, circuit: Circuit): { edit: Circuit; fra
 // title, and its pins, which follow their Terminals; wires to a pin whose
 // Terminal is gone are cut. Everything in the edit is the module's, except
 // frames: its own frame marks the pins, others are dropped as when made.
-// Modules made while editing join the circuit's.
-export function updateModule(circuit: Circuit, def: ModuleDef, edit: Circuit, frameId: string): { cut: number } | { error: string } {
+// Modules made while editing join the circuit's. `face`: its block laid out
+// anew, or null to lay it out automatically again; `panel`: its front-panel
+// parts anew (each left out: as it was).
+export function updateModule(
+  circuit: Circuit,
+  def: ModuleDef,
+  edit: Circuit,
+  frameId: string,
+  face?: Face | null,
+  panel?: string[],
+): { cut: number } | { error: string } {
   const frame = edit.part(frameId) as Part<'frame'> | undefined;
   if (!frame) return { error: 'Keep the module’s frame: the Terminals on its edge are its pins.' };
   const box = frameBox(frame);
@@ -150,13 +224,20 @@ export function updateModule(circuit: Circuit, def: ModuleDef, edit: Circuit, fr
     ports: ports.map((p) => p.c.id),
     box,
   });
+  if (face === null) delete def.face;
+  else if (face) def.face = face;
+  if (panel) def.panel = panel;
+  def.panel = def.panel?.filter((id) => parts.some((c) => c.id === id && canMount(c.type)));
+  if (!def.panel?.length) delete def.panel;
   circuit.modules.splice(0, circuit.modules.length, ...modules);
-  const value = portsValue(ports);
+  const value = portsValue(ports, def.face);
+  const layout = layoutValue(def.face);
+  const mounted = panelValue(def.panel, parts, def.face);
   let cut = 0;
   const update = (list: Part[], wires: Wire[], remove: (w: Wire) => void) => {
     for (const block of list) {
       if (block.type !== 'module' || (block.props as { module: string }).module !== def.id) continue;
-      Object.assign(block.props, { title: def.name, ports: value });
+      Object.assign(block.props, { title: def.name, ports: value, layout, panel: mounted });
       for (const w of [...wires]) {
         for (const at of ['from', 'to'] as const) {
           if (w[at].part !== block.id) continue;
@@ -222,6 +303,8 @@ export function flatten(circuit: Circuit): Flat {
   const out: Flat = { parts: [], joints: [], wires: [], ports: [] };
   const defs = new Map(circuit.modules.map((m) => [m.id, m]));
   const kept = new Map<string, { from: Part; part: Part }>();
+  // How the block a part is in has its switches set (applied to its copy).
+  const pending: Record<string, Record<string, PropValue>> = {};
   const walk = (parts: readonly Part[], joints: readonly Joint[], wires: readonly Wire[], space: string, home: Part | null, depth: number) => {
     for (const c of parts) {
       let part = c;
@@ -229,12 +312,14 @@ export function flatten(circuit: Circuit): Flat {
         const id = space + c.id;
         const had = copies.get(id);
         part = had?.from === c ? had.part : { ...structuredClone(c), id };
+        if (pending[id]) Object.assign(part.props, pending[id]);
         kept.set(id, { from: c, part });
       }
       out.parts.push({ part, space, home: home ?? part });
       const def = part.type === 'module' ? defs.get((part.props as { module: string }).module) : undefined;
       if (!def || depth >= MAX_DEPTH) continue;
       const inner = `${part.id}/`;
+      settingsOf(part).forEach((values, id) => (pending[inner + id] = values));
       def.ports.forEach((t, k) => out.ports.push([pinKey(part.id, k), pinKey(inner + t, 0)]));
       walk(def.parts, def.joints, def.wires, inner, home ?? part, depth + 1);
     }
@@ -276,4 +361,36 @@ export function insideOf(circuit: Circuit, id: string): Circuit | null {
 // The block a flattened id names ("c12", "c12/c5"), for its reference and title.
 export function blockAt(circuit: Circuit, id: string): Part | undefined {
   return flatten(circuit).parts.find((f) => f.part.id === id && f.part.type === 'module')?.part;
+}
+
+// --- A copy's own settings ---------------------------------------------------------
+
+// How a block has the switches inside it set: part id → values.
+function settingsOf(block: Part): Map<string, Record<string, PropValue>> {
+  try {
+    const v: unknown = JSON.parse((block.props as { settings: string }).settings || '{}');
+    return new Map(Object.entries(v && typeof v === 'object' ? (v as Record<string, Record<string, PropValue>>) : {}));
+  } catch {
+    return new Map();
+  }
+}
+
+// Remember that a part inside a block (`id` as flatten gives it, "c12/c3")
+// was set this way, in the block's own `settings`, so the copy keeps it: on
+// the next rebuild, and in the file when the block is on the board.
+export function rememberSetting(circuit: Circuit, id: string, key: string, value: PropValue) {
+  const cut = id.lastIndexOf('/');
+  if (cut < 0) return;
+  const block = flatten(circuit).parts.find((f) => f.part.id === id.slice(0, cut))?.part;
+  if (block?.type !== 'module') return;
+  const settings = Object.fromEntries(settingsOf(block));
+  const local = id.slice(cut + 1);
+  settings[local] = { ...settings[local], [key]: value };
+  (block.props as { settings: string }).settings = JSON.stringify(settings);
+}
+
+// A part as the simulator sees it, by its flattened id (a block's copy of a
+// part inside it, or a part on the board).
+export function flatPart(circuit: Circuit, id: string): Part | undefined {
+  return flatten(circuit).parts.find((f) => f.part.id === id)?.part;
 }

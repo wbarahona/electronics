@@ -2204,6 +2204,74 @@ body.dragging * {
 /* Its legend: a small M3 card (surface container high, medium corners) in
    the board's top-left corner. The gradient matches the editor's colours;
    most parts reach their rating at two thirds of the way to failing. */
+/* Edit module's Face view: grab the box's edges and corners to resize it
+   (handles drawn like a frame's), and its pins to move them. */
+.face-editor .face-edge {
+  stroke: transparent;
+  stroke-width: 12;
+}
+
+.face-editor .face-edge.ew {
+  cursor: ew-resize;
+}
+
+.face-editor .face-edge.ns {
+  cursor: ns-resize;
+}
+
+.face-editor .face-handle-hit {
+  fill: transparent;
+}
+
+.face-editor .face-handle-dot {
+  fill: var(--md-sys-color-surface);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.face-editor .face-handle.nwse {
+  cursor: nwse-resize;
+}
+
+.face-editor .face-handle.nesw {
+  cursor: nesw-resize;
+}
+
+.face-editor .face-pin {
+  fill: transparent;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-opacity: 0;
+  cursor: grab;
+}
+
+.face-editor .face-pin:hover {
+  stroke-opacity: 1;
+}
+
+/* A front-panel part on the face, by its reference: drag it into place. */
+.face-editor .face-panel {
+  cursor: grab;
+}
+
+.face-editor .face-panel rect {
+  fill: var(--md-sys-color-secondary-container);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.face-editor .face-panel text {
+  fill: var(--md-sys-color-on-secondary-container);
+  font: 500 9px var(--font-drawing);
+}
+
+/* A lamp or LED on a block's front panel: an indicator with a rim. */
+.part .panel-lamp {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
 /* Inside a module: where you are, and the way back out. An M3 floating bar
    (surface container high, full corner shape, level 2 elevation) at the top
    of the board; the levels above are text buttons in the primary colour, the

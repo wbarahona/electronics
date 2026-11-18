@@ -3,6 +3,7 @@ import { getNorm, refText } from './norm.ts';
 import { LIGHT_COLORS, PARTS, defaults, mixedLight, hitOf, keepUpright, pinNamesOf, pinsOf, symbolMarkup, tagOf, type ChoiceSpec } from './components.ts';
 import { fromControl } from './keys.ts';
 import { FRAME_MIN, frameSize, type Corner } from './parts/annotate/frame.ts';
+import { blockLayout } from './parts/modules/block.ts';
 import type { Circuit } from './model.ts';
 import { makeModule } from './modules.ts';
 import { buildNets, keyOf, pinKey, type Nets } from './nets.ts';
@@ -116,7 +117,7 @@ export interface EditorEvents {
   // After every edit to the circuit.
   onChange?: (nets: Nets) => void;
   // When a part's props were changed on the board (e.g. a switch flipped).
-  onPropChange?: (id: string) => void;
+  onPropChange?: (id: string, key?: string, value?: PropValue) => void;
   // On a right-click, after the selection is updated.
   onContextMenu?: (clientX: number, clientY: number, at: Point) => void;
   // Double-clicking a module block: step inside it.
@@ -133,6 +134,9 @@ export interface EditorEvents {
 export interface EditorScope {
   root: () => Circuit;
   locked: () => boolean;
+  // A part inside a block by its flattened id ("c12/c3"), for the parts
+  // mounted on a block's face.
+  inner?: (id: string) => Part | undefined;
 }
 
 export type Editor = ReturnType<typeof createEditor>;
@@ -291,7 +295,8 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       text.setAttribute('transform', `rotate(${-rotation}) translate(${lx} ${ly})`);
       text.setAttribute('text-anchor', anchor);
     }
-    g.querySelector('.actuator')
+    // (Its own, not a control on a block's front panel, which sits where placed.)
+    g.querySelector(':scope > .actuator')
       ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '34 0' : '0 -34'})`);
     // Heat rises: the haze sits just above it on screen, whichever way it's
     // turned (above a frame's top edge, mid-way along).
@@ -436,15 +441,72 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       (part.gauge ? GAUGE : '') +
       (part.display ? displayMarkup(c) : '') +
       HAZE;
+    if (c.type === 'module') mountPanel(c, g);
     place(c);
     const display = g.querySelector('.meter-display');
     if (display) layoutDisplay(display);
   }
 
+  // --- A block's front panel -----------------------------------------------------
+  // The parts inside a module block that are mounted on its face (see
+  // blockLayout), drawn as they'd look on a panel door: a switch or button as
+  // its on-board control, a lamp or LED as an indicator that lights with it.
+  // Each is the block's own copy of the part, by its flattened id, so it shows
+  // that copy's live state, and operating it operates that copy.
+  const panelNodes = new Map<string, SVGGElement>(); // flattened id -> its control on the face
+
+  function mountPanel(block: Part, g: SVGElement) {
+    for (const id of panelNodes.keys()) if (id.startsWith(`${block.id}/`)) panelNodes.delete(id);
+    const items = blockLayout(block.props as Part<'module'>['props']).panel.map(({ id, x, y }) => {
+      const c = scope?.inner?.(`${block.id}/${id}`);
+      if (!c || block.broken) return '';
+      const part = PARTS[c.type];
+      let body: string;
+      if (part.actuator) body = actuatorMarkup(c);
+      else {
+        const key = part.glow?.color(c.props) ?? 'red';
+        body = `<g style="--glow-color: ${LIGHT_COLORS[key]}">
+          <circle class="glow" r="16" fill="url(#glow-${key})" />
+          <circle class="bulb tinted" r="6" /><circle class="panel-lamp" r="6" />
+        </g>`;
+      }
+      return `<g class="panel-item" data-panel="${c.id}" transform="translate(${x} ${y})"><g class="upright">${body}</g></g>`;
+    });
+    g.insertAdjacentHTML('beforeend', items.join(''));
+    for (const item of g.querySelectorAll<SVGGElement>('.panel-item')) panelNodes.set(item.dataset.panel!, item);
+  }
+
+  // Operate a front-panel control: as actuate(), on the block's copy of the
+  // part, redrawing the block it's on.
+  function actuatePanel(block: Part, c: Part) {
+    const { prop, momentary } = PARTS[c.type].actuator!;
+    const set = (value: boolean) => {
+      (c.props as Record<string, PropValue>)[prop] = value;
+      onPropChange(c.id, prop, value);
+      if (!circuit.part(block.id)) return;
+      renderPart(block);
+      refreshNets();
+    };
+    if (!momentary) {
+      set(!propOf(c, prop));
+      return;
+    }
+    set(true);
+    const release = () => {
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', release);
+      set(false);
+    };
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+  }
+
   function setProp(c: Part, key: string, value: PropValue) {
     (c.props as Record<string, PropValue>)[key] = value;
+    // (Told first, with the value: a switch inside a block is remembered by its
+    // block before the circuit is solved again.)
+    onPropChange(c.id, key, value);
     refreshPart(c.id);
-    onPropChange(c.id);
   }
 
   // Turn a part's selector to its next option (a meter: DC ↔ AC).
@@ -479,7 +541,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   function showLive(live: Live, smooth = false) {
     for (const [id, { glow, heat, level: charge, reading, active, reverse, segments, light, temp, needle, shimmer = 0 }] of live) {
-      const g = nodes.get(id);
+      const g = nodes.get(id) ?? panelNodes.get(id);
       if (!g) continue;
       if (charge !== undefined) paintGauge(g, charge);
       if (reading !== undefined) paintDisplay(g, reading);
@@ -497,7 +559,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       if (temp === undefined) g.style.removeProperty('--thermo');
       else g.style.setProperty('--thermo', thermalColor(temp));
     }
-    for (const id of glows.keys()) if (!nodes.has(id)) glows.delete(id);
+    for (const id of glows.keys()) if (!nodes.has(id) && !panelNodes.has(id)) glows.delete(id);
   }
 
   // Thermal view colours: blue when cold, through green and yellow (around
@@ -1223,7 +1285,15 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // empty-board handlers below from starting a marquee.
   world.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || board.spaceHeld) return;
-    // A part's actuator or selector operates it without selecting or moving it.
+    // A part's actuator or selector operates it without selecting or moving it;
+    // so does a control on a block's front panel.
+    const item = closestIn(e.target, '.panel-item');
+    const inner = item && scope?.inner?.(item.dataset.panel!);
+    if (inner && PARTS[inner.type].actuator) {
+      e.stopPropagation();
+      actuatePanel(circuit.part(item.closest<SVGElement>('.part')!.dataset.id!)!, inner);
+      return;
+    }
     const sel = closestIn(e.target, '.selector');
     if (sel) {
       e.stopPropagation();
@@ -1479,7 +1549,10 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // Advance light and current-flow dots by `dt` seconds of real time.
   function animate(dt: number) {
     const k = 1 - Math.exp(-dt / PERSISTENCE);
-    for (const [id, s] of glows) if (easeLit(s.shown, s.target, k)) paintLit(nodes.get(id)!, s.shown);
+    for (const [id, s] of glows) {
+      const g = nodes.get(id) ?? panelNodes.get(id);
+      if (g && easeLit(s.shown, s.target, k)) paintLit(g, s.shown);
+    }
     for (const [id, f] of flows) {
       f.speed += (f.target - f.speed) * k;
       if (Math.abs(f.speed) < 1e-3) continue;

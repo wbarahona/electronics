@@ -43,7 +43,7 @@ sheet frame and title block for printing):
      (`Circuit › -A1 Controller`); the simulation keeps running, its
      readouts are live and its buttons work; Back / Esc returns to the same
      pan and zoom. A collapsed block's heat sits at the block's position.
-  4. **Block face**: Edit module gets two views, Inside | Face (an M3
+  4. **Block face** (built): Edit module gets two views, Inside | Face (an M3
      segmented button in the path bar). Face shows the block at real size:
      resize the box (edges, corners, grid steps, never smaller than its pins
      and title need), drag pins along an edge or to another side (on the grid,
@@ -53,7 +53,8 @@ sheet frame and title block for printing):
      Terminal it is, so wires stay connected; every copy follows. Kept in the
      definition and in each block's values, so its pins stay a pure function
      of them.
-  5. **Front panel**: a part inside a module (switch, push button, LED, lamp,
+  5. **Front panel** (built; a part's own switch positions are kept per
+     copy in the block's `settings`, inside it or on its face): a part inside a module (switch, push button, LED, lamp,
      display) can be set to Mounting: on the front panel. It's drawn on the
      block's face, placed in the Face view, and works there: its switch flips
      and its LED glows from the board, like the controls and pilot lights on

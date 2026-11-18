@@ -1,6 +1,7 @@
 import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, isTextSpec, pinsOf, usLetterOf } from './components.ts';
 import { AMBIENT, freeRef, type Circuit } from './model.ts';
-import { modulesInUse, type ModuleDef } from './modules.ts';
+import { modulesInUse, type Face, type ModuleDef } from './modules.ts';
+import type { Side } from './parts/modules/block.ts';
 import type { End, Fault, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
 // A circuit as stored in a file (and in the browser's autosave): what was
@@ -128,7 +129,37 @@ function readModule(o: Record<string, unknown>): ModuleDef {
   // Its frame, where it's edited (files from before it was kept have none).
   const b = o.box === undefined ? undefined : obj(o.box, 'module frame');
   const box = b && { x: num(b.x, 'module frame x'), y: num(b.y, 'module frame y'), w: num(b.w, 'module frame width'), h: num(b.h, 'module frame height') };
-  return { id: str(o.id, 'module id'), name: typeof o.name === 'string' ? o.name : 'Module', parts, joints, wires, ports, ...(box ? { box } : {}) };
+  const face = o.face === undefined ? undefined : readFace(obj(o.face, 'module face'));
+  // Its front-panel parts: ids of its parts (others are dropped).
+  const panel = list(o.panel, 'module front panel').filter((id): id is string => parts.some((p) => p.id === id));
+  return {
+    id: str(o.id, 'module id'),
+    name: typeof o.name === 'string' ? o.name : 'Module',
+    parts,
+    joints,
+    wires,
+    ports,
+    ...(box ? { box } : {}),
+    ...(face ? { face } : {}),
+    ...(panel.length ? { panel } : {}),
+  };
+}
+
+// A module's block as laid out by hand. Pins placed oddly are dropped (they
+// take a free spot instead).
+function readFace(o: Record<string, unknown>): Face {
+  const pins: Face['pins'] = {};
+  for (const [id, v] of Object.entries(obj(o.pins ?? {}, 'module face pins'))) {
+    const pin = obj(v, 'module face pin');
+    if (['L', 'R', 'T', 'B'].includes(pin.side as string) && Number.isFinite(pin.at)) pins[id] = { side: pin.side as Side, at: pin.at as number };
+  }
+  const title = o.title === 'centre' || o.title === 'hidden' ? o.title : 'top';
+  const panel: NonNullable<Face['panel']> = {};
+  for (const [id, v] of Object.entries(obj(o.panel ?? {}, 'module face panel'))) {
+    const at = obj(v, 'module face panel spot');
+    if (Number.isFinite(at.x) && Number.isFinite(at.y)) panel[id] = { x: at.x as number, y: at.y as number };
+  }
+  return { hw: num(o.hw, 'module face width'), hh: num(o.hh, 'module face height'), title, pins, ...(Object.keys(panel).length ? { panel } : {}) };
 }
 
 function readPart(o: Record<string, unknown>): Part {

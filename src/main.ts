@@ -35,7 +35,11 @@ import { wireCurrents } from './sim/flow.ts';
 import { createAirflow } from './airflow.ts';
 import { MODELS, type Result, type Sound, type Thermal } from './sim/models.ts';
 import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
-import { blockAt, editCopy, insideOf, updateModule, type ModuleDef } from './modules.ts';
+import { blockAt, canMount, editCopy, editedBlock, flatPart, flatten, insideOf, rememberSetting, updateModule, type Face, type ModuleDef } from './modules.ts';
+import { PARTS } from './components.ts';
+import { createFaceEditor } from './face-editor.ts';
+import { blockLayout, type TitleSpot } from './parts/modules/block.ts';
+import type { Part } from './types.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
 
@@ -80,8 +84,21 @@ const shown = new Proxy(circuit, {
 // with the view of the level above, to come back to.
 const path: { id: string; view: View }[] = [];
 // A module's definition being edited (see editModule): a copy laid out as a
-// circuit of its own, shown instead, with the view and run state to go back to.
-let editing: { def: ModuleDef; circuit: Circuit; frame: string; block: string; view: View; running: boolean } | null = null;
+// circuit of its own, shown instead (`mode` inside), or its block's face laid
+// out by hand (`face`: left out while untouched, null for automatic again),
+// with the view and run state to go back to.
+let editing: {
+  def: ModuleDef;
+  circuit: Circuit;
+  frame: string;
+  block: string;
+  view: View;
+  running: boolean;
+  mode: 'inside' | 'face';
+  face?: Face | null;
+  panel?: string[]; // its front-panel parts as changed (left out while untouched)
+} | null = null;
+const blank = createCircuit(); // what the board shows under the Face view
 // The parts shown can only be looked at and operated: inside a block, not editing.
 const viewOnly = () => path.length > 0 && !editing;
 let selection: string[] = []; // the selected ids, for the context menu
@@ -159,6 +176,19 @@ window.addEventListener('keydown', (e) => {
 const stressOf = (r: Result, thermal: Thermal<never>) =>
   r.celsius !== undefined && thermal.rise ? (r.celsius - AMBIENT) / thermal.rise : r.heat;
 
+// The parts mounted on the faces of the blocks shown (their copies, by
+// flattened id), so their controls and lamps show live values too.
+let panelCache: { at: unknown; parts: Part[] } = { at: null, parts: [] };
+function panelParts(): Part[] {
+  if (panelCache.at === nets) return panelCache.parts;
+  const ids = shown.components
+    .filter((c) => c.type === 'module')
+    .flatMap((c) => blockLayout(c.props as Part<'module'>['props']).panel.map((q) => `${c.id}/${q.id}`));
+  const flat = ids.length ? new Map(flatten(circuit).parts.map((f) => [f.part.id, f.part])) : new Map<string, Part>();
+  panelCache = { at: nets, parts: ids.map((id) => flat.get(id)).filter((c): c is Part => !!c) };
+  return panelCache.parts;
+}
+
 // Push the latest simulation results to the screen: how brightly each part
 // shines, how close each is to failing (0 at its rating, 1 at its limit), and
 // the current along every wire. While running, light and flow ease toward the
@@ -175,7 +205,7 @@ function showResults() {
   const smooth = controls.running;
   const live: Live = new Map();
   sounds = new Map();
-  for (const c of shown.components) {
+  for (const c of [...shown.components, ...panelParts()]) {
     const { brightness, thermal, reading, failure, active, reverse, tint, segments, light, sound, needle } = MODELS[c.type];
     const r = engine.results.get(c.id);
     const tone = r && sound && !c.broken ? sound(r, c.props) : null;
@@ -207,14 +237,23 @@ function showResults() {
 // (the simulation carries on; only a new or opened circuit resets it).
 const history = createHistory(byId('history-actions'), {
   // (While a module is edited, its own steps: see editModule.)
-  capture: () => JSON.stringify(serialize(editing ? editing.circuit : circuit)),
+  // ("keep": the face untouched so far.)
+  capture: () =>
+    editing
+      ? JSON.stringify({ edit: serialize(editing.circuit), face: editing.face === undefined ? 'keep' : editing.face, panel: editing.panel ?? 'keep' })
+      : JSON.stringify(serialize(circuit)),
   restore(snapshot) {
-    const data = parse(snapshot);
     if (editing) {
+      const { edit, face, panel: mounted } = JSON.parse(snapshot) as { edit: unknown; face: Face | null | 'keep'; panel: string[] | 'keep' };
+      const data = parse(JSON.stringify(edit));
       editing.circuit.load(data.parts, data.joints, data.wires, data.ambient, data.modules);
-      editor.reload();
+      editing.face = face === 'keep' ? undefined : face;
+      editing.panel = mounted === 'keep' ? undefined : mounted;
+      if (editing.mode === 'face') showFace();
+      else editor.reload();
       return;
     }
+    const data = parse(snapshot);
     leaveModules();
     circuit.load(data.parts, data.joints, data.wires, data.ambient, data.modules);
     editor.reload();
@@ -242,7 +281,17 @@ const editor = createEditor(board, shown, {
     files.changed();
     history.changed();
   },
-  onPropChange: () => panel.refresh(),
+  // A switch inside a block (flipped inside it, or on its front panel) is
+  // remembered by that block's copy. (The value comes with the change: looking
+  // the part up again would apply the block's old setting to it first.)
+  onPropChange: (id, key, value) => {
+    if (id.includes('/') && !editing && key !== undefined && value !== undefined) {
+      const c = flatPart(circuit, id);
+      const act = c && PARTS[c.type].actuator;
+      if (act && !act.momentary && act.prop === key) rememberSetting(circuit, id, key, value);
+    }
+    panel.refresh();
+  },
   onEnterModule: enterModule,
   onLeaveModule: () => leaveModule(),
   onContextMenu: (x, y, at) =>
@@ -258,13 +307,16 @@ const editor = createEditor(board, shown, {
             { label: t('Make module'), icon: 'category', enabled: true, action: makeModule },
           ]
         : []),
+      ...(editing?.mode === 'inside' && selection.length === 1 && canMount(shown.part(selection[0])?.type ?? 'note')
+        ? [onPanelItem(selection[0])]
+        : []),
       ...(selection.length === 1 && shown.part(selection[0])?.type === 'module' && !editing
         ? [{ label: t('Edit module'), icon: 'edit', enabled: true, action: () => editModule(selection[0]) }]
         : []),
       'separator',
       { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection() && !viewOnly(), danger: true, action: editor.deleteSelected },
     ]),
-}, { root: () => editing?.circuit ?? circuit, locked: viewOnly });
+}, { root: () => editing?.circuit ?? circuit, locked: viewOnly, inner: (id) => flatPart(circuit, id) });
 const menu = createMenu(byId('menu'), byId('menu-anchor'));
 const panel = createPanel(byId('props'), shown, editor, { makeModule, editModule: (id) => editModule(id) });
 
@@ -302,7 +354,7 @@ const pathBar = byId('module-path');
 function showLevel() {
   while (path.length && !insideOf(circuit, path.at(-1)!.id)) path.pop();
   const id = path.at(-1)?.id;
-  shownCircuit = editing?.circuit ?? ((id && insideOf(circuit, id)) || circuit);
+  shownCircuit = editing ? (editing.mode === 'face' ? blank : editing.circuit) : (id && insideOf(circuit, id)) || circuit;
   files.quietly(() => editor.reload());
   renderPath();
 }
@@ -333,6 +385,7 @@ function leaveModules() {
   if (editing) {
     board.setView(editing.view);
     editing = null;
+    faceEditor.hide();
     history.end();
   }
   if (path.length) board.setView(path[0].view);
@@ -357,7 +410,7 @@ function editModule(id: string) {
     return;
   }
   const { edit, frame } = editCopy(def, circuit);
-  editing = { def, circuit: edit, frame, block: id, view: { x: board.view.x, y: board.view.y, scale: board.view.scale }, running: controls.running };
+  editing = { def, circuit: edit, frame, block: id, view: { x: board.view.x, y: board.view.y, scale: board.view.scale }, running: controls.running, mode: 'inside' };
   controls.pause();
   panel.show(null);
   history.begin();
@@ -370,7 +423,7 @@ function finishEdit(save: boolean) {
   if (!e) return;
   let cut = 0;
   if (save) {
-    const done = updateModule(circuit, e.def, e.circuit, e.frame);
+    const done = updateModule(circuit, e.def, e.circuit, e.frame, e.face, e.panel);
     if ('error' in done) {
       showToast(t(done.error));
       return;
@@ -378,6 +431,7 @@ function finishEdit(save: boolean) {
     cut = done.cut;
   }
   editing = null;
+  faceEditor.hide();
   history.end();
   panel.show(null);
   showLevel();
@@ -389,9 +443,70 @@ function finishEdit(save: boolean) {
   if (e.running && !controls.running) controls.toggle();
 }
 
+// The Face view: the block the edit would make, laid out by hand. Each change
+// is an undo step of the edit.
+const faceEditor = createFaceEditor(board, (face) => {
+  if (!editing) return;
+  editing.face = face;
+  history.changed();
+});
+
+// While editing, the context menu of a part that can go on the front panel
+// puts it there or takes it off.
+function onPanelItem(id: string) {
+  const e = editing!;
+  const now = e.panel ?? e.def.panel ?? [];
+  const on = now.includes(id);
+  return {
+    label: t('On the front panel'),
+    icon: on ? 'check' : 'check_box_outline_blank',
+    enabled: true,
+    action: () => {
+      e.panel = on ? now.filter((x) => x !== id) : [...now, id];
+      history.changed();
+    },
+  };
+}
+
+// The face to show: as changed in this edit, else as the module has it.
+const faceNow = (e: NonNullable<typeof editing>) => (e.face === undefined ? e.def.face : (e.face ?? undefined));
+
+// Show the Face view (again: after an undo, or automatic layout).
+function showFace() {
+  const e = editing;
+  if (!e) return;
+  const block = editedBlock(e.def, e.circuit, e.frame, faceNow(e), e.panel ?? e.def.panel);
+  if (!block) {
+    showToast(t('Keep the module’s frame: the Terminals on its edge are its pins.'));
+    e.mode = 'inside';
+    showLevel();
+    return;
+  }
+  e.mode = 'face';
+  panel.show(null);
+  showLevel();
+  faceEditor.show(block.props, block.ids, (id) => {
+    const c = e.circuit.part(id);
+    return c ? refText(c) : id;
+  });
+}
+
+function setEditMode(mode: 'inside' | 'face') {
+  const e = editing;
+  if (!e || e.mode === mode) return;
+  if (mode === 'face') showFace();
+  else {
+    faceEditor.hide();
+    e.mode = 'inside';
+    showLevel();
+  }
+  board.fitAll();
+}
+
 // The path bar: back, then the circuit and each block stepped into, the
-// levels above clickable, and Edit module; while editing, what's being edited
-// with Cancel and Done.
+// levels above clickable, and Edit module; while editing, what's being edited,
+// its Inside | Face views (with the face's title spot and automatic layout),
+// Cancel and Done.
 function renderPath() {
   pathBar.hidden = !path.length && !editing;
   if (editing) {
@@ -405,7 +520,36 @@ function renderPath() {
     const done = document.createElement('md-filled-button');
     done.innerHTML = `<md-icon slot="icon">check</md-icon>${t('Done')}`;
     done.addEventListener('click', () => finishEdit(true));
-    pathBar.replaceChildren(what, cancel, done);
+    const segments = (options: [string, string][], value: string, pick: (v: string) => void) => {
+      const set = document.createElement('md-outlined-segmented-button-set');
+      for (const [v, label] of options) {
+        const b = document.createElement('md-outlined-segmented-button') as HTMLElement & { selected: boolean; label: string };
+        b.dataset.value = v;
+        b.label = t(label);
+        b.selected = v === value;
+        set.append(b);
+      }
+      set.addEventListener('segmented-button-set-selection', (ev) => {
+        const { button, selected } = (ev as CustomEvent<{ button: HTMLElement; selected: boolean }>).detail;
+        if (selected) pick(button.dataset.value!);
+      });
+      return set;
+    };
+    const views = segments([['inside', 'Inside'], ['face', 'Face']], editing.mode, (v) => setEditMode(v as 'inside' | 'face'));
+    const extra: HTMLElement[] = [];
+    if (editing.mode === 'face') {
+      const title = segments([['top', 'Title on top'], ['centre', 'Title centred'], ['hidden', 'No title']], faceNow(editing)?.title ?? 'top', (v) => faceEditor.setTitle(v as TitleSpot));
+      const auto = document.createElement('md-text-button');
+      auto.textContent = t('Automatic layout');
+      auto.addEventListener('click', () => {
+        if (!editing) return;
+        editing.face = null;
+        showFace();
+        history.changed();
+      });
+      extra.push(title, auto);
+    }
+    pathBar.replaceChildren(what, views, ...extra, cancel, done);
     return;
   }
   if (!path.length) {
