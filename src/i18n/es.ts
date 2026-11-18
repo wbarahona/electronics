@@ -548,6 +548,7 @@ export default {
   'They’re removed from my modules. Circuits that use them keep their copies.': 'Se quitan de mis módulos. Los circuitos que los usan conservan sus copias.',
   'Couldn’t delete: {error}': 'No se pudo eliminar: {error}',
   'Manage…': 'Gestionar…',
+  'Relay driver': 'Controlador de relé',
   Circuit: 'Circuito',
   'Back (Esc)': 'Atrás (Esc)',
   'This module’s definition isn’t in this circuit.': 'La definición de este módulo no está en este circuito.',

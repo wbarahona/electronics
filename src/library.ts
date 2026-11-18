@@ -1,4 +1,5 @@
 import type { ModuleDef } from './modules.ts';
+import { idb } from './idb.ts';
 import { isApp } from './platform.ts';
 
 // The module library: modules saved to be placed in any circuit, kept apart
@@ -34,49 +35,19 @@ const byName = (a: LibModule, b: LibModule) => a.name.localeCompare(b.name);
 
 // --- Browser: IndexedDB ------------------------------------------------------------
 
-const DB = 'ampage';
-const STORE = 'modules';
-
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: 'id' });
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function request<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  return openDb().then(
-    (db) =>
-      new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, mode);
-        const req = run(tx.objectStore(STORE));
-        tx.oncomplete = () => {
-          db.close();
-          resolve(req.result);
-        };
-        tx.onerror = () => {
-          db.close();
-          reject(tx.error);
-        };
-      }),
-  );
-}
-
 const browserLibrary: Library = {
   async list() {
-    const all = await request('readonly', (s) => s.getAll());
+    const all = await idb('modules', 'readonly', (s) => s.getAll());
     return (all as unknown[]).filter(isLibModule).sort(byName);
   },
   async save(m) {
     // Ask the browser to keep the library rather than clear it when space
     // runs low (Chrome and Firefox honour this; it can't stop "clear site data").
     void navigator.storage?.persist?.();
-    await request('readwrite', (s) => s.put(m));
+    await idb('modules', 'readwrite', (s) => s.put(m));
   },
   async remove(id) {
-    await request('readwrite', (s) => s.delete(id));
+    await idb('modules', 'readwrite', (s) => s.delete(id));
   },
 };
 

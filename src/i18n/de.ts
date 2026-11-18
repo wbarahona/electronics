@@ -549,6 +549,7 @@ export default {
   'They’re removed from my modules. Circuits that use them keep their copies.': 'Sie werden aus meinen Baugruppen entfernt. Schaltungen, die sie verwenden, behalten ihre Kopien.',
   'Couldn’t delete: {error}': 'Löschen fehlgeschlagen: {error}',
   'Manage…': 'Verwalten …',
+  'Relay driver': 'Relaistreiber',
   Circuit: 'Schaltung',
   'Back (Esc)': 'Zurück (Esc)',
   'This module’s definition isn’t in this circuit.': 'Die Definition dieser Baugruppe ist nicht in dieser Schaltung.',

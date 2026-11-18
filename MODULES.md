@@ -131,9 +131,11 @@ The tray also has **Built-in** modules that come with the app:
 |---|---|---|---|
 | 5 V supply | +VIN, 0V, +5V | 7805 regulator with 100 µF in, 10 µF out | Green power LED |
 | 555 astable | +V, 0V, OUT | NE555 at about 1.5 Hz (1 kΩ, 47 kΩ, 10 µF) | Red LED blinking with OUT |
+| Relay driver | +V, IN, 0V, NC, NO, COM | BC547 switching a 12 V relay (SRD-12VDC), 4.7 kΩ base resistor, 1N4007 across the coil | Yellow LED while the relay is on |
 
 They fit together: 7 to 24 V into the supply's +VIN, its +5V to the
-astable's +V, and both 0V to ground.
+astable's +V, and both 0V to ground. The relay driver takes a logic level
+(5 V) on IN and 12 V on +V; its contacts switch whatever you wire to COM.
 
 A module placed from my modules is copied into the circuit, so the circuit
 still opens anywhere, even where that module isn't saved.

@@ -1,0 +1,392 @@
+{
+  "id": "builtin-relay-driver",
+  "name": "Relay driver",
+  "main": "m1",
+  "modules": [
+    {
+      "id": "m1",
+      "name": "Relay driver",
+      "parts": [
+        {
+          "id": "c2",
+          "ref": "X1",
+          "usRef": "X1",
+          "type": "terminal",
+          "x": 0,
+          "y": 40,
+          "rotation": 0,
+          "props": {
+            "name": "+V"
+          },
+          "broken": false
+        },
+        {
+          "id": "c3",
+          "ref": "X2",
+          "usRef": "X2",
+          "type": "terminal",
+          "x": 0,
+          "y": 240,
+          "rotation": 0,
+          "props": {
+            "name": "IN"
+          },
+          "broken": false
+        },
+        {
+          "id": "c4",
+          "ref": "X3",
+          "usRef": "X3",
+          "type": "terminal",
+          "x": 0,
+          "y": 300,
+          "rotation": 0,
+          "props": {
+            "name": "0V"
+          },
+          "broken": false
+        },
+        {
+          "id": "c5",
+          "ref": "X4",
+          "usRef": "X4",
+          "type": "terminal",
+          "x": 520,
+          "y": 60,
+          "rotation": 0,
+          "props": {
+            "name": "NC"
+          },
+          "broken": false
+        },
+        {
+          "id": "c6",
+          "ref": "X5",
+          "usRef": "X5",
+          "type": "terminal",
+          "x": 520,
+          "y": 100,
+          "rotation": 0,
+          "props": {
+            "name": "NO"
+          },
+          "broken": false
+        },
+        {
+          "id": "c7",
+          "ref": "X6",
+          "usRef": "X6",
+          "type": "terminal",
+          "x": 520,
+          "y": 220,
+          "rotation": 0,
+          "props": {
+            "name": "COM"
+          },
+          "broken": false
+        },
+        {
+          "id": "c8",
+          "ref": "K1",
+          "usRef": "K1",
+          "type": "relay",
+          "x": 300,
+          "y": 140,
+          "rotation": 0,
+          "props": {
+            "partNumber": "SRD-12VDC-SL-C",
+            "coil": "DC",
+            "coilVoltage": 12,
+            "coilResistance": 400,
+            "contacts": 1,
+            "contactType": "SPDT",
+            "maxCurrent": 10
+          },
+          "broken": false
+        },
+        {
+          "id": "c9",
+          "ref": "R1",
+          "usRef": "D1",
+          "type": "diode",
+          "x": 220,
+          "y": 140,
+          "rotation": 270,
+          "props": {
+            "partNumber": "1N4007",
+            "forwardVoltage": 0.65,
+            "maxCurrent": 1,
+            "reverseVoltage": 1000
+          },
+          "broken": false
+        },
+        {
+          "id": "c10",
+          "ref": "K2",
+          "usRef": "Q1",
+          "type": "npn",
+          "x": 240,
+          "y": 240,
+          "rotation": 0,
+          "props": {
+            "partNumber": "BC547",
+            "gain": 290,
+            "maxCurrent": 0.1,
+            "powerRating": 0.5
+          },
+          "broken": false
+        },
+        {
+          "id": "c11",
+          "ref": "R2",
+          "usRef": "R1",
+          "type": "resistor",
+          "x": 120,
+          "y": 240,
+          "rotation": 0,
+          "props": {
+            "resistance": 4700,
+            "powerRating": 0.25,
+            "tolerance": 5,
+            "deviation": -0.049
+          },
+          "broken": false
+        },
+        {
+          "id": "c12",
+          "ref": "R3",
+          "usRef": "R2",
+          "type": "resistor",
+          "x": 140,
+          "y": 80,
+          "rotation": 90,
+          "props": {
+            "resistance": 2200,
+            "powerRating": 0.25,
+            "tolerance": 5,
+            "deviation": -0.16
+          },
+          "broken": false
+        },
+        {
+          "id": "c13",
+          "ref": "P1",
+          "usRef": "D2",
+          "type": "led",
+          "x": 140,
+          "y": 180,
+          "rotation": 90,
+          "props": {
+            "partNumber": "5 mm yellow",
+            "color": "yellow",
+            "forwardVoltage": 2.1,
+            "maxCurrent": 0.02
+          },
+          "broken": false
+        }
+      ],
+      "joints": [
+        {
+          "id": "j1",
+          "x": 220,
+          "y": 40
+        }
+      ],
+      "wires": [
+        {
+          "id": "w1",
+          "from": {
+            "part": "c2",
+            "pin": 0
+          },
+          "to": {
+            "part": "c12",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w2",
+          "from": {
+            "part": "c12",
+            "pin": 0
+          },
+          "to": {
+            "joint": "j1"
+          },
+          "via": []
+        },
+        {
+          "id": "w3",
+          "from": {
+            "joint": "j1"
+          },
+          "to": {
+            "part": "c9",
+            "pin": 1
+          },
+          "via": []
+        },
+        {
+          "id": "w4",
+          "from": {
+            "joint": "j1"
+          },
+          "to": {
+            "part": "c8",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w5",
+          "from": {
+            "part": "c9",
+            "pin": 0
+          },
+          "to": {
+            "part": "c8",
+            "pin": 1
+          },
+          "via": []
+        },
+        {
+          "id": "w6",
+          "from": {
+            "part": "c8",
+            "pin": 1
+          },
+          "to": {
+            "part": "c10",
+            "pin": 1
+          },
+          "via": []
+        },
+        {
+          "id": "w7",
+          "from": {
+            "part": "c12",
+            "pin": 1
+          },
+          "to": {
+            "part": "c13",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w8",
+          "from": {
+            "part": "c13",
+            "pin": 1
+          },
+          "to": {
+            "part": "c9",
+            "pin": 0
+          },
+          "via": [
+            {
+              "x": 180,
+              "y": 220
+            },
+            {
+              "x": 180,
+              "y": 180
+            }
+          ]
+        },
+        {
+          "id": "w9",
+          "from": {
+            "part": "c3",
+            "pin": 0
+          },
+          "to": {
+            "part": "c11",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w10",
+          "from": {
+            "part": "c11",
+            "pin": 1
+          },
+          "to": {
+            "part": "c10",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w11",
+          "from": {
+            "part": "c4",
+            "pin": 0
+          },
+          "to": {
+            "part": "c10",
+            "pin": 2
+          },
+          "via": []
+        },
+        {
+          "id": "w12",
+          "from": {
+            "part": "c8",
+            "pin": 3
+          },
+          "to": {
+            "part": "c5",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w13",
+          "from": {
+            "part": "c8",
+            "pin": 4
+          },
+          "to": {
+            "part": "c6",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w14",
+          "from": {
+            "part": "c8",
+            "pin": 2
+          },
+          "to": {
+            "part": "c7",
+            "pin": 0
+          },
+          "via": []
+        }
+      ],
+      "ports": [
+        "c2",
+        "c3",
+        "c4",
+        "c5",
+        "c6",
+        "c7"
+      ],
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 520,
+        "h": 320
+      },
+      "panel": [
+        "c13"
+      ]
+    }
+  ],
+  "version": 1,
+  "saved": "2026-11-18T00:00:00.000Z"
+}

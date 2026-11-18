@@ -327,7 +327,9 @@ export function flatten(circuit: Circuit): Flat {
   const kept = new Map<string, { from: Part; part: Part }>();
   // How the block a part is in has its switches set (applied to its copy).
   const pending: Record<string, Record<string, PropValue>> = {};
-  const walk = (parts: readonly Part[], joints: readonly Joint[], wires: readonly Wire[], space: string, home: Part | null, depth: number) => {
+  // A copy's reference is its block's and its own (EN 81346's product
+  // aspect: K6 in block A1 is -A1-K6, and so on down).
+  const walk = (parts: readonly Part[], joints: readonly Joint[], wires: readonly Wire[], space: string, home: Part | null, depth: number, block?: Part) => {
     for (const c of parts) {
       let part = c;
       if (space) {
@@ -335,6 +337,7 @@ export function flatten(circuit: Circuit): Flat {
         const had = copies.get(id);
         part = had?.from === c ? had.part : { ...structuredClone(c), id };
         if (pending[id]) Object.assign(part.props, pending[id]);
+        if (block) Object.assign(part, { ref: `${block.ref}-${c.ref}`, usRef: `${block.usRef}-${c.usRef}` });
         kept.set(id, { from: c, part });
       }
       out.parts.push({ part, space, home: home ?? part });
@@ -343,7 +346,7 @@ export function flatten(circuit: Circuit): Flat {
       const inner = `${part.id}/`;
       settingsOf(part).forEach((values, id) => (pending[inner + id] = values));
       def.ports.forEach((t, k) => out.ports.push([pinKey(part.id, k), pinKey(inner + t, 0)]));
-      walk(def.parts, def.joints, def.wires, inner, home ?? part, depth + 1);
+      walk(def.parts, def.joints, def.wires, inner, home ?? part, depth + 1, part);
     }
     for (const j of joints) out.joints.push({ key: space + j.id, space, at: j });
     for (const w of wires) out.wires.push([space + keyOf(w.from), space + keyOf(w.to)]);
