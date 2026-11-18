@@ -6,7 +6,7 @@ import { onLanguage, t } from './i18n/index.ts';
 import { onNorm } from './norm.ts';
 import { rememberPart } from './recent.ts';
 import { fromControl } from './keys.ts';
-import type { PartType } from './types.ts';
+import type { PartType, Props, PropsByType } from './types.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DRAG_THRESHOLD = 4; // px before a press counts as a drag rather than a click
@@ -20,15 +20,18 @@ const ICON_MAX_WIDTH = 48; // px
 // the usual 88×48 so small symbols keep a common scale. Taller symbols get a
 // taller icon, up to ICON_MAX_HEIGHT, so chips stay legible; the width follows
 // so the symbol keeps its proportions.
-const iconCache = new Map<PartType, { box: string; width: number; height: number }>();
+// (Keyed by part type, or for a module block by its drawing.)
+const iconCache = new Map<string, { box: string; width: number; height: number }>();
 
-export function icon(type: PartType): { box: string; width: number; height: number } {
-  const cached = iconCache.get(type);
+export function icon(type: PartType, props?: Props): { box: string; width: number; height: number } {
+  const markup = symbolMarkup(type, props ?? defaults(type));
+  const key = props ? markup : type;
+  const cached = iconCache.get(key);
   if (cached) return cached;
   const probe = document.createElementNS(SVG_NS, 'svg');
   probe.setAttribute('class', 'part');
   probe.style.cssText = 'position: absolute; visibility: hidden; width: 0; height: 0';
-  probe.innerHTML = `<g>${symbolMarkup(type, defaults(type))}</g>`;
+  probe.innerHTML = `<g>${markup}</g>`;
   document.body.append(probe);
   const b = (probe.firstElementChild as SVGGElement).getBBox();
   probe.remove();
@@ -41,8 +44,27 @@ export function icon(type: PartType): { box: string; width: number; height: numb
   const px = Math.min(ICON_MAX_HEIGHT, (ICON_HEIGHT * height) / 48);
   const scale = Math.min(px / height, ICON_MAX_WIDTH / width);
   const result = { box: `${left} ${top} ${width} ${height}`, width: width * scale, height: height * scale };
-  iconCache.set(type, result);
+  iconCache.set(key, result);
   return result;
+}
+
+// A module in the Modules tray (from the library): its block's values, to
+// draw and drag it, and how to place it and offer its menu.
+export interface TrayModule {
+  key: string;
+  name: string;
+  props: PropsByType['module'];
+  place: (x: number, y: number, rotation: number) => void;
+  menu?: (clientX: number, clientY: number) => void;
+}
+
+// The Modules tray's groups (Built-in, My modules), each with a line to show
+// when it's empty, and actions of its own (Import, Export all).
+export interface TrayGroup {
+  label: string;
+  items: TrayModule[];
+  empty: string;
+  actions?: { label: string; icon: string; run: () => void; disabled?: boolean }[];
 }
 
 // A category's parts by group, groups in the order their first part is listed.
@@ -67,7 +89,13 @@ function groupsOf(category: CategoryId): [string, PartType[]][] {
 // middle of the view. Returns both, for other part lists (search results).
 export type Palette = ReturnType<typeof createPalette>;
 
-export function createPalette(container: HTMLElement, tray: HTMLElement, board: Board, editor: Editor) {
+export function createPalette(
+  container: HTMLElement,
+  tray: HTMLElement,
+  board: Board,
+  editor: Editor,
+  modules: () => Promise<TrayGroup[]> = async () => [],
+) {
   const { svg, world } = board;
   const ghost = document.createElementNS(SVG_NS, 'g');
   ghost.classList.add('part', 'ghost');
@@ -106,6 +134,59 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     return btn;
   }
 
+  function moduleButton(m: TrayModule) {
+    const look = icon('module', m.props);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'palette-item';
+    btn.title = t('Drag {part} onto the board', { part: m.name });
+    btn.innerHTML = `
+      <md-focus-ring></md-focus-ring>
+      <md-ripple></md-ripple>
+      <svg class="part" viewBox="${look.box}" style="width: ${look.width}px; height: ${look.height}px" aria-hidden="true">${symbolMarkup('module', m.props)}</svg>
+      <span></span>`;
+    btn.querySelector('span')!.textContent = m.name;
+    btn.addEventListener('pointerdown', (e) => startDrag(e, 'module', btn, m));
+    if (m.menu) {
+      btn.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        m.menu!(e.clientX, e.clientY);
+      });
+    }
+    return btn;
+  }
+
+  // The Modules tray: the library's groups, read when it opens.
+  async function moduleGroups(): Promise<HTMLElement[]> {
+    return (await modules()).map(({ label, items, empty, actions = [] }) => {
+      const group = document.createElement('div');
+      group.className = 'tray-group';
+      const caption = document.createElement('div');
+      caption.className = 'tray-group-label';
+      caption.textContent = label;
+      const row = document.createElement('div');
+      row.className = 'tray-group-items';
+      if (items.length) row.append(...items.map(moduleButton));
+      else {
+        const hint = document.createElement('div');
+        hint.className = 'tray-empty';
+        hint.textContent = empty;
+        row.append(hint);
+      }
+      for (const a of actions) {
+        const b = document.createElement('md-text-button') as HTMLElement & { disabled: boolean };
+        b.className = 'tray-action';
+        b.innerHTML = `<md-icon slot="icon">${a.icon}</md-icon>`;
+        b.append(a.label);
+        b.disabled = !!a.disabled;
+        b.addEventListener('click', a.run);
+        row.append(b);
+      }
+      group.append(caption, row);
+      return group;
+    });
+  }
+
   // Categories that don't fit the top bar go into a "More" menu.
   const buttons: HTMLButtonElement[] = [];
   const more = document.createElement('button');
@@ -118,7 +199,12 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     openCategory = button;
     button.classList.add('open');
     button.setAttribute('aria-expanded', 'true');
-    trayParts.replaceChildren(...groupsOf(category.id).map(([name, types], _, all) => {
+    if (category.id === 'modules') {
+      trayParts.replaceChildren();
+      void moduleGroups().then((groups) => {
+        if (openCategory === button) trayParts.replaceChildren(...groups);
+      });
+    } else trayParts.replaceChildren(...groupsOf(category.id).map(([name, types], _, all) => {
       const group = document.createElement('div');
       group.className = 'tray-group';
       // Captions only help when there's more than one group.
@@ -259,18 +345,26 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     if (open) openTray(open, CATEGORIES[buttons.indexOf(open)]);
   });
 
-  function addToView(type: PartType, rotation = 0) {
-    const r = svg.getBoundingClientRect();
-    const p = board.screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
-    editor.add(type, p.x, p.y, rotation);
-    rememberPart(type);
+  // Drop a part, or a module from the library, at (x, y).
+  function drop(type: PartType, x: number, y: number, rotation: number, module?: TrayModule) {
+    if (module) module.place(x, y, rotation);
+    else {
+      editor.add(type, x, y, rotation);
+      rememberPart(type);
+    }
   }
 
-  function startDrag(e: PointerEvent, type: PartType, btn: HTMLElement) {
+  function addToView(type: PartType, rotation = 0, module?: TrayModule) {
+    const r = svg.getBoundingClientRect();
+    const p = board.screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+    drop(type, p.x, p.y, rotation, module);
+  }
+
+  function startDrag(e: PointerEvent, type: PartType, btn: HTMLElement, module?: TrayModule) {
     if (e.button !== 0) return;
     e.preventDefault();
     btn.setPointerCapture(e.pointerId);
-    ghost.innerHTML = symbolMarkup(type, defaults(type));
+    ghost.innerHTML = symbolMarkup(type, module?.props ?? defaults(type));
     const start = { clientX: e.clientX, clientY: e.clientY };
     let last = start;
     let moved = false;
@@ -310,12 +404,10 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     const end = (ev: PointerEvent) => {
       stop();
       if (!moved) {
-        addToView(type, rotation);
+        addToView(type, rotation, module);
       } else if (overBoard(ev)) {
         const p = board.screenToWorld(ev.clientX, ev.clientY);
-        editor.add(type, p.x, p.y, rotation);
-        rememberPart(type);
-    rememberPart(type);
+        drop(type, p.x, p.y, rotation, module);
       }
     };
 
@@ -347,5 +439,11 @@ export function createPalette(container: HTMLElement, tray: HTMLElement, board: 
     if (k >= 0) openTray(buttons[k], CATEGORIES[k]);
   }
 
-  return { addToView, startDrag, openCategory: openCategoryTray };
+  // The library changed: show it again if its tray is open.
+  function refreshModules() {
+    const k = CATEGORIES.findIndex((c) => c.id === 'modules');
+    if (openCategory === buttons[k]) openTray(buttons[k], CATEGORIES[k]);
+  }
+
+  return { addToView, startDrag, openCategory: openCategoryTray, refreshModules };
 }

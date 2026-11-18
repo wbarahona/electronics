@@ -15,26 +15,46 @@ export interface PartProps {
   module: { module: string; title: string; ports: string; layout: string; panel: string; settings: string };
 }
 
-// A part inside mounted on the face: its id in the module and, when placed
-// by hand, where (from the block's middle).
-export type PanelSpot = [string, number?, number?];
+// A part inside mounted on the face: its id in the module, how far it reaches
+// each way from its middle as mounted (`w`, `h`), the share of its full size
+// it's mounted at (`s`, a display's), and, when placed by hand, where (from
+// the block's middle).
+export interface PanelSpot {
+  id: string;
+  w: number;
+  h: number;
+  s?: number;
+  x?: number;
+  y?: number;
+}
 
 export const encodePanel = (spots: PanelSpot[]): string => (spots.length ? JSON.stringify(spots) : '');
 
+// (Also reads [id, x, y], as saved before parts had sizes on the face.)
 export function decodePanel(text: string): PanelSpot[] {
+  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
   try {
     const v: unknown = JSON.parse(text);
     if (!Array.isArray(v)) return [];
-    return v
-      .filter((q): q is PanelSpot => Array.isArray(q) && typeof q[0] === 'string')
-      .map(([id, x, y]): PanelSpot => (Number.isFinite(x) && Number.isFinite(y) ? [id, x, y] : [id]));
+    return v.flatMap((q): PanelSpot[] => {
+      if (Array.isArray(q) && typeof q[0] === 'string') {
+        const [x, y] = [n(q[1]), n(q[2])];
+        return [{ id: q[0], ...PANEL_HALF, ...(x !== undefined && y !== undefined ? { x, y } : {}) }];
+      }
+      if (!q || typeof q !== 'object' || typeof (q as PanelSpot).id !== 'string') return [];
+      const o = q as Record<string, unknown>;
+      const [x, y, s] = [n(o.x), n(o.y), n(o.s)];
+      return [{ id: o.id as string, w: n(o.w) ?? PANEL_HALF.w, h: n(o.h) ?? PANEL_HALF.h, ...(s ? { s } : {}), ...(x !== undefined && y !== undefined ? { x, y } : {}) }];
+    });
   } catch {
     return [];
   }
 }
 
-// What a front-panel part takes up on the face, each way from its middle.
+// What a control or lamp takes up on the face, each way from its middle.
 export const PANEL_HALF = { w: 13, h: 10 };
+
+const PANEL_GAP = 10; // between front-panel parts in the automatic row
 
 // Which side of the block a pin comes out of: left, right, top, bottom.
 export type Side = 'L' | 'R' | 'T' | 'B';
@@ -116,15 +136,20 @@ export function blockLayout(p: PropsByType['module']) {
     });
   };
   const [lo, ro, to, bo] = [left, right, top, bottom].map(offsets);
-  // Front-panel parts: where placed, else in a row below the side pins.
+  // Front-panel parts: where placed, else side by side in a row below the
+  // side pins, centred.
   const spots = decodePanel(p.panel);
-  const rowY = Math.max(0, ...lo, ...ro) + 30;
-  const loose = spots.filter((q) => q.length < 3);
-  const panel = spots.map(([id, x, y]) => {
-    if (x !== undefined && y !== undefined) return { id, x, y };
-    const j = loose.findIndex((q) => q[0] === id);
-    return { id, x: (j - (loose.length - 1) / 2) * 30, y: rowY };
-  });
+  const loose = spots.filter((q) => q.x === undefined || q.y === undefined);
+  const rowY = Math.max(0, ...lo, ...ro) + STEP + Math.max(0, ...loose.map((q) => q.h));
+  let cursor = -(loose.reduce((sum, q) => sum + 2 * q.w, 0) + PANEL_GAP * (loose.length - 1)) / 2;
+  const row = new Map(
+    loose.map((q) => {
+      const x = cursor + q.w;
+      cursor += 2 * q.w + PANEL_GAP;
+      return [q.id, x];
+    }),
+  );
+  const panel = spots.map((q) => ({ ...q, x: q.x ?? row.get(q.id)!, y: q.y ?? rowY }));
   const widest = (list: { name: string }[]) => Math.max(0, ...list.map((q) => q.name.length * CHAR_W));
   const titleW = title === 'hidden' ? 0 : p.title.length * TITLE_W + 16;
   const names = widest(left) + widest(right) + 24;
@@ -132,7 +157,7 @@ export function blockLayout(p: PropsByType['module']) {
   const across = [...to, ...bo].map(Math.abs);
   const needW = Math.max(
     2 * STEP,
-    Math.max(0, ...panel.map((q) => ceilStep(Math.abs(q.x) + PANEL_HALF.w + 4))),
+    Math.max(0, ...panel.map((q) => ceilStep(Math.abs(q.x) + q.w + 4))),
     ceilStep((title === 'centre' ? titleW + names : Math.max(titleW, names)) / 2),
     Math.max(0, ...across) + STEP,
   );
@@ -141,7 +166,7 @@ export function blockLayout(p: PropsByType['module']) {
     2 * STEP,
     Math.max(0, ...down) + STEP,
     -Math.min(0, ...down) + (title === 'top' ? 2 * STEP : STEP),
-    ...panel.map((q) => ceilStep(Math.abs(q.y) + PANEL_HALF.h + 6)),
+    ...panel.map((q) => ceilStep(Math.abs(q.y) + q.h + 6)),
   );
   const hw = Math.max(needW, layout?.hw ?? 0);
   const hh = Math.max(needH, layout?.hh ?? 0);

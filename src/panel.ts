@@ -20,7 +20,18 @@ const NO_FAULTS = new Set(['ground', 'netLabel', 'terminal', 'scopeProbe', 'modu
 // sits in the action area at the bottom.
 // Shown while exactly one part is selected; its close button, or Esc from
 // inside it, deselects the part (an open dropdown takes the Esc first).
-export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Editor, 'refreshPart' | 'deselect'>, modules: { makeModule: () => void; editModule: (id: string) => void }) {
+export function createPanel(
+  el: HTMLElement,
+  circuit: Circuit,
+  editor: Pick<Editor, 'refreshPart' | 'deselect'>,
+  modules: {
+    makeModule: () => void;
+    editModule: (id: string) => void;
+    saveModule: (id: string) => void;
+    newer: (id: string) => number | null; // the version my modules has, if newer
+    updateModule: (id: string) => void;
+  },
+) {
   let current: string | null = null;
 
   // The scrim behind it when it's modal: a click there closes it.
@@ -313,7 +324,19 @@ export function createPanel(el: HTMLElement, circuit: Circuit, editor: Pick<Edit
       edit.innerHTML = `<md-icon slot="icon">edit</md-icon>${t('Edit module')}`;
       edit.title = t('Edit what’s inside; every copy of this module follows');
       edit.addEventListener('click', () => modules.editModule(c.id));
-      actions.append(edit);
+      const save = document.createElement('md-outlined-button');
+      save.innerHTML = `<md-icon slot="icon">library_add</md-icon>${t('Save to my modules')}`;
+      save.title = t('Keep it in my modules, to place in any circuit');
+      save.addEventListener('click', () => modules.saveModule(c.id));
+      actions.append(edit, save);
+      const newer = modules.newer(c.id);
+      if (newer !== null) {
+        const update = document.createElement('md-filled-tonal-button');
+        update.innerHTML = `<md-icon slot="icon">autorenew</md-icon>${t('Update to version {n}', { n: String(newer) })}`;
+        update.title = t('My modules has a newer version of this module');
+        update.addEventListener('click', () => modules.updateModule(c.id));
+        actions.append(update);
+      }
     }
     el.replaceChildren(handle, head, body, actions);
     markModified(c);

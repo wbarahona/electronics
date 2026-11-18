@@ -182,7 +182,8 @@ export function createSearch(root: HTMLElement, palette: Palette) {
       const has = (text = '') => [text, t(text)].some((s) => s.toLowerCase().includes(query));
       const matches = (Object.keys(PARTS) as PartType[]).filter((type) => {
         const { category: id, name, group } = PARTS[type];
-        return id === category.id && (has(name) || has(group) || codes(type).length > 0);
+        // (A bare module block isn't placed from search: modules come from the library.)
+        return id === category.id && type !== 'module' && (has(name) || has(group) || codes(type).length > 0);
       });
       if (!matches.length) return [];
       return [section(category.icon, t(category.label), matches.map((type) => option(type, query, codes(type))))];

@@ -60,7 +60,20 @@ sheet frame and title block for printing):
      and its LED glows from the board, like the controls and pilot lights on
      a real panel door (EN 81346's location aspect: +door vs inside). Its
      state would then be saved with the circuit.
-  6. **Module library**: a Modules tray category with Built-in (shipped
+  6. **Front-panel displays** (built): the 7-segment display, LED bar graph and dot
+     matrix (mono or RGB) on a block's face, lit from that copy's simulation
+     (their live segments and light, painted as on the board). Each drawn as
+     its own symbol at a size on the face (e.g. 50 / 75 / 100 %); panel parts
+     get their real footprint, so the box grows to fit and the Face view keeps
+     them from overlapping. RGB and bi-colour LEDs join the indicators: one
+     round lamp like an LED's, in the colour they mix (red, green, amber, any
+     RGB blend).
+  7. **Module library** (core built: the Modules tray with My modules, Save
+     to my modules, place, rename, delete, IndexedDB / app-data files; Built-in group
+     with a 5 V supply and a 555 astable, a Manage dialog (rename,
+     export, delete one or many, import, storage used), export and import as
+     .ampage-modules files, Update to version N offered on blocks; still to
+     do: more built-ins): a Modules tray category with Built-in (shipped
      with the app, like the examples) and My modules (rename, edit, export,
      delete); placing one copies its definition into the circuit, and a newer
      library version can be offered as an update. Storage behind one

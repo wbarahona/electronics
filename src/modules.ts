@@ -1,8 +1,9 @@
 import { snap } from './board.ts';
 import { FRAME_MIN, frameSize } from './parts/annotate/frame.ts';
 import { PARTS } from './components.ts';
-import { encodeLayout, encodePanel, encodePorts, type Layout, type Side } from './parts/modules/block.ts';
+import { PANEL_HALF, encodeLayout, encodePanel, encodePorts, type Layout, type PanelSpot, type Side } from './parts/modules/block.ts';
 import { createCircuit, type Circuit } from './model.ts';
+import type { LibModule } from './library.ts';
 import { keyOf, pinKey } from './nets.ts';
 import type { End, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
@@ -23,6 +24,14 @@ export interface ModuleDef {
   box?: Box; // its frame, where it's edited (made before it was kept: see boxOf)
   face?: Face; // its block as laid out by hand (none: laid out automatically)
   panel?: string[]; // the parts inside mounted on its block's face, by id
+  source?: Source; // the library module it was saved as or placed from
+}
+
+// Where a module in a circuit came from in the library: the library module's
+// id and this module's id within it ("lib-…#m2"), and the version it was.
+export interface Source {
+  id: string;
+  version: number;
 }
 
 // A block face laid out by hand (Edit module's Face view): the box and title,
@@ -30,14 +39,18 @@ export interface ModuleDef {
 // since) take free spots on their frame side.
 export interface Face extends Layout {
   pins: Record<string, { side: Side; at: number }>;
-  panel?: Record<string, Point>; // where its front-panel parts sit (others: in a row)
+  panel?: Record<string, Point & { s?: number }>; // where its front-panel parts sit (others: in a row), and a display's size
 }
 
-// Parts that can be mounted on a block's face, like the controls and pilot
-// lights on a panel door: those you operate (switches, buttons) and those that
-// light up as a single lamp.
+// Parts that can be mounted on a block's face, like the controls, pilot
+// lights and displays on a panel door: those you operate (switches, buttons),
+// those that light up as a single lamp, and those with a look of their own
+// there (onPanel: displays, RGB and bi-colour LEDs).
 const PANEL_LAMPS: PartType[] = ['led', 'lamp', 'pilot', 'probe'];
-export const canMount = (type: PartType) => !!PARTS[type].actuator || PANEL_LAMPS.includes(type);
+export const canMount = (type: PartType) => !!PARTS[type].actuator || PANEL_LAMPS.includes(type) || !!PARTS[type].onPanel;
+
+// The sizes a display can be mounted at, as shares of its full size.
+export const PANEL_SCALES = [0.5, 0.75, 1];
 
 export interface Box {
   x: number;
@@ -75,16 +88,19 @@ const portsValue = (ports: Port[], face?: Face) =>
 
 const layoutValue = (face?: Face) => encodeLayout(face ? { hw: face.hw, hh: face.hh, title: face.title } : null);
 
-// The block's `panel` value: its front-panel parts that are still there, and
-// where the face puts them.
+// The block's `panel` value: its front-panel parts that are still there, each
+// with what it takes up at its size, and where the face puts them.
 const panelValue = (ids: readonly string[] | undefined, parts: readonly Part[], face?: Face) =>
   encodePanel(
-    (ids ?? [])
-      .filter((id) => parts.some((c) => c.id === id && canMount(c.type)))
-      .map((id) => {
-        const at = face?.panel?.[id];
-        return at ? [id, at.x, at.y] : [id];
-      }),
+    (ids ?? []).flatMap((id): PanelSpot[] => {
+      const c = parts.find((p) => p.id === id);
+      if (!c || !canMount(c.type)) return [];
+      const at = face?.panel?.[id];
+      const look = PARTS[c.type].onPanel?.(c.props);
+      const s = look ? (at?.s ?? look.scale ?? 1) : undefined;
+      const size = look ? { w: look.hw * s!, h: look.hh * s!, s } : PANEL_HALF;
+      return [{ id, ...size, ...(at ? { x: at.x, y: at.y } : {}) }];
+    }),
   );
 
 // The block an edit (editCopy) would make now, as a block's values, with the
@@ -230,14 +246,20 @@ export function updateModule(
   def.panel = def.panel?.filter((id) => parts.some((c) => c.id === id && canMount(c.type)));
   if (!def.panel?.length) delete def.panel;
   circuit.modules.splice(0, circuit.modules.length, ...modules);
-  const value = portsValue(ports, def.face);
-  const layout = layoutValue(def.face);
-  const mounted = panelValue(def.panel, parts, def.face);
+  return { cut: refreshBlocks(circuit, def, before) };
+}
+
+// Bring every block of a changed module up to date, on the board and inside
+// other modules: its title, face and front panel, and its pins, which follow
+// their Terminals (`before`: the module's pins before the change); wires to a
+// pin whose Terminal is gone are cut. Returns how many were.
+function refreshBlocks(circuit: Circuit, def: ModuleDef, before: string[]): number {
+  const { title, ports, layout, panel } = blockValues(def);
   let cut = 0;
   const update = (list: Part[], wires: Wire[], remove: (w: Wire) => void) => {
     for (const block of list) {
       if (block.type !== 'module' || (block.props as { module: string }).module !== def.id) continue;
-      Object.assign(block.props, { title: def.name, ports: value, layout, panel: mounted });
+      Object.assign(block.props, { title, ports, layout, panel });
       for (const w of [...wires]) {
         for (const at of ['from', 'to'] as const) {
           if (w[at].part !== block.id) continue;
@@ -254,7 +276,7 @@ export function updateModule(
   };
   update(circuit.components, circuit.wires, (w) => circuit.remove(w.id));
   for (const m of circuit.modules) update(m.parts, m.wires, (w) => (m.wires = m.wires.filter((x) => x !== w)));
-  return { cut };
+  return cut;
 }
 
 // The definitions a circuit's blocks use, directly or through blocks inside
@@ -393,4 +415,109 @@ export function rememberSetting(circuit: Circuit, id: string, key: string, value
 // part inside it, or a part on the board).
 export function flatPart(circuit: Circuit, id: string): Part | undefined {
   return flatten(circuit).parts.find((f) => f.part.id === id)?.part;
+}
+
+// --- The library ---------------------------------------------------------------------
+
+// A block's values for a module as it stands: its pins on their frame sides (or
+// as its face puts them), its layout and its front panel.
+export function blockValues(def: ModuleDef): PropsOf<'module'> {
+  const sides = new Map(portsOn(boxOf(def), def.parts).map((p) => [p.c.id, p.side]));
+  const ports = def.ports.flatMap((id) => {
+    const c = def.parts.find((p) => p.id === id);
+    return c ? [{ c, side: sides.get(id) ?? 'L' }] : [];
+  });
+  return {
+    module: def.id,
+    title: def.name,
+    ports: portsValue(ports, def.face),
+    layout: layoutValue(def.face),
+    panel: panelValue(def.panel, def.parts, def.face),
+    settings: '',
+  };
+}
+
+// A module of the circuit as a library module: it and the modules inside it,
+// copied, as `id`'s next version (or a new one). The circuit's modules then
+// know they came from it, so placing it again reuses them.
+export function toLibrary(circuit: Circuit, def: ModuleDef, id: string, version: number): LibModule {
+  const all = [def, ...modulesInUse(def.parts, circuit.modules).filter((m) => m !== def)];
+  const modules = all.map((m) => {
+    const copy = structuredClone(m);
+    delete copy.source;
+    return copy;
+  });
+  for (const m of all) m.source = { id: `${id}#${m.id}`, version };
+  return { id, name: def.name, main: def.id, modules, version, saved: new Date().toISOString() };
+}
+
+// Bring a library module into the circuit, to place a block of it: its
+// modules join the circuit's under ids of their own (reusing ones already
+// placed from the same version). Returns the circuit's id for the module itself.
+export const fromLibrary = (circuit: Circuit, lib: LibModule): string => bring(circuit, lib).get(lib.main)!;
+
+// Copy a library module's modules into the circuit (all but `except`), each
+// under an id of its own unless the same version is there already. Returns
+// each one's id in the circuit, by its id in the library module.
+function bring(circuit: Circuit, lib: LibModule, except?: string): Map<string, string> {
+  const ids = new Map<string, string>();
+  const used = new Set(circuit.modules.map((m) => m.id));
+  for (const m of lib.modules) {
+    const source = `${lib.id}#${m.id}`;
+    const have = circuit.modules.find((o) => o.source?.id === source && o.source.version === lib.version);
+    if (have) ids.set(m.id, have.id);
+    else {
+      let n = 1;
+      while (used.has(`m${n}`)) n++;
+      used.add(`m${n}`);
+      ids.set(m.id, `m${n}`);
+    }
+  }
+  for (const m of lib.modules) {
+    const id = ids.get(m.id)!;
+    if (m.id === except || circuit.modules.some((o) => o.id === id)) continue;
+    const copy = structuredClone(m);
+    copy.id = id;
+    copy.source = { id: `${lib.id}#${m.id}`, version: lib.version };
+    for (const c of copy.parts) {
+      if (c.type === 'module') (c.props as { module: string }).module = ids.get((c.props as { module: string }).module) ?? '';
+    }
+    circuit.modules.push(copy);
+  }
+  return ids;
+}
+
+// The library module (among `libs`) that has a newer version of this one,
+// if any: the one it was saved as or placed from, saved again since.
+export function newerIn(def: ModuleDef, libs: readonly LibModule[]): LibModule | undefined {
+  if (!def.source) return undefined;
+  const [libId, mainId] = def.source.id.split('#');
+  return libs.find((l) => l.id === libId && l.main === mainId && l.version > def.source!.version);
+}
+
+// Bring a module of the circuit up to that newer version: it becomes the
+// library's (every copy follows, as after an edit: pins follow their
+// Terminals, wires to pins that are gone are cut), and the modules inside it
+// join the circuit as when placed. Returns how many wires were cut.
+export function adoptVersion(circuit: Circuit, def: ModuleDef, lib: LibModule): number {
+  const ids = bring(circuit, lib, lib.main);
+  const latest = structuredClone(lib.modules.find((m) => m.id === lib.main)!);
+  for (const c of latest.parts) {
+    if (c.type === 'module') (c.props as { module: string }).module = ids.get((c.props as { module: string }).module) ?? '';
+  }
+  const before = def.ports;
+  delete def.face;
+  delete def.panel;
+  Object.assign(def, {
+    name: latest.name,
+    parts: latest.parts,
+    joints: latest.joints,
+    wires: latest.wires,
+    ports: latest.ports,
+    ...(latest.box ? { box: latest.box } : {}),
+    ...(latest.face ? { face: latest.face } : {}),
+    ...(latest.panel ? { panel: latest.panel } : {}),
+    source: { id: `${lib.id}#${lib.main}`, version: lib.version },
+  });
+  return refreshBlocks(circuit, def, before);
 }

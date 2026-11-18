@@ -1,7 +1,7 @@
 import { snap, type Board } from './board.ts';
 import { symbolMarkup } from './components.ts';
 import type { Face } from './modules.ts';
-import { PANEL_HALF, blockLayout, decodePanel, decodePorts, encodeLayout, encodePanel, encodePorts, type Side, type TitleSpot } from './parts/modules/block.ts';
+import { blockLayout, decodePanel, decodePorts, encodeLayout, encodePanel, encodePorts, type PanelSpot, type Side, type TitleSpot } from './parts/modules/block.ts';
 import type { PropsByType } from './types.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -13,9 +13,15 @@ type BlockProps = PropsByType['module'];
 // origin, to lay out by hand. Drag its edges or corners to resize it (never
 // smaller than its pins and title need), and its pins along an edge or round
 // to another side (on the grid, never two in one spot), and its front-panel
-// parts anywhere inside the box (in half grid steps). `onChange` gets the
-// face after each drag; the title's spot is set from outside (setTitle).
-export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
+// parts anywhere inside the box (in half grid steps, never overlapping).
+// `onChange` gets the face after each drag. Pressing a display selects it
+// (`onSelect` gets it and its size, or null), to size it with setScale; the
+// title's spot is set with setTitle.
+export function createFaceEditor(
+  board: Board,
+  onChange: (face: Face) => void,
+  onSelect: (display: { id: string; s: number } | null) => void = () => {},
+) {
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('class', 'face-editor');
   board.world.append(g);
@@ -24,6 +30,8 @@ export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
   let ids: string[] = []; // the Terminal behind each pin, in pin order
   let face: Face | null = null;
   let label: (id: string) => string = (id) => id; // a front-panel part's reference
+  let spots: PanelSpot[] = []; // the front-panel parts as first shown: their size at their first scale
+  let selected: string | null = null; // the display pressed last
   let drag:
     | { id: number; what: 'pin'; k: number }
     | { id: number; what: 'size'; x: boolean; y: boolean }
@@ -37,14 +45,21 @@ export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
       ...props!,
       ports: encodePorts(ids.map((id, k) => [f.pins[id].side, names[k], f.pins[id].at])),
       layout: encodeLayout({ hw: f.hw, hh: f.hh, title: f.title }),
-      panel: encodePanel(decodePanel(props!.panel).map(([id]) => (f.panel?.[id] ? [id, f.panel[id].x, f.panel[id].y] : [id]))),
+      panel: encodePanel(
+        spots.map((q) => {
+          const at = f.panel?.[q.id];
+          const s = at?.s ?? q.s;
+          const k = q.s && s ? s / q.s : 1; // (a display's size follows its scale)
+          return { id: q.id, w: q.w * k, h: q.h * k, ...(s ? { s } : {}), ...(at ? { x: at.x, y: at.y } : {}) };
+        }),
+      ),
     };
   };
 
   // The face as a block with these values lays itself out (every pin placed).
   function faceOf(p: BlockProps): Face {
     const { hw, hh, title, pins, panel } = blockLayout(p);
-    const out: Face = { hw, hh, title, pins: {}, panel: Object.fromEntries(panel.map((q) => [q.id, { x: q.x, y: q.y }])) };
+    const out: Face = { hw, hh, title, pins: {}, panel: Object.fromEntries(panel.map((q) => [q.id, { x: q.x, y: q.y, ...(q.s ? { s: q.s } : {}) }])) };
     pins.forEach((pin, k) => {
       const side: Side = pin.x < -hw ? 'L' : pin.x > hw ? 'R' : pin.y < 0 ? 'T' : 'B';
       out.pins[ids[k]] = { side, at: side === 'L' || side === 'R' ? pin.y : pin.x };
@@ -56,7 +71,9 @@ export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
     props = values;
     ids = terminals;
     label = refOf;
+    spots = decodePanel(values.panel);
     face = faceOf(values);
+    select(null);
     render();
   }
 
@@ -64,7 +81,26 @@ export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
     props = null;
     face = null;
     drag = null;
+    select(null);
     g.replaceChildren();
+  }
+
+  function select(id: string | null) {
+    const q = spots.find((x) => x.id === id);
+    selected = q?.s ? q.id : null;
+    onSelect(selected ? { id: selected, s: face?.panel?.[selected]?.s ?? q!.s! } : null);
+    render();
+  }
+
+  // Mount the selected display at share s of its full size (where it is, or
+  // the nearest spot it fits).
+  function setScale(s: number) {
+    if (!face || !selected) return;
+    const at = face.panel?.[selected];
+    if (!at) return;
+    face = faceOf(valuesOf({ ...face, panel: { ...face.panel, [selected]: { ...at, s } } }));
+    movePanel(selected, at);
+    onChange(face);
   }
 
   function setTitle(title: TitleSpot) {
@@ -89,8 +125,8 @@ export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
       ${pins.map((p, k) => `<circle class="face-pin" data-k="${k}" cx="${p.x}" cy="${p.y}" r="9" />`).join('')}
       ${panel
         .map(
-          (q) => `<g class="face-panel" data-part="${q.id}" transform="translate(${q.x} ${q.y})">
-            <rect x="${-PANEL_HALF.w}" y="${-PANEL_HALF.h}" width="${2 * PANEL_HALF.w}" height="${2 * PANEL_HALF.h}" rx="4" />
+          (q) => `<g class="face-panel${q.id === selected ? ' selected' : ''}" data-part="${q.id}" transform="translate(${q.x} ${q.y})">
+            <rect x="${-q.w}" y="${-q.h}" width="${2 * q.w}" height="${2 * q.h}" rx="4" />
             <text y="0" text-anchor="middle" dominant-baseline="central">${label(q.id)}</text>
           </g>`,
         )
@@ -124,15 +160,29 @@ export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
     }
   }
 
-  // Put front-panel part `id` at world point p: in half grid steps, inside the box.
+  // Put front-panel part `id` at world point p: in half grid steps, inside the
+  // box, or at the nearest such spot that doesn't overlap another.
   function movePanel(id: string, p: { x: number; y: number }) {
     const f = face!;
+    const all = blockLayout(valuesOf(f)).panel;
+    const me = all.find((q) => q.id === id)!;
+    const others = all.filter((q) => q.id !== id);
     const half = (v: number) => Math.round(v / (STEP / 2)) * (STEP / 2);
-    const [mx, my] = [f.hw - PANEL_HALF.w - 4, f.hh - PANEL_HALF.h - 6];
-    const x = Math.min(mx, Math.max(-mx, half(p.x)));
-    const y = Math.min(my, Math.max(-my, half(p.y)));
-    face = faceOf(valuesOf({ ...f, panel: { ...f.panel, [id]: { x, y } } }));
-    render();
+    const [mx, my] = [f.hw - me.w - 4, f.hh - me.h - 6];
+    const fits = (x: number, y: number) =>
+      Math.abs(x) <= mx && Math.abs(y) <= my && others.every((o) => Math.abs(o.x - x) >= o.w + me.w + 4 || Math.abs(o.y - y) >= o.h + me.h + 4);
+    const [x0, y0] = [Math.min(mx, Math.max(-mx, half(p.x))), Math.min(my, Math.max(-my, half(p.y)))];
+    const step = STEP / 2;
+    for (let r = 0; r <= 2 * Math.max(f.hw, f.hh); r += step) {
+      for (let dx = -r; dx <= r; dx += step) {
+        for (const dy of r === 0 ? [0] : Math.abs(dx) === r ? range(-r, r, step) : [-r, r]) {
+          if (!fits(x0 + dx, y0 + dy)) continue;
+          face = faceOf(valuesOf({ ...f, panel: { ...f.panel, [id]: { ...f.panel?.[id], x: x0 + dx, y: y0 + dy } } }));
+          render();
+          return;
+        }
+      }
+    }
   }
 
   // Resize to reach world point p (the box stays centred, so it grows a grid
@@ -151,6 +201,8 @@ export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
     if (!t) return;
     e.stopPropagation();
     e.preventDefault();
+    if (t.dataset.part) select(t.dataset.part);
+    else select(null);
     if (t.dataset.k !== undefined) drag = { id: e.pointerId, what: 'pin', k: Number(t.dataset.k) };
     else if (t.dataset.part) drag = { id: e.pointerId, what: 'panel', part: t.dataset.part };
     else if (t.dataset.edge) drag = { id: e.pointerId, what: 'size', x: 'LR'.includes(t.dataset.edge), y: 'TB'.includes(t.dataset.edge) };
@@ -174,5 +226,7 @@ export function createFaceEditor(board: Board, onChange: (face: Face) => void) {
   g.addEventListener('pointerup', drop);
   g.addEventListener('pointercancel', drop);
 
-  return { show, hide, setTitle };
+  return { show, hide, setTitle, setScale };
 }
+
+const range = (from: number, to: number, step: number) => Array.from({ length: Math.round((to - from) / step) + 1 }, (_, k) => from + k * step);

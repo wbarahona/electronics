@@ -34,8 +34,14 @@ import { createEngine } from './sim/engine.ts';
 import { wireCurrents } from './sim/flow.ts';
 import { createAirflow } from './airflow.ts';
 import { MODELS, type Result, type Sound, type Thermal } from './sim/models.ts';
-import { parse, serialize, type SavedCircuit, type View } from './persist.ts';
-import { blockAt, canMount, editCopy, editedBlock, flatPart, flatten, insideOf, rememberSetting, updateModule, type Face, type ModuleDef } from './modules.ts';
+import { MODULES_EXTENSION, parse, parseModules, serialize, serializeModules, type SavedCircuit, type View } from './persist.ts';
+import { PANEL_SCALES, adoptVersion, blockAt, blockValues, canMount, editCopy, editedBlock, flatPart, flatten, fromLibrary, insideOf, newerIn, rememberSetting, toLibrary, updateModule, type Face, type ModuleDef } from './modules.ts';
+import { library, newLibraryId, type LibModule } from './library.ts';
+import { builtinModules } from './builtin-modules/index.ts';
+import { createModuleManager } from './module-manager.ts';
+import { confirmDialog, promptDialog } from './confirm.ts';
+import type { TrayGroup } from './palette.ts';
+import { isApp, openTextFile, saveFile } from './platform.ts';
 import { PARTS } from './components.ts';
 import { createFaceEditor } from './face-editor.ts';
 import { blockLayout, type TitleSpot } from './parts/modules/block.ts';
@@ -311,21 +317,222 @@ const editor = createEditor(board, shown, {
         ? [onPanelItem(selection[0])]
         : []),
       ...(selection.length === 1 && shown.part(selection[0])?.type === 'module' && !editing
-        ? [{ label: t('Edit module'), icon: 'edit', enabled: true, action: () => editModule(selection[0]) }]
+        ? [
+            { label: t('Edit module'), icon: 'edit', enabled: true, action: () => editModule(selection[0]) },
+            { label: t('Save to my modules'), icon: 'library_add', enabled: true, action: () => void saveToLibrary(selection[0]) },
+            ...(newerFor(selection[0])
+              ? [{ label: t('Update to version {n}', { n: String(newerFor(selection[0])!.version) }), icon: 'autorenew', enabled: true, action: () => updateFromLibrary(selection[0]) }]
+              : []),
+          ]
         : []),
       'separator',
       { label: t('Delete'), icon: 'delete', shortcut: MOD === '⌘' ? '⌘⌫' : t('Del'), enabled: editor.hasSelection() && !viewOnly(), danger: true, action: editor.deleteSelected },
     ]),
 }, { root: () => editing?.circuit ?? circuit, locked: viewOnly, inner: (id) => flatPart(circuit, id) });
 const menu = createMenu(byId('menu'), byId('menu-anchor'));
-const panel = createPanel(byId('props'), shown, editor, { makeModule, editModule: (id) => editModule(id) });
+const panel = createPanel(byId('props'), shown, editor, {
+  makeModule,
+  editModule: (id) => editModule(id),
+  saveModule: (id) => void saveToLibrary(id),
+  newer: (id) => newerFor(id)?.version ?? null,
+  updateModule: (id) => updateFromLibrary(id),
+});
 
 // Make the selected frame a module, saying why not or what had to give.
 function makeModule() {
   const said = editor.makeModule();
   if (said) showToast(t(said.message, { count: String(said.count ?? 0) }));
 }
-const palette = createPalette(byId('palette'), byId('palette-tray'), board, editor);
+const palette = createPalette(byId('palette'), byId('palette-tray'), board, editor, moduleTray);
+
+// --- The module library -------------------------------------------------------------
+// Modules saved to be placed in any circuit (see src/library.ts): the Modules
+// tray lists them; dragged or clicked from there, a module joins the circuit
+// (or the module being edited) and a block of it is placed.
+
+async function moduleTray(): Promise<TrayGroup[]> {
+  const item = (m: LibModule, mine: boolean) => ({
+    key: m.id,
+    name: t(m.name),
+    props: blockValues(m.modules.find((d) => d.id === m.main)!),
+    place: (x: number, y: number, rotation: number) => placeFromLibrary(m, x, y, rotation),
+    ...(mine ? { menu: (cx: number, cy: number) => libraryMenu(m, cx, cy) } : {}),
+  });
+  let mine: LibModule[] = [];
+  try {
+    mine = await library.list();
+  } catch (e) {
+    showToast(t('Couldn’t read your modules: {error}', { error: String(e) }));
+  }
+  const builtins = await builtinModules();
+  known = [...builtins, ...mine];
+  return [
+    { label: t('Built-in'), items: builtins.map((m) => item(m, false)), empty: '' },
+    {
+      // (In the browser, they're this browser's: say so.)
+      label: isApp ? t('My modules') : t('My modules (in this browser)'),
+      items: mine.map((m) => item(m, true)),
+      empty: t('Save a module from its block’s menu to keep it here.'),
+      actions: [{ label: t('Manage…'), icon: 'tune', run: () => void moduleManager.open() }],
+    },
+  ];
+}
+
+// The library as last read (built-in and mine), to tell when a module in the
+// circuit has a newer version there.
+let known: LibModule[] = [];
+async function readKnown() {
+  try {
+    known = [...(await builtinModules()), ...(await library.list())];
+  } catch {
+    // the tray says so when opened
+  }
+}
+void readKnown();
+
+// The newer version of the module a block is a copy of, if the library has one.
+function newerFor(id: string): LibModule | undefined {
+  const block = blockAt(circuit, id);
+  const def = block && circuit.modules.find((m) => m.id === (block.props as { module: string }).module);
+  return def && newerIn(def, known);
+}
+
+// Bring a block's module up to the library's newer version: every copy of it
+// follows (one undo step).
+function updateFromLibrary(id: string) {
+  const lib = newerFor(id);
+  const block = blockAt(circuit, id);
+  const def = block && circuit.modules.find((m) => m.id === (block.props as { module: string }).module);
+  if (!lib || !def) return;
+  const cut = adoptVersion(circuit, def, lib);
+  showLevel();
+  panel.show(null);
+  showToast(
+    cut
+      ? t('Updated {name} to version {n}; {count} wires went to pins that are gone and were cut.', { name: def.name, n: String(lib.version), count: String(cut) })
+      : t('Updated {name} to version {n}.', { name: def.name, n: String(lib.version) }),
+  );
+}
+
+// Manage modules: the whole library in one list (see src/module-manager.ts).
+const moduleManager = createModuleManager({
+  builtins: builtinModules,
+  exportModules,
+  importModules,
+  changed: () => {
+    palette.refreshModules();
+    void readKnown();
+  },
+  report: showToast,
+});
+
+// A file name from a module's name.
+const fileNameOf = (name: string) => `${name.trim().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-') || 'modules'}.${MODULES_EXTENSION}`;
+
+async function exportModules(list: LibModule[], name: string) {
+  try {
+    await saveFile(new Blob([serializeModules(list)], { type: 'application/json' }), fileNameOf(name));
+  } catch (e) {
+    showToast(t('Couldn’t export: {error}', { error: String(e) }));
+  }
+}
+
+// Add the modules in a file to mine: new ones, and newer versions of ones I
+// have; older or the same versions are left as they are.
+async function importModules() {
+  let file: { name: string; text: string } | null;
+  try {
+    file = await openTextFile(t('Ampage modules'), [MODULES_EXTENSION, 'json']);
+  } catch (e) {
+    showToast(t('Couldn’t open the file: {error}', { error: String(e) }));
+    return;
+  }
+  if (!file) return;
+  try {
+    const incoming = parseModules(file.text);
+    const have = await library.list();
+    let added = 0;
+    for (const m of incoming) {
+      const old = have.find((h) => h.id === m.id);
+      if (old && old.version >= m.version) continue;
+      await library.save(m);
+      added++;
+    }
+    palette.refreshModules();
+    void readKnown();
+    const skipped = incoming.length - added;
+    showToast(
+      skipped
+        ? t('Imported {count} modules; {skipped} you already had.', { count: String(added), skipped: String(skipped) })
+        : t('Imported {count} modules.', { count: String(added) }),
+    );
+  } catch (e) {
+    showToast(t('Couldn’t open {file}: {error}', { file: file.name, error: t((e as Error).message) }));
+  }
+}
+
+function placeFromLibrary(m: LibModule, x: number, y: number, rotation: number) {
+  if (viewOnly()) {
+    showToast(t('Step out of the module to place another.'));
+    return;
+  }
+  const target = editing?.circuit ?? circuit;
+  const id = fromLibrary(target, m);
+  editor.add('module', x, y, rotation, blockValues(target.modules.find((d) => d.id === id)!));
+}
+
+// Save the module a block is a copy of to my modules: as a new one, or as the
+// next version of the one it was saved as or placed from.
+async function saveToLibrary(id: string) {
+  const block = blockAt(circuit, id);
+  const def = block && circuit.modules.find((m) => m.id === (block.props as { module: string }).module);
+  if (!def) return;
+  try {
+    const [libId, mainId] = def.source?.id.split('#') ?? [];
+    const had = (await library.list()).find((m) => m.id === libId && m.main === mainId);
+    await library.save(toLibrary(circuit, def, had?.id ?? newLibraryId(), (had?.version ?? 0) + 1));
+    files.changed();
+    palette.refreshModules();
+    void readKnown();
+    showToast(t(had ? 'Updated {name} in my modules.' : 'Saved {name} to my modules.', { name: def.name }));
+  } catch (e) {
+    showToast(t('Couldn’t save to my modules: {error}', { error: String(e) }));
+  }
+}
+
+function libraryMenu(m: LibModule, x: number, y: number) {
+  menu.open(x, y, [
+    { label: t('Export…'), icon: 'save', enabled: true, action: () => void exportModules([m], m.name) },
+    {
+      label: t('Rename'),
+      icon: 'edit',
+      enabled: true,
+      action: async () => {
+        const name = await promptDialog({ headline: t('Rename module'), label: t('Name'), value: m.name, action: t('Rename') });
+        if (!name || name === m.name) return;
+        await library.save({ ...m, name, saved: new Date().toISOString() });
+        palette.refreshModules();
+      },
+    },
+    'separator',
+    {
+      label: t('Delete'),
+      icon: 'delete',
+      enabled: true,
+      danger: true,
+      action: async () => {
+        const ok = await confirmDialog({
+          headline: t('Delete {name}?', { name: m.name }),
+          message: t('It’s removed from my modules. Circuits that use it keep their copy.'),
+          action: t('Delete'),
+        });
+        if (!ok) return;
+        await library.remove(m.id);
+        palette.refreshModules();
+      },
+    },
+  ]);
+}
 createSearch(byId('search'), palette);
 const controls = createControls(byId('sim-controls'));
 board.onSpaceTap(controls.toggle);
@@ -445,11 +652,20 @@ function finishEdit(save: boolean) {
 
 // The Face view: the block the edit would make, laid out by hand. Each change
 // is an undo step of the edit.
-const faceEditor = createFaceEditor(board, (face) => {
-  if (!editing) return;
-  editing.face = face;
-  history.changed();
-});
+let faceDisplay: { id: string; s: number } | null = null; // the display selected on the Face view
+const faceEditor = createFaceEditor(
+  board,
+  (face) => {
+    if (!editing) return;
+    editing.face = face;
+    history.changed();
+  },
+  (display) => {
+    const was = faceDisplay?.id;
+    faceDisplay = display;
+    if (display?.id !== was) renderPath();
+  },
+);
 
 // While editing, the context menu of a part that can go on the front panel
 // puts it there or takes it off.
@@ -548,6 +764,16 @@ function renderPath() {
         history.changed();
       });
       extra.push(title, auto);
+      // A selected display: the size it's mounted at.
+      if (faceDisplay) {
+        const sizes = segments(
+          PANEL_SCALES.map((k): [string, string] => [String(k), `${Math.round(k * 100)} %`]),
+          String(faceDisplay.s),
+          (v) => faceEditor.setScale(Number(v)),
+        );
+        sizes.title = t('Size on the face');
+        extra.push(sizes);
+      }
     }
     pathBar.replaceChildren(what, views, ...extra, cancel, done);
     return;

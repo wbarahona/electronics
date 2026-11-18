@@ -347,6 +347,22 @@ md-icon svg {
 }
 
 /* M3 title-small, as the search view's and other section headings. */
+/* A group's own actions (Import, Export all), after its modules. */
+.tray-action {
+  align-self: center;
+  flex: none;
+}
+
+/* An empty group's hint (no modules saved yet). */
+.tray-empty {
+  padding: 8px;
+  max-width: 260px;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
 .tray-group-label {
   padding-left: 8px;
   font-size: 14px;
@@ -1271,6 +1287,7 @@ body.dragging * {
 .props-actions {
   flex: none;
   display: flex;
+  flex-wrap: wrap; /* a module's actions take more than one row */
   gap: 8px;
   padding: 16px 24px 24px;
   border-top: 1px solid var(--md-sys-color-outline-variant);
@@ -2263,6 +2280,18 @@ body.dragging * {
 .face-editor .face-panel text {
   fill: var(--md-sys-color-on-secondary-container);
   font: 500 9px var(--font-drawing);
+}
+
+/* The selected display on the Face view, to size it. */
+.face-editor .face-panel.selected rect {
+  fill: var(--md-sys-color-primary-container);
+  stroke-width: 2.5;
+}
+
+/* A display's window on a block's front panel. */
+.part .panel-window {
+  fill: color-mix(in srgb, var(--ink) 8%, transparent);
+  stroke-width: 1.5;
 }
 
 /* A lamp or LED on a block's front panel: an indicator with a rim. */
@@ -3910,4 +3939,108 @@ span.module-crumb {
 
 .settings-body-group[hidden] {
   display: none;
+}
+
+/* Manage modules: an M3 dialog with a list of every module (M3 list items:
+   leading tick box and block, headline and supporting text, trailing icon
+   buttons), my modules then the built-in ones. */
+.module-manager {
+  width: min(640px, calc(100vw - 48px));
+  max-width: min(640px, calc(100vw - 48px));
+  max-height: min(720px, calc(100% - 48px));
+}
+
+.module-manager-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.module-manager-storage {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.mm-section + .mm-section {
+  margin-top: 16px;
+}
+
+/* M3 title-small */
+.mm-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--md-sys-color-primary);
+}
+
+.mm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.mm-tick-space {
+  flex: none;
+  width: 18px;
+}
+
+.mm-look {
+  flex: none;
+  max-width: 56px;
+}
+
+.mm-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* M3 body-large and body-medium */
+.mm-name {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.5px;
+  color: var(--md-sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-facts {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.mm-empty {
+  padding: 8px 0 16px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.module-manager-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.module-manager-actions .mm-spacer {
+  flex: 1;
+}
+
+.module-manager-actions .mm-delete {
+  --md-text-button-label-text-color: var(--md-sys-color-error);
+  --md-text-button-icon-color: var(--md-sys-color-error);
 }

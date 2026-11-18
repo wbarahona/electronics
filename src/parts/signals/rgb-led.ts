@@ -58,6 +58,8 @@ export const defs: PartDefs<'rgbLed'> = {
       <circle r="16" />
       <path d="M 8 -18 L 15 -25 M 10 -25 H 15 V -20 M 15 -13 L 22 -20 M 17 -20 H 22 V -15" />
       ${pinText('R', -37, -24)}${pinText('G', -37, -4)}${pinText('B', -37, 16)}${pinText(p.common === 'cathode' ? 'K' : 'A', 30, -4)}`,
+    // On a front panel: one lamp, in the colour its dies mix.
+    onPanel: (p) => ({ markup: `${mixedSpot({ r: 7, halo: 14, lens: p.lens })}<circle class="panel-lamp" r="7" />`, hw: 10, hh: 10 }),
   },
 };
 

@@ -38,6 +38,17 @@ export const defs: PartDefs<'barGraph'> = {
           <rect class="bar-lit" data-seg="${k}" x="-10" y="${y}" width="20" height="8" rx="1" style="opacity: 0" />`;
       }).join('')}
       ${pinText(p.common === 'cathode' ? 'K' : 'A', 23, 76)}`,
+    // On a front panel: its ten bars, closer together, in their window.
+    onPanel: () => ({
+      markup: `<rect class="panel-window" x="-14" y="-64" width="28" height="128" rx="3" />
+        ${Array.from({ length: 10 }, (_, k) => {
+          const y = -58 + 12 * k;
+          return `<rect class="bar-off" x="-9" y="${y}" width="18" height="8" rx="1" />
+            <rect class="bar-lit" data-seg="${k}" x="-9" y="${y}" width="18" height="8" rx="1" style="opacity: 0" />`;
+        }).join('')}`,
+      hw: 14,
+      hh: 64,
+    }),
   },
 };
 

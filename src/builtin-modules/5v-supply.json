@@ -1,0 +1,343 @@
+{
+  "id": "builtin-5v-supply",
+  "name": "5 V supply",
+  "main": "m1",
+  "modules": [
+    {
+      "id": "m1",
+      "name": "5 V supply",
+      "parts": [
+        {
+          "id": "c2",
+          "ref": "X1",
+          "usRef": "X1",
+          "type": "terminal",
+          "x": 0,
+          "y": 60,
+          "rotation": 0,
+          "props": {
+            "name": "+VIN"
+          },
+          "broken": false
+        },
+        {
+          "id": "c3",
+          "ref": "X2",
+          "usRef": "X2",
+          "type": "terminal",
+          "x": 0,
+          "y": 240,
+          "rotation": 0,
+          "props": {
+            "name": "0V"
+          },
+          "broken": false
+        },
+        {
+          "id": "c4",
+          "ref": "X3",
+          "usRef": "X3",
+          "type": "terminal",
+          "x": 440,
+          "y": 60,
+          "rotation": 0,
+          "props": {
+            "name": "+5V"
+          },
+          "broken": false
+        },
+        {
+          "id": "c5",
+          "ref": "T1",
+          "usRef": "U1",
+          "type": "regulator",
+          "x": 180,
+          "y": 60,
+          "rotation": 0,
+          "props": {
+            "partNumber": "7805",
+            "outputVoltage": 5,
+            "dropout": 2,
+            "maxCurrent": 1.5,
+            "powerRating": 2
+          },
+          "broken": false
+        },
+        {
+          "id": "c6",
+          "ref": "C1",
+          "usRef": "C1",
+          "type": "electrolytic",
+          "x": 80,
+          "y": 160,
+          "rotation": 90,
+          "props": {
+            "capacitance": 0.0001,
+            "ratedVoltage": 35,
+            "tolerance": 20,
+            "deviation": 0.044
+          },
+          "broken": false
+        },
+        {
+          "id": "c7",
+          "ref": "C2",
+          "usRef": "C2",
+          "type": "electrolytic",
+          "x": 280,
+          "y": 160,
+          "rotation": 90,
+          "props": {
+            "capacitance": 0.00001,
+            "ratedVoltage": 16,
+            "tolerance": 20,
+            "deviation": 0.447
+          },
+          "broken": false
+        },
+        {
+          "id": "c8",
+          "ref": "R1",
+          "usRef": "R1",
+          "type": "resistor",
+          "x": 360,
+          "y": 100,
+          "rotation": 90,
+          "props": {
+            "resistance": 1000,
+            "powerRating": 0.25,
+            "tolerance": 5,
+            "deviation": 0.207
+          },
+          "broken": false
+        },
+        {
+          "id": "c9",
+          "ref": "P1",
+          "usRef": "D1",
+          "type": "led",
+          "x": 360,
+          "y": 200,
+          "rotation": 90,
+          "props": {
+            "partNumber": "5 mm green",
+            "color": "green",
+            "forwardVoltage": 2.2,
+            "maxCurrent": 0.02
+          },
+          "broken": false
+        }
+      ],
+      "joints": [
+        {
+          "id": "j1",
+          "x": 80,
+          "y": 60
+        },
+        {
+          "id": "j2",
+          "x": 280,
+          "y": 60
+        },
+        {
+          "id": "j3",
+          "x": 80,
+          "y": 240
+        },
+        {
+          "id": "j4",
+          "x": 180,
+          "y": 240
+        },
+        {
+          "id": "j5",
+          "x": 280,
+          "y": 240
+        }
+      ],
+      "wires": [
+        {
+          "id": "w1",
+          "from": {
+            "part": "c2",
+            "pin": 0
+          },
+          "to": {
+            "joint": "j1"
+          },
+          "via": []
+        },
+        {
+          "id": "w2",
+          "from": {
+            "joint": "j1"
+          },
+          "to": {
+            "part": "c5",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w3",
+          "from": {
+            "joint": "j1"
+          },
+          "to": {
+            "part": "c6",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w4",
+          "from": {
+            "part": "c5",
+            "pin": 2
+          },
+          "to": {
+            "joint": "j2"
+          },
+          "via": []
+        },
+        {
+          "id": "w5",
+          "from": {
+            "joint": "j2"
+          },
+          "to": {
+            "part": "c7",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w6",
+          "from": {
+            "joint": "j2"
+          },
+          "to": {
+            "part": "c8",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w7",
+          "from": {
+            "part": "c8",
+            "pin": 0
+          },
+          "to": {
+            "part": "c4",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w8",
+          "from": {
+            "part": "c8",
+            "pin": 1
+          },
+          "to": {
+            "part": "c9",
+            "pin": 0
+          },
+          "via": []
+        },
+        {
+          "id": "w9",
+          "from": {
+            "part": "c3",
+            "pin": 0
+          },
+          "to": {
+            "joint": "j3"
+          },
+          "via": []
+        },
+        {
+          "id": "w10",
+          "from": {
+            "joint": "j3"
+          },
+          "to": {
+            "joint": "j4"
+          },
+          "via": []
+        },
+        {
+          "id": "w11",
+          "from": {
+            "joint": "j4"
+          },
+          "to": {
+            "joint": "j5"
+          },
+          "via": []
+        },
+        {
+          "id": "w12",
+          "from": {
+            "joint": "j5"
+          },
+          "to": {
+            "part": "c9",
+            "pin": 1
+          },
+          "via": []
+        },
+        {
+          "id": "w13",
+          "from": {
+            "part": "c6",
+            "pin": 1
+          },
+          "to": {
+            "joint": "j3"
+          },
+          "via": []
+        },
+        {
+          "id": "w14",
+          "from": {
+            "part": "c5",
+            "pin": 1
+          },
+          "to": {
+            "joint": "j4"
+          },
+          "via": []
+        },
+        {
+          "id": "w15",
+          "from": {
+            "part": "c7",
+            "pin": 1
+          },
+          "to": {
+            "joint": "j5"
+          },
+          "via": []
+        }
+      ],
+      "ports": [
+        "c2",
+        "c3",
+        "c4"
+      ],
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 440,
+        "h": 280
+      },
+      "panel": [
+        "c9"
+      ]
+    }
+  ],
+  "version": 1,
+  "saved": "2026-11-18T00:00:00.000Z"
+}

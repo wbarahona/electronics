@@ -56,6 +56,13 @@ export const defs: PartDefs<'sevenSeg'> = {
         [p.common === 'cathode' ? 'K' : 'A', null, 0, 60],
       ]) +
       `<g class="segments">${segmentMarkup('seg-off', false)}${segmentMarkup('seg-lit', true)}</g>`,
+    // On a front panel: the digit in its window.
+    onPanel: () => ({
+      markup: `<rect class="panel-window" x="-18" y="-30" width="40" height="52" rx="3" />
+        <g class="segments">${segmentMarkup('seg-off', false)}${segmentMarkup('seg-lit', true)}</g>`,
+      hw: 22,
+      hh: 30,
+    }),
   },
 };
 

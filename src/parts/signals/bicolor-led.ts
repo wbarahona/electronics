@@ -69,6 +69,14 @@ export const defs: PartDefs<'bicolorLed'> = {
       <path class="seg-lit rgb-lit" data-seg="1" d="M 8 4 V 20 L -8 12 Z" style="opacity: 0; fill: ${LIGHT_COLORS.green}" />
       <path d="M 8 4 V 20 L -8 12 Z M -8 4 V 20" />
       <path d="M 4 -24 L 11 -31 M 6 -31 H 11 V -26 M 11 -19 L 18 -26 M 13 -26 H 18 V -21" />`,
+    // On a front panel: one lamp, red, green, or both (amber) as it's driven.
+    onPanel: () => ({
+      markup: `<circle class="seg-lit rgb-lit panel-die" data-seg="0" r="6" style="opacity: 0; fill: ${LIGHT_COLORS.red}" />
+        <circle class="seg-lit rgb-lit panel-die" data-seg="1" r="6" style="opacity: 0; fill: ${LIGHT_COLORS.green}" />
+        <circle class="panel-lamp" r="6" />`,
+      hw: 10,
+      hh: 10,
+    }),
   },
 };
 

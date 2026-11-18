@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the app window may do: open and save circuit files and exports through native dialogs.",
+  "description": "What the app window may do: open and save circuit files and exports through native dialogs, and keep the module library in its data folder.",
   "windows": [
     "main"
   ],
@@ -12,6 +12,8 @@
     "dialog:allow-save",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
-    "fs:allow-write-file"
+    "fs:allow-write-file",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive"
   ]
 }

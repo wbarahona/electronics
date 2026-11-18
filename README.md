@@ -52,6 +52,9 @@ The builds aren't code-signed yet, so your system warns you once:
   analog panel meter
 - **Editing**: snap-to-grid, right-angle wires, joints, drop a part onto a
   wire to splice it in, copy/cut/paste/duplicate, marquee select
+- **Modules**: make a section into a reusable block, look inside it live,
+  edit it once for every copy, and lay out its face with front-panel switches,
+  buttons and lamps (see [MODULES.md](MODULES.md))
 - **Visual feedback**: animated current flow, glowing lights, charge
   gauges, net highlighting and live readouts on hover
 - **Drawing standards**: EU (IEC) or US (ANSI / IEEE) symbols and references,

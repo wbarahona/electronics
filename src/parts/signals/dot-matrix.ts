@@ -78,6 +78,22 @@ function leds(p: Props): { row: number; col: number; fv: number }[] {
   return out;
 }
 
+// The dots: each a mono LED (unlit faint, lit in its colour) or an RGB spot
+// of mixed light, in the order their light is reported.
+function dotsMarkup(p: Props): string {
+  const { cols, rows, rgb, x, y } = layout(p);
+  let dots = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      dots += rgb
+        ? mixedSpot({ x: x(c), y: y(r), r: 9, halo: 18, mix: i })
+        : `<circle class="bar-off" cx="${x(c)}" cy="${y(r)}" r="6" /><circle class="bar-lit" data-seg="${i}" cx="${x(c)}" cy="${y(r)}" r="6" style="opacity: 0" />`;
+    }
+  }
+  return dots;
+}
+
 export const defs: PartDefs<'dotMatrix'> = {
   // Pins: see matrixPins.
   dotMatrix: {
@@ -108,30 +124,33 @@ export const defs: PartDefs<'dotMatrix'> = {
       return [box.right + 6, box.top + 10, 'start'];
     },
     draw: (p) => {
-      const { cols, rows, rgb, x, y, box } = layout(p);
+      const { box } = layout(p);
       const pins = matrixPins(p);
       const leads = pins
         .map((pin) =>
           pin.name.startsWith('r') ? `M ${pin.x} ${pin.y} H ${box.left}` : pin.y > 0 ? `M ${pin.x} ${pin.y} V ${box.bottom}` : `M ${pin.x} ${pin.y} V ${box.top}`,
         )
         .join(' ');
-      let dots = '';
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const i = r * cols + c;
-          if (!rgb) {
-            dots += `<circle class="bar-off" cx="${x(c)}" cy="${y(r)}" r="6" /><circle class="bar-lit" data-seg="${i}" cx="${x(c)}" cy="${y(r)}" r="6" style="opacity: 0" />`;
-            continue;
-          }
-          dots += mixedSpot({ x: x(c), y: y(r), r: 9, halo: 18, mix: i });
-        }
-      }
       const labels = pins.map((pin) => (pin.name.startsWith('r') ? pinText(pin.name.slice(1), pin.x + 2, pin.y - 3) : pinText(pin.name, pin.x + 3, pin.y > 0 ? pin.y - 4 : pin.y + 10)));
       return `
         <path d="${leads}" />
         <rect x="${box.left}" y="${box.top}" width="${box.right - box.left}" height="${box.bottom - box.top}" rx="3" />
-        ${dots}
+        ${dotsMarkup(p)}
         ${labels.join('')}`;
+    },
+    // On a front panel: its dots in their window, centred.
+    onPanel: (p) => {
+      const { cols, rows, rgb, x, y } = layout(p);
+      const [cx, cy] = [(x(0) + x(cols - 1)) / 2, (y(0) + y(rows - 1)) / 2];
+      const edge = rgb ? 20 : 12;
+      const [hw, hh] = [(x(cols - 1) - x(0)) / 2 + edge, (y(rows - 1) - y(0)) / 2 + edge];
+      return {
+        markup: `<rect class="panel-window" x="${-hw}" y="${-hh}" width="${2 * hw}" height="${2 * hh}" rx="3" />
+          <g transform="translate(${-cx} ${-cy})">${dotsMarkup(p)}</g>`,
+        hw,
+        hh,
+        scale: 0.5,
+      };
     },
   },
 };

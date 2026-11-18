@@ -1,6 +1,7 @@
 import { GENERIC, PARTS, defaults, isChoiceSpec, isSwitchSpec, isTextSpec, pinsOf, usLetterOf } from './components.ts';
 import { AMBIENT, freeRef, type Circuit } from './model.ts';
 import { modulesInUse, type Face, type ModuleDef } from './modules.ts';
+import type { LibModule } from './library.ts';
 import type { Side } from './parts/modules/block.ts';
 import type { End, Fault, Joint, Part, PartType, Point, PropValue, Wire } from './types.ts';
 
@@ -130,6 +131,9 @@ function readModule(o: Record<string, unknown>): ModuleDef {
   const b = o.box === undefined ? undefined : obj(o.box, 'module frame');
   const box = b && { x: num(b.x, 'module frame x'), y: num(b.y, 'module frame y'), w: num(b.w, 'module frame width'), h: num(b.h, 'module frame height') };
   const face = o.face === undefined ? undefined : readFace(obj(o.face, 'module face'));
+  // The library module it came from, if any.
+  const src = o.source === undefined ? undefined : obj(o.source, 'module source');
+  const source = src && typeof src.id === 'string' && Number.isFinite(src.version) ? { id: src.id, version: src.version as number } : undefined;
   // Its front-panel parts: ids of its parts (others are dropped).
   const panel = list(o.panel, 'module front panel').filter((id): id is string => parts.some((p) => p.id === id));
   return {
@@ -142,6 +146,7 @@ function readModule(o: Record<string, unknown>): ModuleDef {
     ...(box ? { box } : {}),
     ...(face ? { face } : {}),
     ...(panel.length ? { panel } : {}),
+    ...(source ? { source } : {}),
   };
 }
 
@@ -157,7 +162,9 @@ function readFace(o: Record<string, unknown>): Face {
   const panel: NonNullable<Face['panel']> = {};
   for (const [id, v] of Object.entries(obj(o.panel ?? {}, 'module face panel'))) {
     const at = obj(v, 'module face panel spot');
-    if (Number.isFinite(at.x) && Number.isFinite(at.y)) panel[id] = { x: at.x as number, y: at.y as number };
+    if (Number.isFinite(at.x) && Number.isFinite(at.y)) {
+      panel[id] = { x: at.x as number, y: at.y as number, ...(Number.isFinite(at.s) ? { s: at.s as number } : {}) };
+    }
   }
   return { hw: num(o.hw, 'module face width'), hh: num(o.hh, 'module face height'), title, pins, ...(Object.keys(panel).length ? { panel } : {}) };
 }
@@ -221,3 +228,42 @@ const point = (v: unknown, what: string): Point => {
   const o = obj(v, what);
   return { x: num(o.x, `${what} x`), y: num(o.y, `${what} y`) };
 };
+
+// --- Module files ----------------------------------------------------------------------
+// Modules exported from my modules, to back them up or share them: one file
+// with one module or all of them, each as kept in the library (it and the
+// modules inside it).
+
+export const MODULES_FORMAT = 'ampage-modules';
+export const MODULES_EXTENSION = 'ampage-modules';
+
+export const serializeModules = (modules: LibModule[]): string =>
+  JSON.stringify({ format: MODULES_FORMAT, version: 1, modules }, null, 2);
+
+// Read and check a module file, as parse() a circuit: throws saying what's
+// wrong, so a bad file adds nothing.
+export function parseModules(text: string): LibModule[] {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error('This file isn’t valid JSON.');
+  }
+  const d = obj(data, 'file');
+  if (d.format !== MODULES_FORMAT) throw new Error('This isn’t a modules file from this app.');
+  if (typeof d.version !== 'number' || d.version > 1) throw new Error('These modules were saved by a newer version of the app.');
+  return list(d.modules, 'modules').map((m, i) => {
+    const o = obj(m, `module ${i + 1}`);
+    const modules = list(o.modules, 'modules inside it').map((x, k) => readModule(obj(x, `module ${i + 1}.${k + 1}`)));
+    const main = str(o.main, 'module');
+    if (!modules.some((x) => x.id === main)) throw new Error('A module in the file is missing its own definition.');
+    return {
+      id: str(o.id, 'module id'),
+      name: typeof o.name === 'string' && o.name.trim() ? o.name.trim().slice(0, 80) : 'Module',
+      main,
+      modules,
+      version: typeof o.version === 'number' && o.version >= 1 ? Math.floor(o.version) : 1,
+      saved: typeof o.saved === 'string' ? o.saved : new Date().toISOString(),
+    };
+  });
+}

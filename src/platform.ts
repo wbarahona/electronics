@@ -85,3 +85,25 @@ export async function printNatively(widthMm: number, heightMm: number): Promise<
   const { invoke } = await import('@tauri-apps/api/core');
   await invoke('print_sheet', { widthMm, heightMm });
 }
+
+// A text file the user picks (an open dialog in the app, the file picker in
+// the browser) among `extensions`, or null if cancelled.
+export async function openTextFile(description: string, extensions: string[]): Promise<{ name: string; text: string } | null> {
+  if (isApp) {
+    const [{ open }, { readTextFile }] = await Promise.all([import('@tauri-apps/plugin-dialog'), import('@tauri-apps/plugin-fs')]);
+    const path = await open({ multiple: false, directory: false, filters: [{ name: description, extensions }] });
+    if (typeof path !== 'string') return null;
+    return { name: baseName(path), text: await readTextFile(path) };
+  }
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = extensions.map((e) => `.${e}`).join(',');
+  return new Promise((resolve) => {
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      resolve(file ? { name: file.name, text: await file.text() } : null);
+    });
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
+}

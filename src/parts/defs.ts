@@ -25,7 +25,9 @@ import type { PartType, Point, Props, PropsByType } from '../types.ts';
 // grab box when the symbol is bigger than the usual 80×40. `labelBelow` moves the
 // label under the symbol when something else (like a third pin) is above it;
 // `labelAt` places it exactly, as [x, y, text-anchor] in screen space for the
-// part lying horizontally or vertically.
+// part lying horizontally or vertically. Parts that can be mounted on a module
+// block's front panel as more than a lamp have `onPanel`: how they look there
+// (the display without its pins, lit the same way as on the board).
 
 export const LIGHT_COLORS = {
   warm: '#ffc94d', // a plain filament lamp
@@ -63,6 +65,7 @@ export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
   { id: 'digital', label: 'Digital', icon: 'developer_board' },
   { id: 'chips', label: 'Chips', icon: 'memory' },
   { id: 'annotate', label: 'Annotate', icon: 'edit_note' },
+  { id: 'modules', label: 'Modules', icon: 'category' },
 ];
 
 // How the panel edits one value.
@@ -167,6 +170,17 @@ export interface PartDef<P> {
   labelAt?: (vertical: boolean, p: P, rotation: number) => LabelSpot;
   draw: (p: P, broken: boolean) => string;
   us?: UsDef<P>;
+  onPanel?: (p: P) => PanelLook;
+}
+
+// A part as it looks on a front panel, centred on (0, 0): its markup and how
+// far it reaches each way at full size, and the share of that it's mounted at
+// unless set (`scale`, 1 when left out).
+export interface PanelLook {
+  markup: string;
+  hw: number;
+  hh: number;
+  scale?: number;
 }
 
 export type LabelSpot = [number, number, 'start' | 'middle' | 'end'];
@@ -201,6 +215,7 @@ export interface AnyPartDef {
   labelAt?: (vertical: boolean, p: Props, rotation: number) => LabelSpot;
   draw: (p: Props, broken: boolean) => string;
   us?: UsDef<Props>;
+  onPanel?: (p: Props) => PanelLook;
 }
 
 // Definitions for the part types K, each checked against its values.

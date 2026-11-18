@@ -457,13 +457,18 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   function mountPanel(block: Part, g: SVGElement) {
     for (const id of panelNodes.keys()) if (id.startsWith(`${block.id}/`)) panelNodes.delete(id);
-    const items = blockLayout(block.props as Part<'module'>['props']).panel.map(({ id, x, y }) => {
+    const items = blockLayout(block.props as Part<'module'>['props']).panel.map(({ id, x, y, s = 1 }) => {
       const c = scope?.inner?.(`${block.id}/${id}`);
       if (!c || block.broken) return '';
       const part = PARTS[c.type];
+      const look = part.onPanel?.(c.props);
       let body: string;
       if (part.actuator) body = actuatorMarkup(c);
-      else {
+      else if (look) {
+        // A display (or RGB / bi-colour LED) as it looks on a panel, at its size.
+        const color = part.glow ? ` style="--glow-color: ${LIGHT_COLORS[part.glow.color(c.props)]}"` : '';
+        body = `<g transform="scale(${s})"${color}>${look.markup}</g>`;
+      } else {
         const key = part.glow?.color(c.props) ?? 'red';
         body = `<g style="--glow-color: ${LIGHT_COLORS[key]}">
           <circle class="glow" r="16" fill="url(#glow-${key})" />
@@ -803,16 +808,18 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   }
 
   // A new part dropped onto a wire is embedded in it.
-  function add(type: PartType, x: number, y: number, rotation = 0) {
+  // `props`: values it starts with instead of its defaults (a module block's).
+  function add(type: PartType, x: number, y: number, rotation = 0, props?: Partial<Props>) {
     if (locked()) return;
     highlight(null);
-    const spot = findSpot(type, { x, y }, rotation);
+    const spot = props ? null : findSpot(type, { x, y }, rotation);
     const dock = dockFor(type, { x, y });
     const c = spot
       ? circuit.add(type, spot.x, spot.y, spot.rotation)
       : dock
         ? circuit.add(type, dock.x, dock.y, dock.rotation)
         : circuit.add(type, snap(x), snap(y), rotation);
+    if (props) Object.assign(c.props, props);
     mountPart(c);
     if (spot) embed(c, spot);
     else refreshNets();
