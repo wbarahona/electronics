@@ -470,6 +470,7 @@ export default {
   Speaker: 'Altavoz',
   'Stack light': 'Columna de señalización',
   Switch: 'Interruptor',
+  Terminal: 'Borne',
   Transformer: 'Transformador',
   'ULN2003 driver': 'Driver ULN2003',
   'Variable resistor': 'Resistencia variable',
@@ -479,6 +480,7 @@ export default {
 
   'Net label': 'Etiqueta de red',
   'Net name': 'Nombre de la red',
+  'Terminal name': 'Nombre del borne',
   Net: 'Red',
 
   Annotate: 'Anotar',

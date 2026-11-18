@@ -470,6 +470,7 @@ export default {
   Speaker: 'Lautsprecher',
   'Stack light': 'Signalsäule',
   Switch: 'Schalter',
+  Terminal: 'Klemme',
   Transformer: 'Transformator',
   'ULN2003 driver': 'Treiber ULN2003',
   'Variable resistor': 'Einstellwiderstand',
@@ -480,6 +481,7 @@ export default {
   'Net label': 'Netzbezeichnung',
   'Net name': 'Netzname',
   Net: 'Netz',
+  'Terminal name': 'Klemmenbezeichnung',
 
   Annotate: 'Anmerken',
   Enclosure: 'Gehäuse',

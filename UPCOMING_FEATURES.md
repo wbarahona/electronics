@@ -13,7 +13,8 @@ sheet frame and title block for printing):
 
 1. **Challenges and lessons**: builds on the gallery and fault injection
    (find the hidden fault, checked by the simulator).
-2. **Subcircuits / blocks**: reuse for larger schematics.
+2. **Modules (subcircuits)**: reuse for larger schematics; plan below,
+   under Schematic editing.
 
 ## Learning and sharing
 
@@ -22,10 +23,43 @@ sheet frame and title block for printing):
 
 ## Schematic editing
 
-- **Subcircuits / blocks**: turn a selection into one reusable block and drop
-  copies of it. Starting point: a Frame (Annotate) already marks out a section
-  and finds its contents; "Make block from frame" would take those, with net
-  labels on the frame's edge as the block's pins.
+- **Modules (subcircuits)**: a Frame becomes a reusable module, placed as a
+  block with pins. Copies are instances of one definition (edit it once, every
+  copy follows); the simulator flattens each copy into its parts when it
+  builds the nets (ids prefixed per copy, e.g. `A1/K6`), so the solver,
+  thermal model and readouts stay as they are. Agreed steps:
+  1. **Terminal** part (built: Sources › Reference): the module's pins.
+  2. **Make module from frame**: the Terminals on its edge become the block's
+     pins (named after them, on the side they sat). Net labels inside are
+     local to each copy; rails and grounds stay global. The block is a compact
+     box with its title, only as big as its pins need; copies are -A1, -A2…
+     (EN 81346 class A), inner parts -A1-K6. Definitions are saved in the
+     circuit file (a `modules` section, file VERSION 2), so a circuit opens
+     anywhere without the library. Every copy is identical (no per-copy
+     settings yet).
+  3. **Step inside a copy**: double-click opens it in place with a path bar
+     (`Circuit › -A1 Controller`); the simulation keeps running, its
+     readouts are live and its buttons work; Back / Esc returns to the same
+     pan and zoom. A collapsed block's heat sits at the block's position.
+  4. **Module library**: a Modules tray category with Built-in (shipped
+     with the app, like the examples) and My modules (rename, edit, export,
+     delete); placing one copies its definition into the circuit, and a newer
+     library version can be offered as an update. Storage behind one
+     list / load / save / delete interface:
+     - Web: IndexedDB (a record per module), not localStorage (one ~5 MB
+       limit per site, shared with the autosave). Ask for persistent storage
+       (`navigator.storage.persist()`) on the first save, show usage from
+       `navigator.storage.estimate()`, and say plainly that modules live in
+       this browser: export (one module, or all as one bundle) and import
+       are the backup, since browsers can clear storage (Safari after 7 days
+       without a visit unless installed).
+     - Desktop (Tauri): one file per module in the app's data folder, with an
+       "Open modules folder" command.
+  Tabs for several open circuits are left out for now.
+- **Background image in IndexedDB**: it's kept in localStorage as a base64
+  data URL (often 1–4 MB of the ~5 MB per site), where it can fill the space
+  the autosave needs, and the autosave fails silently. Store it in IndexedDB
+  as a Blob instead (about 25 % smaller too).
 - **Align and distribute**: tidy a selection, with its wires following.
 
 ## Simulation depth

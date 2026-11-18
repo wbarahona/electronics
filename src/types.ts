@@ -1,6 +1,7 @@
 import type { PartProps as BatteryProps } from './parts/sources/battery.ts';
 import type { PartProps as GroundProps } from './parts/sources/ground.ts';
 import type { PartProps as NetLabelProps } from './parts/sources/net-label.ts';
+import type { PartProps as TerminalProps } from './parts/sources/terminal.ts';
 import type { PartProps as GeneratorProps } from './parts/sources/generator.ts';
 import type { PartProps as RailsProps } from './parts/sources/rails.ts';
 import type { PartProps as ResistorProps } from './parts/passive/resistor.ts';
@@ -70,6 +71,7 @@ export interface PropsByType
   extends BatteryProps,
     GroundProps,
     NetLabelProps,
+    TerminalProps,
     GeneratorProps,
     RailsProps,
     ResistorProps,

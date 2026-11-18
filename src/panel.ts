@@ -10,7 +10,7 @@ import { formatNumber, fromShown, parseSI, shownTemps, shownUnit, toShown } from
 
 // Parts with nothing to fail: references and probes (and annotations, the
 // whole Annotate category, left out where the panel is built).
-const NO_FAULTS = new Set(['ground', 'netLabel', 'scopeProbe']);
+const NO_FAULTS = new Set(['ground', 'netLabel', 'terminal', 'scopeProbe']);
 
 // Side sheet for editing the selected part's values, built from M3 fields.
 // Laid out per M3 by window size (in CSS): a standard side sheet docked
