@@ -33,6 +33,7 @@ const GROUPS: { title: string; icon: string; rows: Row[] }[] = [
       ['Choose a search result', [['↑'], ['↓']]],
       ['Place the chosen part', [['Enter']]],
       ['Rotate (also while dragging)', [['R']]],
+      ['Rotate the other way', [['Shift', 'R']]],
     ],
   },
   {

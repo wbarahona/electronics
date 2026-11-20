@@ -50,6 +50,7 @@ import { blockLayout, type TitleSpot } from './parts/modules/block.ts';
 import type { Part } from './types.ts';
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
+const SHIFT = /Mac|iPhone|iPad/.test(navigator.platform) ? '⇧' : 'Shift+';
 
 // An element index.html must have.
 function byId<T extends Element = HTMLElement>(id: string): T {
@@ -310,7 +311,8 @@ const editor = createEditor(board, shown, {
       { label: t('Copy'), icon: 'content_copy', shortcut: `${MOD}C`, enabled: editor.canCopy(), action: editor.copy },
       { label: t('Paste'), icon: 'content_paste', shortcut: `${MOD}V`, enabled: editor.canPaste() && !viewOnly(), action: () => editor.paste(at) },
       { label: t('Duplicate'), icon: 'library_add', shortcut: `${MOD}D`, enabled: editor.canCopy() && !viewOnly(), action: editor.duplicate },
-      { label: t('Rotate'), icon: 'rotate_right', shortcut: 'R', enabled: editor.hasSelection() && !viewOnly(), action: editor.rotate },
+      { label: t('Rotate clockwise'), icon: 'rotate_right', shortcut: 'R', enabled: editor.hasSelection() && !viewOnly(), action: () => editor.rotate() },
+      { label: t('Rotate counter-clockwise'), icon: 'rotate_left', shortcut: `${SHIFT}R`, enabled: editor.hasSelection() && !viewOnly(), action: () => editor.rotate(true) },
       ...(editor.canSelectContents() && !viewOnly()
         ? [
             { label: t('Select contents'), icon: 'select_all', enabled: true, action: editor.selectContents },
@@ -1077,7 +1079,8 @@ registerCommands([
   { label: 'Faster', icon: 'fast_forward', keys: ['→'], words: 'speed', run: press('faster') },
   { label: 'Undo', icon: 'undo', keys: ['Mod', 'Z'], available: enabled('undo'), run: press('undo') },
   { label: 'Redo', icon: 'redo', keys: ['Mod', 'Shift', 'Z'], available: enabled('redo'), run: press('redo') },
-  { label: 'Rotate the selection', icon: 'autorenew', keys: ['R'], words: 'turn', available: editor.hasSelection, run: () => editor.rotate() },
+  { label: 'Rotate the selection', icon: 'rotate_right', keys: ['R'], words: 'turn clockwise', available: editor.hasSelection, run: () => editor.rotate() },
+  { label: 'Rotate the selection counter-clockwise', icon: 'rotate_left', keys: ['Shift', 'R'], words: 'turn anticlockwise left', available: editor.hasSelection, run: () => editor.rotate(true) },
   { label: 'Copy', icon: 'content_copy', keys: ['Mod', 'C'], available: editor.canCopy, run: () => editor.copy() },
   { label: 'Cut', icon: 'content_cut', keys: ['Mod', 'X'], available: editor.canCopy, run: () => editor.cut() },
   { label: 'Paste', icon: 'content_paste', keys: ['Mod', 'V'], available: editor.canPaste, run: () => editor.paste(viewCentre()) },

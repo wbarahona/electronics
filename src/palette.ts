@@ -419,11 +419,11 @@ export function createPalette(
     };
 
     // Captured ahead of the editor's shortcuts so they act on the part being placed:
-    // R rotates it, Esc or Delete cancels the placement.
+    // R rotates it (Shift+R the other way), Esc or Delete cancels the placement.
     const key = (ev: KeyboardEvent) => {
       if (ev.metaKey || ev.ctrlKey) return;
       if (ev.key === 'r' || ev.key === 'R') {
-        rotation = (rotation + 90) % 360;
+        rotation = (rotation + (ev.shiftKey ? 270 : 90)) % 360;
         if (moved) showGhost();
       } else if (ev.key === 'Escape' || ev.key === 'Delete' || ev.key === 'Backspace') {
         ev.preventDefault();

@@ -1052,9 +1052,10 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
 
   // --- Editing the selection ------------------------------------------------
 
-  // Rotate the selection 90° clockwise about a grid point at its centre,
-  // so a single part spins in place and every position stays on the grid.
-  function rotateSelected() {
+  // Rotate the selection 90° clockwise (or counter-clockwise, `ccw`) about a
+  // grid point at its centre, so a single part spins in place and every
+  // position stays on the grid.
+  function rotateSelected(ccw = false) {
     if (locked()) return;
     const list = withContents(selectedNodes());
     if (!list.length) return;
@@ -1062,20 +1063,22 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     const centre = (n: Placed): Point => (isFrame(n) ? { x: n.x + frameSize(n.props).w / 2, y: n.y + frameSize(n.props).h / 2 } : n);
     const cx = snap(list.reduce((s, n) => s + centre(n).x, 0) / list.length);
     const cy = snap(list.reduce((s, n) => s + centre(n).y, 0) / list.length);
-    const spin = (p: Point): Point => ({ x: cx - (p.y - cy), y: cy + (p.x - cx) });
+    const spin = (p: Point): Point =>
+      ccw ? { x: cx + (p.y - cy), y: cy - (p.x - cx) } : { x: cx - (p.y - cy), y: cy + (p.x - cx) };
     const d = drag;
     for (const n of list) {
       if (isFrame(n)) {
         // A frame stays upright: its box turns, so its bottom-left corner
-        // becomes its top-left and its sides swap.
+        // (top-right, turning the other way) becomes its top-left and its
+        // sides swap.
         const { w, h } = frameSize(n.props);
-        Object.assign(n, spin({ x: n.x, y: n.y + h }));
+        Object.assign(n, spin(ccw ? { x: n.x + w, y: n.y } : { x: n.x, y: n.y + h }));
         n.props.width = h;
         n.props.height = w;
         renderPart(n);
       } else {
         Object.assign(n, spin(n));
-        if (isPart(n)) n.rotation = (n.rotation + 90) % 360;
+        if (isPart(n)) n.rotation = (n.rotation + (ccw ? 270 : 90)) % 360;
       }
       place(n);
       // Mid-drag, re-base so the rotated group keeps following the cursor.
@@ -1518,7 +1521,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       return;
     }
     if (e.key === 'r' || e.key === 'R') {
-      rotateSelected();
+      rotateSelected(e.shiftKey);
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
       deleteSelected();
@@ -1740,7 +1743,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     paste,
     duplicate: duplicateSelected,
     deleteSelected,
-    rotate: rotateSelected,
+    rotate: (ccw = false) => rotateSelected(ccw),
     canCopy: () => !!snapshot(),
     canPaste: () => !!clipboard,
     hasSelection: () => selected.size > 0,
