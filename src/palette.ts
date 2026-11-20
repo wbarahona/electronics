@@ -367,9 +367,18 @@ export function createPalette(
     drop(type, p.x, p.y, rotation, module);
   }
 
+  // The drag in progress, if any: how to call it off.
+  let cancelDrag: (() => void) | null = null;
+
+  // Drag a part (or a module) from the tray or search results onto the board.
+  // The pointer is followed on the window, not the button it started on: that
+  // button can lose its pointer capture mid-drag (the tray or results
+  // redrawn, a release outside the window), and its release would then never
+  // arrive, leaving the drag stuck to the pointer.
   function startDrag(e: PointerEvent, type: PartType, btn: HTMLElement, module?: TrayModule) {
     if (e.button !== 0) return;
     e.preventDefault();
+    cancelDrag?.();
     btn.setPointerCapture(e.pointerId);
     ghost.innerHTML = symbolMarkup(type, module?.props ?? defaults(type));
     const start = { clientX: e.clientX, clientY: e.clientY };
@@ -390,6 +399,12 @@ export function createPalette(
     };
 
     const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== e.pointerId) return;
+      // Released where its pointerup didn't reach us: finish there.
+      if (ev.pointerType === 'mouse' && (ev.buttons & 1) === 0) {
+        end(ev);
+        return;
+      }
       if (!moved && Math.hypot(ev.clientX - start.clientX, ev.clientY - start.clientY) < DRAG_THRESHOLD) return;
       if (!moved) document.body.classList.add('dragging');
       moved = true;
@@ -398,9 +413,11 @@ export function createPalette(
     };
 
     const stop = () => {
-      btn.removeEventListener('pointermove', move);
-      btn.removeEventListener('pointerup', end);
-      btn.removeEventListener('pointercancel', stop);
+      cancelDrag = null;
+      window.removeEventListener('pointermove', move, true);
+      window.removeEventListener('pointerup', end, true);
+      window.removeEventListener('pointercancel', cancel, true);
+      window.removeEventListener('blur', stop);
       window.removeEventListener('keydown', key, true);
       if (btn.hasPointerCapture(e.pointerId)) btn.releasePointerCapture(e.pointerId);
       document.body.classList.remove('dragging');
@@ -408,7 +425,12 @@ export function createPalette(
       editor.clearPreview();
     };
 
+    const cancel = (ev: PointerEvent) => {
+      if (ev.pointerId === e.pointerId) stop();
+    };
+
     const end = (ev: PointerEvent) => {
+      if (ev.pointerId !== e.pointerId) return;
       stop();
       if (!moved) {
         addToView(type, rotation, module);
@@ -434,10 +456,14 @@ export function createPalette(
       ev.stopImmediatePropagation();
     };
 
-    btn.addEventListener('pointermove', move);
-    btn.addEventListener('pointerup', end);
-    btn.addEventListener('pointercancel', stop);
+    // (Capturing, so nothing on the page can stop them reaching the drag.)
+    window.addEventListener('pointermove', move, true);
+    window.addEventListener('pointerup', end, true);
+    window.addEventListener('pointercancel', cancel, true);
+    // Leaving the window (switching apps mid-drag) calls it off.
+    window.addEventListener('blur', stop);
     window.addEventListener('keydown', key, true);
+    cancelDrag = stop;
   }
 
   // Open a category's tray from elsewhere (the search view's category chips).
