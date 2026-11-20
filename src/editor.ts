@@ -29,10 +29,10 @@ const FLOW_SPEED = 40; // world units/s per decade of current above FLOW_REF
 const PERSISTENCE = 0.04; // s
 // Invisible box over each symbol so thin strokes are easy to grab.
 // Behind each part, the patch the thermal view colours.
-const thermoBox = ({ w = PART_W, h = PART_H, x = 0 } = {}) =>
-  `<rect class="thermo" x="${x - w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="10" />`;
-const hitBox = ({ w = PART_W, h = PART_H, x = 0 } = {}) =>
-  `<rect class="hit" x="${x - w / 2}" y="${-h / 2}" width="${w}" height="${h}" />`;
+const thermoBox = ({ w = PART_W, h = PART_H, x = 0, y = 0 } = {}) =>
+  `<rect class="thermo" x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="10" />`;
+const hitBox = ({ w = PART_W, h = PART_H, x = 0, y = 0 } = {}) =>
+  `<rect class="hit" x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" />`;
 
 // Heat haze over something too hot to touch: wavy lines rising from it (shown
 // with .touch-hot; see place() for where).
@@ -296,8 +296,8 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       text.setAttribute('text-anchor', anchor);
     }
     // (Its own, not a control on a block's front panel, which sits where placed.)
-    g.querySelector(':scope > .actuator')
-      ?.setAttribute('transform', `rotate(${-rotation}) translate(${vertical ? '34 0' : '0 -34'})`);
+    const act = PARTS[n.type].actuatorAt?.(vertical, n.props, rotation) ?? (vertical ? { x: 34, y: 0 } : { x: 0, y: -34 });
+    g.querySelector(':scope > .actuator')?.setAttribute('transform', `rotate(${-rotation}) translate(${act.x} ${act.y})`);
     // Heat rises: the haze sits just above it on screen, whichever way it's
     // turned (above a frame's top edge, mid-way along).
     if (isFrame(n)) {
@@ -383,13 +383,16 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   }
 
   // The small on-board control for a part you operate by hand: a toggle pill
-  // for switches, a round button for momentary ones.
+  // for switches, a round button for momentary ones, a knob showing its
+  // position for a selector.
   function actuatorMarkup(c: Part): string {
-    const { prop, momentary } = PARTS[c.type].actuator!;
-    const on = propOf(c, prop);
-    const body = momentary
-      ? '<circle class="act-bg" r="7" /><circle class="act-knob" r="3.5" />'
-      : `<rect class="act-bg" x="-10" y="-6" width="20" height="12" rx="6" />
+    const { prop, momentary, positions } = PARTS[c.type].actuator!;
+    const on = !positions && propOf(c, prop);
+    const body = positions
+      ? `<circle class="act-bg" r="8" /><text class="act-num" y="3.5" text-anchor="middle">${propOf(c, prop)}</text>`
+      : momentary
+        ? '<circle class="act-bg" r="7" /><circle class="act-knob" r="3.5" />'
+        : `<rect class="act-bg" x="-10" y="-6" width="20" height="12" rx="6" />
          <circle class="act-knob" cx="${on ? 4 : -4}" r="3.5" />`;
     return `<g class="actuator${on ? ' on' : ''}">${body}<rect class="act-hit" x="-13" y="-10" width="26" height="20" /></g>`;
   }
@@ -485,7 +488,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
   // part, redrawing the block it's on.
   function actuatePanel(block: Part, c: Part) {
     const { prop, momentary } = PARTS[c.type].actuator!;
-    const set = (value: boolean) => {
+    const set = (value: PropValue) => {
       (c.props as Record<string, PropValue>)[prop] = value;
       onPropChange(c.id, prop, value);
       if (!circuit.part(block.id)) return;
@@ -493,7 +496,7 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
       refreshNets();
     };
     if (!momentary) {
-      set(!propOf(c, prop));
+      set(nextPosition(c));
       return;
     }
     set(true);
@@ -521,12 +524,20 @@ export function createEditor(board: Board, circuit: Circuit, events: EditorEvent
     setProp(c, key, options[(options.indexOf(propOf(c, key) as string) + 1) % options.length]);
   }
 
-  // Operate a part's actuator: flip a switch, or hold a push button closed
-  // until the pointer is released anywhere.
+  // Where a click leaves a switch: flipped, or a selector on its next position
+  // (from the last back to 1).
+  function nextPosition(c: Part): PropValue {
+    const { prop, positions } = PARTS[c.type].actuator!;
+    if (!positions) return !propOf(c, prop);
+    return (Math.round(propOf(c, prop) as number) % positions(c.props)) + 1;
+  }
+
+  // Operate a part's actuator: flip a switch, turn a selector, or hold a push
+  // button closed until the pointer is released anywhere.
   function actuate(c: Part) {
     const { prop, momentary } = PARTS[c.type].actuator!;
     if (!momentary) {
-      setProp(c, prop, !propOf(c, prop));
+      setProp(c, prop, nextPosition(c));
       return;
     }
     setProp(c, prop, true);

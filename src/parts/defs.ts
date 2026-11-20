@@ -14,7 +14,10 @@ import type { PartType, Point, Props, PropsByType } from '../types.ts';
 // have a `glow`: its colour (a key of LIGHT_COLORS) and radius; elements drawn
 // with class "bulb" fill with that colour as they light up. Parts you operate
 // by hand have an `actuator`: a small control on the board that flips the
-// boolean prop `prop`, or holds it true only while pressed if `momentary`.
+// boolean prop `prop`, or holds it true only while pressed if `momentary`;
+// one with `positions` (a selector switch) steps its number prop `prop`
+// through 1..positions instead. `actuatorAt` places that control, in screen
+// space, where the usual spot above the part is taken (by further poles).
 // `group` is the subcategory the part is listed under in its category's tray.
 // Parts that store energy have a `gauge`: a small battery icon on the board
 // showing how full they are (the model's `level`). Meters have a `display`:
@@ -136,6 +139,8 @@ export type SpecFor<V> = [V] extends [boolean]
 
 export type BooleanKeys<P> = { [K in keyof P]: P[K] extends boolean ? K : never }[keyof P] & string;
 
+export type NumberKeys<P> = { [K in keyof P]: P[K] extends number ? K : never }[keyof P] & string;
+
 export type ChoiceKeys<P> = { [K in keyof P]: P[K] extends string ? K : never }[keyof P] & string;
 
 // What a part type does differently under the US standard (src/norm.ts): its
@@ -160,7 +165,8 @@ export interface PartDef<P> {
   props: { [K in keyof P]: SpecFor<P[K]> };
   tag?: (p: P) => string;
   glow?: { color: (p: P) => LightColor; radius: number };
-  actuator?: { prop: BooleanKeys<P>; momentary: boolean };
+  actuator?: { prop: BooleanKeys<P>; momentary: boolean } | { prop: NumberKeys<P>; momentary: false; positions: (p: P) => number };
+  actuatorAt?: (vertical: boolean, p: P, rotation: number) => Point | undefined;
   gauge?: boolean;
   display?: boolean;
   selector?: ChoiceKeys<P>;
@@ -207,12 +213,13 @@ export interface PanelLook {
 
 export type LabelSpot = [number, number, 'start' | 'middle' | 'end'];
 
-// The invisible grab box: its size, centred on the part unless `x` says
-// otherwise.
+// The invisible grab box: its size, centred on the part unless `x` or `y`
+// say otherwise.
 export interface HitBox {
   w: number;
   h: number;
   x?: number;
+  y?: number;
 }
 
 // The same, seen by code that handles any part type.
@@ -226,7 +233,8 @@ export interface AnyPartDef {
   props: Record<string, PropSpec>;
   tag?: (p: Props) => string;
   glow?: { color: (p: Props) => LightColor; radius: number };
-  actuator?: { prop: string; momentary: boolean };
+  actuator?: { prop: string; momentary: boolean; positions?: (p: Props) => number };
+  actuatorAt?: (vertical: boolean, p: Props, rotation: number) => Point | undefined;
   gauge?: boolean;
   display?: boolean;
   selector?: string;

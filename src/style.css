@@ -2045,6 +2045,19 @@ body.dragging * {
   fill: var(--bg);
 }
 
+/* A selector's knob shows the position it's on. */
+.actuator .act-num {
+  fill: var(--muted);
+  stroke: none;
+  font-size: 10px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.actuator:hover .act-num {
+  fill: var(--accent);
+}
+
 .part .weld {
   fill: var(--burnt);
   stroke: none;

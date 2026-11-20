@@ -270,40 +270,60 @@ const texts: PartTexts = {
     of: '1413cux',
     about: {
       how: 'Un contacto que queda abierto o cerrado hasta que lo cambias.',
-      sim: 'Abierto, o cerrado con una resistencia mínima; sus contactos se calientan por encima de su corriente nominal. Haz clic en su control del tablero para cambiarlo.',
+      sim: 'Abierto, o cerrado con una resistencia mínima; sus contactos se calientan por encima de su corriente nominal. Haz clic en su control del tablero para cambiarlo. Hasta cuatro polos en la misma palanca (bipolar, tripolar…).',
       uses: 'Encender y apagar circuitos y fijar entradas a mano.',
     },
-    aboutOf: 'ysyqrz',
+    aboutOf: '1pv69ny',
   },
   button: {
     summary: 'Un pulsador que solo cierra mientras se mantiene pulsado (normalmente abierto).',
     of: 'z9plog',
     about: {
       how: 'Un interruptor momentáneo: su contacto solo cierra mientras lo pulsas y se abre solo al soltarlo (normalmente abierto, NA).',
-      sim: 'Cerrado mientras se mantiene: pulsa y mantén su control en el tablero.',
+      sim: 'Cerrado mientras se mantiene: pulsa y mantén su control en el tablero. Hasta cuatro polos en el mismo pulsador.',
       uses: 'Pulsadores de marcha, timbres y entradas lógicas.',
     },
-    aboutOf: '1rtuiih',
+    aboutOf: 'nhtkjq',
   },
   buttonNC: {
     summary: 'Un pulsador que solo abre mientras se mantiene pulsado (normalmente cerrado): un pulsador de paro.',
     of: 'gccl5d',
     about: {
       how: 'Un interruptor momentáneo cuyo contacto está cerrado en reposo y se abre al pulsarlo (normalmente cerrado, NC).',
-      sim: 'Abierto mientras se mantiene: pulsa y mantén su control en el tablero.',
+      sim: 'Abierto mientras se mantiene: pulsa y mantén su control en el tablero. Hasta cuatro polos en el mismo pulsador.',
       uses: 'Pulsadores de paro y circuitos de seguridad, que deben cortar al pulsarlos.',
     },
-    aboutOf: '8t2va2',
+    aboutOf: '7xlrzb',
+  },
+  buttonBlocks: {
+    summary: 'Un pulsador con contactos NA y NC a la vez: al pulsarlo cierra unos y abre los otros al mismo tiempo.',
+    of: '19shaj',
+    about: {
+      how: 'Un pulsador momentáneo con varios bloques de contacto: mientras está pulsado, sus contactos NA se cierran y sus contactos NC se abren.',
+      sim: 'Cada contacto es un par de pines propio, numerado como en EN 50005 (13–14 NA, 21–22 NC); todos conmutan mientras mantienes su control en el tablero.',
+      uses: 'Pulsadores de marcha con enclavamiento, avisar de una pulsación a un segundo circuito, y mandos a dos manos o de emergencia.',
+    },
+    aboutOf: 'xgr3mi',
   },
   changeover: {
     summary: 'Un conmutador que une su común con uno de dos contactos: conmutación desde dos puntos, como la luz de una escalera.',
     of: '1rhho8',
     about: {
       how: 'Un interruptor que une su terminal común con uno de otros dos.',
-      sim: 'Su común unido a un contacto o al otro; haz clic en su control para cambiarlo.',
+      sim: 'Su común unido a un contacto o al otro; haz clic en su control para cambiarlo. Hasta cuatro polos en la misma palanca (conmutador bipolar…).',
       uses: 'Encender una luz desde dos puntos, elegir entre dos fuentes o señales.',
     },
-    aboutOf: '1abeykb',
+    aboutOf: '1wmkiej',
+  },
+  selectorSwitch: {
+    summary: 'Un interruptor que une su común con uno de varios contactos, una posición cada vez: un selector o conmutador rotativo.',
+    of: 'arfjg0',
+    about: {
+      how: 'Un interruptor con un terminal común y varias posiciones, cada una de las cuales lo une a un contacto distinto.',
+      sim: 'Su común unido al contacto de la posición en la que está, los demás abiertos; haz clic en su perilla para pasar a la siguiente posición (tras la última, vuelve a la 1).',
+      uses: 'Elegir entre fuentes, velocidades, rangos o salidas: selectores de velocidad de ventilador, rangos de un medidor, Manual–Apagado–Automático.',
+    },
+    aboutOf: 'o78sfa',
   },
   motor: {
     summary: 'Un motor de continua, monofásico o trifásico que mueve una carga en su eje; su velocidad y su corriente siguen a la carga, y se cala si se sobrecarga.',

@@ -22,6 +22,7 @@ import type { PartProps as BicolorLedProps } from './parts/signals/bicolor-led.t
 import type { PartProps as SevenSegProps } from './parts/signals/seven-seg.ts';
 import type { PartProps as SwitchesProps } from './parts/switches/switches.ts';
 import type { PartProps as ChangeoverProps } from './parts/switches/changeover.ts';
+import type { PartProps as SelectorProps } from './parts/switches/selector.ts';
 import type { PartProps as MotorProps } from './parts/loads/motor.ts';
 import type { PartProps as MechLoadsProps } from './parts/loads/mech-loads.ts';
 import type { PartProps as FanProps } from './parts/loads/fan.ts';
@@ -93,6 +94,7 @@ export interface PropsByType
     SevenSegProps,
     SwitchesProps,
     ChangeoverProps,
+    SelectorProps,
     MotorProps,
     MechLoadsProps,
     FanProps,

@@ -23,6 +23,7 @@ import * as bicolorLed from './signals/bicolor-led.ts';
 import * as sevenSeg from './signals/seven-seg.ts';
 import * as switches from './switches/switches.ts';
 import * as changeover from './switches/changeover.ts';
+import * as selector from './switches/selector.ts';
 import * as motor from './loads/motor.ts';
 import * as mechLoads from './loads/mech-loads.ts';
 import * as fan from './loads/fan.ts';
@@ -83,6 +84,7 @@ export const DEFS: PartDefs<PartType> = {
   ...sevenSeg.defs,
   ...switches.defs,
   ...changeover.defs,
+  ...selector.defs,
   ...motor.defs,
   ...mechLoads.defs,
   ...fan.defs,
@@ -137,6 +139,7 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...sevenSeg.models,
   ...switches.models,
   ...changeover.models,
+  ...selector.models,
   ...motor.models,
   ...mechLoads.models,
   ...fan.models,

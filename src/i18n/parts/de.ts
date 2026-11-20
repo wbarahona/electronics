@@ -270,40 +270,60 @@ const texts: PartTexts = {
     of: '1413cux',
     about: {
       how: 'Ein Kontakt, der offen oder geschlossen bleibt, bis man ihn umlegt.',
-      sim: 'Offen oder geschlossen mit winzigem Widerstand; seine Kontakte erwärmen sich über ihrem Nennstrom. Ein Klick auf sein Bedienelement legt ihn um.',
+      sim: 'Offen oder geschlossen mit winzigem Widerstand; seine Kontakte erwärmen sich über ihrem Nennstrom. Ein Klick auf sein Bedienelement legt ihn um. Bis zu vier Pole an demselben Griff (zweipolig, dreipolig…).',
       uses: 'Schaltungen ein- und ausschalten und Eingänge von Hand setzen.',
     },
-    aboutOf: 'ysyqrz',
+    aboutOf: '1pv69ny',
   },
   button: {
     summary: 'Ein Taster, der nur schließt, solange er gedrückt wird (Schließer).',
     of: 'z9plog',
     about: {
       how: 'Ein Taster: Sein Kontakt schließt nur, solange man drückt, und öffnet wieder von selbst (Schließer).',
-      sim: 'Geschlossen, solange gehalten: sein Bedienelement auf der Arbeitsfläche drücken und halten.',
+      sim: 'Geschlossen, solange gehalten: sein Bedienelement auf der Arbeitsfläche drücken und halten. Bis zu vier Pole an demselben Taster.',
       uses: 'Starttaster, Klingeltaster und Logikeingänge.',
     },
-    aboutOf: '1rtuiih',
+    aboutOf: 'nhtkjq',
   },
   buttonNC: {
     summary: 'Ein Taster, der nur öffnet, solange er gedrückt wird (Öffner): ein Halt-Taster.',
     of: 'gccl5d',
     about: {
       how: 'Ein Taster, dessen Kontakt in Ruhe geschlossen ist und beim Drücken öffnet (Öffner).',
-      sim: 'Offen, solange gehalten: sein Bedienelement auf der Arbeitsfläche drücken und halten.',
+      sim: 'Offen, solange gehalten: sein Bedienelement auf der Arbeitsfläche drücken und halten. Bis zu vier Pole an demselben Taster.',
       uses: 'Halt-Taster und Sicherheitskreise, die beim Drücken unterbrechen müssen.',
     },
-    aboutOf: '8t2va2',
+    aboutOf: '7xlrzb',
+  },
+  buttonBlocks: {
+    summary: 'Ein Taster mit Schließern und Öffnern zugleich: Drücken schließt die einen und öffnet die anderen gleichzeitig.',
+    of: '19shaj',
+    about: {
+      how: 'Ein Taster mit mehreren Kontaktelementen: Solange er gedrückt ist, schließen seine Schließer und öffnen seine Öffner.',
+      sim: 'Jeder Kontakt ist ein eigenes Anschlusspaar, nummeriert nach EN 50005 (13–14 Schließer, 21–22 Öffner); alle schalten, solange du sein Bedienelement auf der Arbeitsfläche hältst.',
+      uses: 'Ein-Taster mit Verriegelung, Meldung eines Tastendrucks an einen zweiten Kreis, Zweihand- und Not-Halt-Steuerungen.',
+    },
+    aboutOf: 'xgr3mi',
   },
   changeover: {
     summary: 'Ein Schalter, der seinen gemeinsamen Anschluss mit einem von zwei Kontakten verbindet: Wechselschaltung wie bei einer Treppenhausbeleuchtung.',
     of: '1rhho8',
     about: {
       how: 'Ein Schalter, der seinen gemeinsamen Anschluss mit einem von zwei anderen verbindet.',
-      sim: 'Der gemeinsame Anschluss ist mit dem einen oder dem anderen Kontakt verbunden; ein Klick auf das Bedienelement schaltet um.',
+      sim: 'Der gemeinsame Anschluss ist mit dem einen oder dem anderen Kontakt verbunden; ein Klick auf das Bedienelement schaltet um. Bis zu vier Pole an demselben Griff (zweipoliger Wechsler…).',
       uses: 'Wechselschaltung von Licht, Auswahl zwischen zwei Quellen oder Signalen.',
     },
-    aboutOf: '1abeykb',
+    aboutOf: '1wmkiej',
+  },
+  selectorSwitch: {
+    summary: 'Ein Schalter, der seinen gemeinsamen Anschluss mit einem von mehreren Kontakten verbindet, eine Stellung nach der anderen: ein Dreh- oder Stufenschalter.',
+    of: 'arfjg0',
+    about: {
+      how: 'Ein Schalter mit einem gemeinsamen Anschluss und mehreren Stellungen, von denen jede ihn mit einem anderen Kontakt verbindet.',
+      sim: 'Der gemeinsame Anschluss ist mit dem Kontakt der eingestellten Stellung verbunden, die anderen sind offen; ein Klick auf den Knopf schaltet eine Stellung weiter (nach der letzten wieder auf 1).',
+      uses: 'Auswahl zwischen Quellen, Drehzahlen, Messbereichen oder Ausgängen: Lüfterstufenschalter, Messbereiche, Hand–Aus–Automatik.',
+    },
+    aboutOf: 'o78sfa',
   },
   motor: {
     summary: 'Ein Gleichstrom-, Einphasen- oder Drehstrommotor, der eine Last an seiner Welle antreibt; Drehzahl und Strom folgen der Last, und bei Überlast bleibt er stehen.',
