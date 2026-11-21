@@ -302,10 +302,14 @@ export function createPalette(
   });
 
   // Show as many categories as fit, in order; the rest go under "More".
+  const OPEN_SPREAD = 8; // .palette-category.open's side margins
+
   function layout() {
     for (const b of buttons) b.hidden = false;
     more.hidden = true;
-    const available = container.clientWidth;
+    // (Less the room the open category takes as it pulls apart from its
+    // neighbours, so opening one doesn't push the row past the bar's sides.)
+    const available = container.clientWidth - OPEN_SPREAD;
     if (container.scrollWidth <= available) {
       overflow = [];
       syncMore();

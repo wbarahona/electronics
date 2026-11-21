@@ -827,8 +827,8 @@ body.dragging .search-results {
 
   /* Even sides, so the centred row is centred on the screen. */
   #toolbar {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 
@@ -910,8 +910,34 @@ body.dragging .search-results {
 }
 
 @media (max-width: 600px) {
+  /* The simulated time and the speed in slots of the same width either
+     side, so Run stays in the middle of the screen; the time without its
+     icon, to fit. */
+  .clock,
+  .speed {
+    flex: 0 1 64px;
+    min-width: 0;
+    margin: 0;
+  }
+
   .clock {
+    justify-content: flex-end;
+  }
+
+  .clock md-icon {
     display: none;
+  }
+
+  #clock {
+    min-width: 0;
+  }
+
+  #speed {
+    min-width: 0;
+  }
+
+  #run {
+    min-width: 96px;
   }
 
   /* On phones just the icons, in the same pills. */
@@ -3321,25 +3347,46 @@ span.module-crumb {
     min-height: 0;
   }
 
+  /* An M3 Expressive navigation bar, 64px tall: the destinations share the
+     room on the left; Help and Settings sit together at the right end. */
   .rail {
     order: 1;
     width: auto;
-    height: 80px;
+    height: auto;
     flex-direction: row;
     justify-content: center;
-    padding: 12px 0 16px;
+    padding: 6px 8px;
   }
 
   .rail-items {
     flex-direction: row;
     gap: 0;
     flex: 1;
-    justify-content: space-around;
+    min-width: 0;
   }
 
+  /* Each as wide as its label, and an even share of the room left. */
   .rail-item {
     width: auto;
-    flex: 1;
+    flex: 1 0 auto;
+    min-width: 0;
+  }
+
+  .rail-help,
+  .rail-settings {
+    flex: 0 0 56px;
+  }
+
+  .rail-help {
+    margin-left: 4px;
+  }
+
+  .rail-label {
+    letter-spacing: 0.2px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
 }
