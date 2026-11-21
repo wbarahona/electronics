@@ -418,10 +418,13 @@ md-icon svg {
   background: var(--hover);
 }
 
-/* On narrow screens: keep only the logo of the app title, and show the
-   categories as icons only (their names stay as tooltips); whatever still
-   doesn't fit goes under "More". */
-@media (max-width: 600px) {
+/* On narrow screens (tablets in portrait, small windows): keep only the
+   logo of the app title, and show the categories as icons only (their
+   names stay as tooltips); whatever still doesn't fit goes under "More".
+   The run controls go icon-only too (see .speed-step-label), so the top
+   row fits: wider than the screen, a mobile browser zooms the whole page
+   out, leaving blank strips round it. */
+@media (max-width: 900px) {
   .title span {
     display: none;
   }
@@ -566,7 +569,7 @@ md-icon svg {
   display: none;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .search-open {
     display: inline-flex;
   }
@@ -776,16 +779,21 @@ body.dragging .search-results {
 /* Phones: two rows. The logo, undo / redo and the search, folded to its
    magnifier at the end of the row, which opens across the row while in use;
    then the run controls, centred. */
-@media (max-width: 600px) {
+/* Phones, tablets in portrait and small windows: the search folded to its
+   magnifier, which opens across the first row while in use. (Above phone
+   width the row stays one: the magnifier sits by the run controls.) */
+@media (max-width: 900px) {
   .toolbar-row {
     position: relative;
-    flex-wrap: wrap;
-    row-gap: 4px;
   }
 
   .search {
     flex: 0 0 auto;
     margin-left: auto;
+  }
+
+  .toolbar-row .sim-controls {
+    margin-left: 0;
   }
 
   /* Folded: only the magnifier button; the bar comes back while in use. */
@@ -811,6 +819,13 @@ body.dragging .search-results {
     flex-direction: column;
     justify-content: center;
     background: var(--md-sys-color-surface-container);
+  }
+}
+
+@media (max-width: 600px) {
+  .toolbar-row {
+    flex-wrap: wrap;
+    row-gap: 4px;
   }
 
   .toolbar-row .sim-controls {
@@ -941,6 +956,34 @@ body.dragging .search-results {
   }
 
   /* On phones just the icons, in the same pills. */
+  .speed-step-label {
+    display: none;
+  }
+
+  .speed-step {
+    --md-filled-tonal-button-with-leading-icon-leading-space: 10px;
+    --md-filled-tonal-button-with-leading-icon-trailing-space: 2px;
+  }
+}
+
+/* Just above phone width: tighter still (the time without its icon, a
+   narrower Run, smaller gaps). */
+@media (min-width: 601px) and (max-width: 680px) {
+  .toolbar-row {
+    gap: 8px;
+  }
+
+  .clock md-icon {
+    display: none;
+  }
+
+  #run {
+    min-width: 96px;
+  }
+}
+
+/* Tablets and small windows: Slower and Faster as icons, as on phones. */
+@media (min-width: 601px) and (max-width: 900px) {
   .speed-step-label {
     display: none;
   }
