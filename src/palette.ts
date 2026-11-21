@@ -309,14 +309,17 @@ export function createPalette(
     more.hidden = true;
     // (Less the room the open category takes as it pulls apart from its
     // neighbours, so opening one doesn't push the row past the bar's sides.)
+    // (Their widths added up, not the bar's scrollWidth: that's never less
+    // than the bar's own width, so it never fits in less.)
     const available = container.clientWidth - OPEN_SPREAD;
-    if (container.scrollWidth <= available) {
+    const gap = parseFloat(getComputedStyle(container).columnGap) || 0;
+    const needed = buttons.reduce((sum, b) => sum + b.offsetWidth, 0) + gap * (buttons.length - 1);
+    if (needed <= available) {
       overflow = [];
       syncMore();
       return;
     }
     more.hidden = false;
-    const gap = parseFloat(getComputedStyle(container).columnGap) || 0;
     let used = more.offsetWidth;
     let fits = 0;
     for (const b of buttons) {
