@@ -20,10 +20,10 @@ function highlight(text: string, query: string): string {
 // you type, a list under the field shows every part whose name, subcategory
 // or a part number contains the text ("gate" finds the gates, "1N4148" the
 // diode), by category, with its symbol and the matching piece highlighted.
-// Before anything is typed it shows the parts placed most recently and a
-// chip per category that opens its tray. Click a result to drop the part in
-// the middle of the view, or drag it onto the board, as in the tray. From the
-// It finds actions too (the command palette, see commands.ts): ⌘⇧P, or typing
+// Before anything is typed it shows the parts placed most recently. Under
+// the list, fixed while it scrolls, Browse has a chip per category that
+// opens its tray. Click a result to drop the part in the middle of the view,
+// or drag it onto the board, as in the tray. It finds actions too (the command palette, see commands.ts): ⌘⇧P, or typing
 // > first, shows only them, all of them before anything else is typed;
 // otherwise they come first when the text starts one of their names ("fit",
 // "export"), after the parts if not. Enter or a click runs one. From the
@@ -34,7 +34,9 @@ function highlight(text: string, query: string): string {
 // ✕ at the end only clears it.
 export function createSearch(root: HTMLElement, palette: Palette) {
   const input = root.querySelector<HTMLInputElement>('#search-input')!;
-  const results = root.querySelector<HTMLElement>('#search-results')!;
+  const results = root.querySelector<HTMLElement>('.search-results')!;
+  const list = results.querySelector<HTMLElement>('.search-list')!; // what scrolls
+  const browse = results.querySelector<HTMLElement>('.search-browse')!;
   const clear = root.querySelector<HTMLElement>('.search-clear')!;
   let options: { el: HTMLElement; type?: PartType; command?: Command }[] = [];
   let actionsOnly = false; // opened with ⌘⇧P: only actions, until it closes
@@ -127,9 +129,19 @@ export function createSearch(root: HTMLElement, palette: Palette) {
     return { list, leading: list.some((c) => starts(c.label) || starts(t(c.label))) };
   }
 
-  // Nothing typed yet: the recent parts, then a chip per category.
-  function suggestions(): HTMLElement[] {
-    const recent = recentParts();
+  // Show these rows, from the top, with Browse under them unless only actions
+  // are searched.
+  function fill(rows: HTMLElement[], withBrowse = true) {
+    list.replaceChildren(...rows);
+    list.hidden = !rows.length;
+    list.scrollTop = 0;
+    browse.hidden = !withBrowse;
+    if (withBrowse) browse.replaceChildren(browseSection());
+    show(true);
+  }
+
+  // Browse: a chip per category, opening its tray.
+  function browseSection(): HTMLElement {
     const chips = document.createElement('md-chip-set');
     chips.className = 'search-chips';
     for (const category of CATEGORIES) {
@@ -142,10 +154,13 @@ export function createSearch(root: HTMLElement, palette: Palette) {
       });
       chips.append(chip);
     }
-    return [
-      ...(recent.length ? [section('history', t('Recent'), recent.map((type) => option(type, '')))] : []),
-      section('category', t('Browse'), [chips]),
-    ];
+    return section('category', t('Browse'), [chips]);
+  }
+
+  // Nothing typed yet: the parts placed most recently.
+  function suggestions(): HTMLElement[] {
+    const recent = recentParts();
+    return recent.length ? [section('history', t('Recent'), recent.map((type) => option(type, '')))] : [];
   }
 
   function update() {
@@ -161,18 +176,13 @@ export function createSearch(root: HTMLElement, palette: Palette) {
     options = [];
     active = -1;
     if (onlyActions) {
-      const { list } = query ? matchingActions(query) : { list: availableCommands() };
-      if (list.length) results.replaceChildren(section('bolt', t('Actions'), list.map((c) => actionRow(c, query))));
-      else results.replaceChildren(nothing(t('No actions match “{query}”', { query })));
-      results.scrollTop = 0;
-      show(true);
+      const { list: found } = query ? matchingActions(query) : { list: availableCommands() };
+      fill([found.length ? section('bolt', t('Actions'), found.map((c) => actionRow(c, query))) : nothing(t('No actions match “{query}”', { query }))], false);
       setActive(options.length ? 0 : -1);
       return;
     }
     if (!query) {
-      results.replaceChildren(...suggestions());
-      results.scrollTop = 0;
-      show(true);
+      fill(suggestions());
       return;
     }
     const groups = CATEGORIES.flatMap((category) => {
@@ -200,13 +210,7 @@ export function createSearch(root: HTMLElement, palette: Palette) {
         groups.splice(0, groups.length, first, ...parts);
       } else groups.push(rows());
     }
-    if (groups.length) {
-      results.replaceChildren(...groups);
-    } else {
-      results.replaceChildren(nothing(t('No parts match “{query}”', { query: input.value.trim() })));
-    }
-    results.scrollTop = 0;
-    show(true);
+    fill(groups.length ? groups : [nothing(t('No parts match “{query}”', { query: input.value.trim() }))]);
     setActive(options.length ? 0 : -1);
   }
 

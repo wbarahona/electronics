@@ -242,12 +242,14 @@ button {
   display: none;
 }
 
-/* The group's two ends. */
-.palette-category:first-child {
+/* The group's two ends. (In :where(), so they weigh no more than a plain
+   button: pressing or opening one still changes its shape; the last one's
+   long selector used to win over both.) */
+.palette-category:where(:first-child) {
   border-radius: 20px 8px 8px 20px;
 }
 
-.palette-category:not([hidden]):not(:has(~ .palette-category:not([hidden]))) {
+.palette-category:where(:not([hidden]):not(:has(~ .palette-category:not([hidden])))) {
   border-radius: 8px 20px 20px 8px;
 }
 
@@ -591,9 +593,10 @@ md-icon svg {
   top: 100%;
   left: 0;
   right: 0;
+  display: flex;
+  flex-direction: column;
   max-height: min(520px, 70vh);
-  overflow-y: auto;
-  padding: 4px 8px 12px;
+  overflow: hidden;
   border-top: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 0 0 28px 28px;
   background: var(--md-sys-color-surface-container-high);
@@ -604,6 +607,29 @@ md-icon svg {
   box-shadow:
     0 4px 8px 3px rgb(0 0 0 / 0.15),
     0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+/* The results (or recent parts) scroll; Browse stays at the foot. */
+.search-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 8px 12px;
+}
+
+.search-browse {
+  flex: none;
+  padding: 0 8px 12px;
+}
+
+.search-list:not([hidden]) + .search-browse {
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.search-list[hidden],
+.search-browse[hidden] {
+  display: none;
 }
 
 @keyframes search-open {

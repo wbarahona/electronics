@@ -246,13 +246,10 @@
             <kbd class="search-key" aria-hidden="true"></kbd>
           </label>
           <md-icon-button class="search-clear" aria-label="Clear search" title="Clear search" hidden><md-icon>close</md-icon></md-icon-button>
-          <div
-            id="search-results"
-            class="search-results"
-            role="listbox"
-            aria-label="Matching parts"
-            hidden
-          ></div>
+          <div class="search-results" hidden>
+            <div id="search-results" class="search-list" role="listbox" aria-label="Matching parts"></div>
+            <div class="search-browse"></div>
+          </div>
         </div>
         <div id="sim-controls" class="sim-controls">
           <span class="clock" title="Simulated time" data-tip="Time inside the simulation. It runs slower or faster than real time at other speeds."
