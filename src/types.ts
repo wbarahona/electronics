@@ -26,6 +26,7 @@ import type { PartProps as SelectorProps } from './parts/switches/selector.ts';
 import type { PartProps as MotorProps } from './parts/loads/motor.ts';
 import type { PartProps as DynamoProps } from './parts/loads/dynamo.ts';
 import type { PartProps as MechLoadsProps } from './parts/loads/mech-loads.ts';
+import type { PartProps as CrankProps } from './parts/loads/crank.ts';
 import type { PartProps as FanProps } from './parts/loads/fan.ts';
 import type { PartProps as HeaterProps } from './parts/loads/heater.ts';
 import type { PartProps as SolenoidProps } from './parts/loads/solenoid.ts';
@@ -99,6 +100,7 @@ export interface PropsByType
     MotorProps,
     DynamoProps,
     MechLoadsProps,
+    CrankProps,
     FanProps,
     HeaterProps,
     SolenoidProps,

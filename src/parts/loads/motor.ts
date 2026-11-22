@@ -3,7 +3,7 @@ import { formatSI } from '../../units.ts';
 import type { Element, ModelDef, ModelDefs, Result, Stamper } from '../../sim/models.ts';
 import type { PartDefs } from '../defs.ts';
 import type { PropsByType } from '../../types.ts';
-import { loadState, shaftOutput, spin, type ShaftLoad } from '../../sim/shared/shaft.ts';
+import { drivenBy, loadState, shaftOutput, spin, type ShaftLoad } from '../../sim/shared/shaft.ts';
 import type { LabelSpot } from '../defs.ts';
 
 export type MotorSupply = 'DC' | 'AC 1~' | 'AC 3~';
@@ -175,9 +175,7 @@ export const respondWith =
     if (dt === null) return false;
     const p = el.props;
     const shaft = env.shaft(el);
-    let load = shaft?.load ?? builtIn;
-    // A dynamo's drag, in this motor's terms: its torque at rated speed.
-    if (load?.kind === 'generator') load = { ...load, torque: (load.power ?? 0) / p.ratedPower };
+    const load = drivenBy(shaft?.load ?? builtIn, p.ratedPower);
     const speed = el.state.speed ?? 0;
     let next: number;
     let held: number;
@@ -401,6 +399,8 @@ export const ROTOR = `
         <animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="0.8s" repeatCount="indefinite" />
       </g>`;
 
+// (Its shaft takes a docked load; a fan's, built on the same model, has its
+// blades.)
 export const models: ModelDefs<'motor'> = {
-  motor: motorModel,
+  motor: { ...motorModel, drivesShaft: true },
 };

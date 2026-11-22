@@ -134,7 +134,7 @@ function loadModel<P>(shaftLoad: (p: P) => ShaftLoad, readout: (r: Result) => [s
     shaftLoad,
     active: (r) => Math.abs(r.state.shaft?.turn ?? 0) > 0.05,
     reverse: (r) => (r.state.shaft?.turn ?? 0) < 0,
-    readout: (r) => (r.state.shaft ? readout(r) : [['Shaft', 'not on a motor']]),
+    readout: (r) => (r.state.shaft ? readout(r) : [['Shaft', 'not on a shaft']]),
   };
 }
 

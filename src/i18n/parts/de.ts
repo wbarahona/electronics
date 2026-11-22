@@ -325,6 +325,16 @@ const texts: PartTexts = {
     },
     aboutOf: 'o78sfa',
   },
+  crank: {
+    summary: 'Dreht eine Welle von Hand, solange du sein Bedienelement hältst: Setz einen Dynamo darauf und bring mit eigener Kraft eine Lampe zum Leuchten.',
+    of: '1s2nrij',
+    about: {
+      how: 'Ein Griff, den du drehst, um eine Maschine anzutreiben, über ein Getriebe, das die Drehzahl erhöht: hier die Welle, auf der ein Dynamo oder eine andere Last sitzt.',
+      sim: 'Solange du sein Bedienelement auf der Arbeitsfläche hältst, kurbelt eine Person: das größte Drehmoment aus dem Stand, mit der Drehzahl abnehmend, ihre Leistung am größten beim eingestellten Kraftaufwand bei bequemen einer Umdrehung pro Sekunde. Die Übersetzung erhöht das auf die Drehzahl der Welle. Eine schwerere Last bremst sie; lässt du los, läuft sie aus.',
+      uses: 'Handkurbelgeneratoren und Kurbeltaschenlampen, und um zu spüren, wie viel Kraft eine Last braucht.',
+    },
+    aboutOf: '1n4suqr',
+  },
   dynamo: {
     summary: 'Ein Gleichstromgenerator auf der Welle eines Motors: Er erzeugt eine Spannung aus seiner Drehzahl, und was du ihm entnimmst, bremst den Motor.',
     of: '928o7f',

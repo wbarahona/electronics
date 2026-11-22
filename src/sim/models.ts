@@ -179,6 +179,8 @@ export interface ModelDef<P> {
   pinCurrents?(el: Element<P>, s: Stamper): number[];
   groups?: number[][] | ((p: P) => number[][]);
   active?(r: Result): boolean;
+  // A part with a shaft a load docks on (a motor, a crank; see src/shaft.ts).
+  drivesShaft?: boolean;
   // A mechanical load that docks on a motor's shaft: how it loads it (a
   // dynamo's from its state: what its circuit draws).
   shaftLoad?(p: P, state: PartState): ShaftLoad;

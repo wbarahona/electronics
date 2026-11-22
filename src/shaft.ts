@@ -2,7 +2,7 @@ import { MODELS } from './sim/models.ts';
 import type { Part, PartType, Point } from './types.ts';
 import { turn } from './wires.ts';
 
-// A mechanical load docks onto a motor's shaft the way pins connect: by
+// A mechanical load docks onto a motor's (or a crank's) shaft the way pins connect: by
 // position. The motor's shaft ends at SHAFT_END (local, above the symbol); a
 // load's coupling is at COUPLING (local, below its symbol). When the two meet,
 // turned the same way, the motor drives the load. Nothing is saved beyond the
@@ -11,7 +11,7 @@ export const SHAFT_END: Point = { x: 0, y: -40 };
 export const COUPLING: Point = { x: 0, y: 40 };
 export const DOCK_REACH = 30; // px: how near a dragged load snaps onto a shaft
 
-export const hasShaft = (type: PartType) => type === 'motor';
+export const hasShaft = (type: PartType) => !!MODELS[type].drivesShaft;
 export const isShaftLoad = (type: PartType) => !!MODELS[type].shaftLoad;
 
 const at = (c: { x: number; y: number; rotation: number }, local: Point): Point => {

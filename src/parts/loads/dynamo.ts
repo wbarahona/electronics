@@ -64,7 +64,7 @@ const dynamoModel: ModelDef<PropsByType['dynamo']> = {
     const shaft = r.state.shaft;
     const input = shaft?.power ?? 0;
     return [
-      shaft ? ['Speed', `${Math.round(Math.abs(shaft.rpm))} rpm`] : ['Shaft', 'not on a motor'],
+      shaft ? ['Speed', `${Math.round(Math.abs(shaft.rpm))} rpm`] : ['Shaft', 'not on a shaft'],
       ['Voltage', fmt(Math.abs(r.v), 'V')],
       ['Current', fmt(Math.abs(r.i), 'A')],
       ['Power out', fmt(out, 'W')],

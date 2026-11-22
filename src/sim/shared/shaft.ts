@@ -35,6 +35,11 @@ export interface ShaftState {
   stored: number;
 }
 
+// A docked load as the part driving it sees it: a dynamo's drag in its terms
+// (its torque at the driver's rated speed, for a driver of `ratedPower` W).
+export const drivenBy = (load: ShaftLoad | null, ratedPower: number): ShaftLoad | null =>
+  load?.kind === 'generator' ? { ...load, torque: (load.power ?? 0) / ratedPower } : load;
+
 // A docked load before its motor has turned it.
 export const STOPPED: ShaftState = { turn: 0, rpm: 0, torque: 0, power: 0, work: 0, stored: 0 };
 

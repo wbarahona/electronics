@@ -325,6 +325,16 @@ const texts: PartTexts = {
     },
     aboutOf: 'o78sfa',
   },
+  crank: {
+    summary: 'Hace girar un eje a mano mientras mantienes su control: acopla una dinamo y enciende una lámpara con tu propio esfuerzo.',
+    of: '1s2nrij',
+    about: {
+      how: 'Una manivela que giras para mover una máquina, a través de engranajes que aumentan la velocidad: aquí, el eje en el que va una dinamo u otra carga.',
+      sim: 'Mientras mantienes su control en el tablero, una persona girando la manivela: el mayor par desde parado, que baja con la velocidad, y su potencia máxima, el esfuerzo fijado, a un cómodo giro por segundo. La relación de transmisión lo eleva a la velocidad del eje. Una carga mayor la frena; si la sueltas, se detiene poco a poco.',
+      uses: 'Generadores y linternas de manivela, y sentir cuánto esfuerzo exige una carga.',
+    },
+    aboutOf: '1n4suqr',
+  },
   dynamo: {
     summary: 'Un generador de corriente continua acoplado al eje de un motor: produce una tensión según la velocidad a la que gira, y lo que le pides frena el motor.',
     of: '928o7f',
