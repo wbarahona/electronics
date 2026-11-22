@@ -175,7 +175,9 @@ export const respondWith =
     if (dt === null) return false;
     const p = el.props;
     const shaft = env.shaft(el);
-    const load = shaft?.load ?? builtIn;
+    let load = shaft?.load ?? builtIn;
+    // A dynamo's drag, in this motor's terms: its torque at rated speed.
+    if (load?.kind === 'generator') load = { ...load, torque: (load.power ?? 0) / p.ratedPower };
     const speed = el.state.speed ?? 0;
     let next: number;
     let held: number;
@@ -384,6 +386,12 @@ const motorSymbol = (p: PropsByType['motor'], letters: string) => `
       <text class="meter-letter upright" y="2" text-anchor="middle" data-y="-2"${letters.length > 1 ? ' style="font-size: 11px"' : ''}>${letters}</text>
       <text class="sym-text upright" y="12" text-anchor="middle" data-y="9">${p.supply === 'DC' ? '=' : p.supply === 'AC 1~' ? '1~' : '3~'}</text>
       ${p.supply === 'DC' ? '<text class="sym-text" x="-30" y="-6" text-anchor="middle">+</text>' : ''}
+      ${ROTOR}`;
+
+// While it turns, a rotor mark spinning round the circle the way the shaft
+// turns (.reverse: counter-clockwise), its arrow pointing that way. (A
+// dynamo's too.)
+export const ROTOR = `
       <g class="when-on turn-cw">
         <path class="rotor" d="M 0 -23 A 23 23 0 0 1 20 -11.5 M 20 -11.5 l -1 -5 M 20 -11.5 l -5 1" />
         <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="0.8s" repeatCount="indefinite" />

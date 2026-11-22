@@ -25,6 +25,7 @@ import * as switches from './switches/switches.ts';
 import * as changeover from './switches/changeover.ts';
 import * as selector from './switches/selector.ts';
 import * as motor from './loads/motor.ts';
+import * as dynamo from './loads/dynamo.ts';
 import * as mechLoads from './loads/mech-loads.ts';
 import * as fan from './loads/fan.ts';
 import * as heater from './loads/heater.ts';
@@ -86,6 +87,7 @@ export const DEFS: PartDefs<PartType> = {
   ...changeover.defs,
   ...selector.defs,
   ...motor.defs,
+  ...dynamo.defs,
   ...mechLoads.defs,
   ...fan.defs,
   ...heater.defs,
@@ -141,6 +143,7 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...changeover.models,
   ...selector.models,
   ...motor.models,
+  ...dynamo.models,
   ...mechLoads.models,
   ...fan.models,
   ...heater.models,

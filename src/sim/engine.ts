@@ -342,7 +342,7 @@ export function createEngine(circuit: Circuit) {
     temperature: around,
     shaft(el) {
       const load = docked.get(el.id);
-      return load?.model.shaftLoad && !load.open ? { load: load.model.shaftLoad(load.props), state: load.state } : null;
+      return load?.model.shaftLoad && !load.open ? { load: load.model.shaftLoad(load.props, load.state), state: load.state } : null;
     },
   };
 

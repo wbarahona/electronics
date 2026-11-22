@@ -325,6 +325,16 @@ const texts: PartTexts = {
     },
     aboutOf: 'o78sfa',
   },
+  dynamo: {
+    summary: 'Un generador de corriente continua acoplado al eje de un motor: produce una tensión según la velocidad a la que gira, y lo que le pides frena el motor.',
+    of: '928o7f',
+    about: {
+      how: 'Convierte el giro en electricidad: una bobina que gira en el campo de un imán produce una tensión proporcional a su velocidad. La corriente que entrega se opone a lo que la hace girar.',
+      sim: 'Una fuerza electromotriz proporcional a su velocidad tras la resistencia de su inducido (su tensión cae una décima a corriente nominal), acoplado al eje de un motor al colocarlo allí. La potencia que entrega, y sus pérdidas, salen del eje del motor: al cargarlo, el motor gira más despacio y consume más corriente. Si el motor gira al revés, su polaridad se invierte. No funciona como motor.',
+      uses: 'Grupos motor-generador, dinamos de bicicleta, tacogeneradores (una tensión que mide la velocidad), y ver adónde va la energía.',
+    },
+    aboutOf: 'xkz9na',
+  },
   motor: {
     summary: 'Un motor de continua, monofásico o trifásico que mueve una carga en su eje; su velocidad y su corriente siguen a la carga, y se cala si se sobrecarga.',
     of: 'ley0j7',

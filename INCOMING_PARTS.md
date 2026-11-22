@@ -29,9 +29,6 @@ order they'd be most useful. Move an entry out when it's done. App features
 
 ## Loads
 
-- **Dynamo / DC generator**: docks on a motor's shaft (like the mechanical
-  loads) and makes a voltage from its speed; a motor–generator set, and the
-  first part driven by the shaft instead of driving it.
 - **Solenoid valve**: the solenoid model with a valve symbol.
 - **Stepper motor**: steps per coil pulse; pairs with counters and flip-flops.
 - **Servo**: angle from a PWM signal.

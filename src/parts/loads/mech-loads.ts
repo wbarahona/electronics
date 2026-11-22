@@ -26,7 +26,7 @@ const inertiaSpec = (value: number) => ({ label: 'Inertia', unit: '×', value, m
 
 // Turns while it runs, as its motor turns: the CSS shows the clockwise or
 // counter-clockwise copy (.reverse), spinning about (cx, cy).
-const spinning = (body: string, cx = 0, cy = 0) => {
+export const spinning = (body: string, cx = 0, cy = 0) => {
   const turn = (to: number) =>
     `<animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="${to} ${cx} ${cy}" dur="0.8s" repeatCount="indefinite" />`;
   return `
@@ -37,7 +37,7 @@ const spinning = (body: string, cx = 0, cy = 0) => {
 
 // The dashed mechanical link down to its coupling: an open ring until it's
 // docked on a shaft, then filled.
-const coupling = (from: number) => `
+export const coupling = (from: number) => `
   <path class="link" d="M 0 ${from} V 40" />
   <circle class="coupling-end" cy="40" r="3" />`;
 

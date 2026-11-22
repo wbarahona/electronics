@@ -325,6 +325,16 @@ const texts: PartTexts = {
     },
     aboutOf: 'o78sfa',
   },
+  dynamo: {
+    summary: 'Ein Gleichstromgenerator auf der Welle eines Motors: Er erzeugt eine Spannung aus seiner Drehzahl, und was du ihm entnimmst, bremst den Motor.',
+    of: '928o7f',
+    about: {
+      how: 'Wandelt Drehung in Strom: Eine Spule, die sich im Feld eines Magneten dreht, erzeugt eine Spannung im Verhältnis zu ihrer Drehzahl. Der Strom, den sie liefert, wirkt gegen das, was sie antreibt.',
+      sim: 'Eine Quellenspannung im Verhältnis zur Drehzahl hinter dem Ankerwiderstand (bei Nennstrom sinkt seine Spannung um ein Zehntel), auf die Welle eines Motors gesetzt, indem du ihn dort ablegst. Die abgegebene Leistung und seine Verluste gehen von der Welle des Motors ab: Belastet wird der Motor langsamer und nimmt mehr Strom auf. Dreht der Motor andersherum, kehrt sich seine Polarität um. Als Motor läuft er nicht.',
+      uses: 'Motor-Generator-Sätze, Fahrraddynamos, Tachogeneratoren (eine Spannung, die die Drehzahl misst), und um zu sehen, wohin die Energie geht.',
+    },
+    aboutOf: 'xkz9na',
+  },
   motor: {
     summary: 'Ein Gleichstrom-, Einphasen- oder Drehstrommotor, der eine Last an seiner Welle antreibt; Drehzahl und Strom folgen der Last, und bei Überlast bleibt er stehen.',
     of: 'ley0j7',

@@ -54,6 +54,8 @@ export interface PartState {
   vds?: number;
   segV?: number[]; // a display's segment junction voltages at the last iteration
   energized?: boolean; // a relay's coil has pulled in; a sounder is sounding
+  emf?: number; // a dynamo's EMF now (V), and the power its circuit would draw
+  drag?: number; //   from it at its motor's rated speed (W)
   speed?: number; // a motor's speed, 1 = rated (negative: turning backwards)
   slip?: number; // an AC motor's slip behind its field (1 at standstill) and the
   hz?: number; //   supply frequency it measured (with crossAt and last, as a speaker's)
@@ -177,8 +179,9 @@ export interface ModelDef<P> {
   pinCurrents?(el: Element<P>, s: Stamper): number[];
   groups?: number[][] | ((p: P) => number[][]);
   active?(r: Result): boolean;
-  // A mechanical load that docks on a motor's shaft: how it loads it.
-  shaftLoad?(p: P): ShaftLoad;
+  // A mechanical load that docks on a motor's shaft: how it loads it (a
+  // dynamo's from its state: what its circuit draws).
+  shaftLoad?(p: P, state: PartState): ShaftLoad;
   // A part that turns (a motor): true while it turns counter-clockwise.
   reverse?(r: Result, p: P): boolean;
   segments?(r: Result, p: P): number[];

@@ -7,14 +7,19 @@
 // bare motor to rated speed; a docked load adds its own `inertia` (× the
 // motor's).
 
-export type ShaftKind = 'conveyor' | 'pump' | 'flywheel';
+export type ShaftKind = 'conveyor' | 'pump' | 'flywheel' | 'generator';
 
 // A docked load: `torque` (share of rated) is a conveyor's steady pull, or a
-// pump's at rated speed; a flywheel takes none, only `inertia`.
+// pump's at rated speed; a flywheel takes none, only `inertia`. A generator
+// (a dynamo) brakes the shaft by the power its circuit draws from it: `power`
+// is what it would take at the motor's rated speed (W), its torque growing in
+// proportion to speed (as a resistor's power grows with the square of the
+// voltage across it); the motor turns that into `torque` at rated speed.
 export interface ShaftLoad {
   kind: ShaftKind;
   torque: number;
   inertia: number;
+  power?: number;
 }
 
 // What a load shows, written by the motor driving it: `turn` its speed (1 =
@@ -65,7 +70,7 @@ export function spin(
       s = s !== 0 && Math.sign(next) !== Math.sign(s) ? 0 : next;
       held = load.torque;
     } else {
-      held = load?.kind === 'pump' ? load.torque * s * Math.abs(s) : 0;
+      held = load?.kind === 'pump' ? load.torque * s * Math.abs(s) : load?.kind === 'generator' ? load.torque * s : 0;
       s += (h / n) * (tm - held);
     }
   }
