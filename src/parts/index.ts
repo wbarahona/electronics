@@ -28,6 +28,7 @@ import * as motor from './loads/motor.ts';
 import * as dynamo from './loads/dynamo.ts';
 import * as mechLoads from './loads/mech-loads.ts';
 import * as crank from './loads/crank.ts';
+import * as turbine from './loads/turbine.ts';
 import * as fan from './loads/fan.ts';
 import * as heater from './loads/heater.ts';
 import * as solenoid from './loads/solenoid.ts';
@@ -91,6 +92,7 @@ export const DEFS: PartDefs<PartType> = {
   ...dynamo.defs,
   ...mechLoads.defs,
   ...crank.defs,
+  ...turbine.defs,
   ...fan.defs,
   ...heater.defs,
   ...solenoid.defs,
@@ -148,6 +150,7 @@ export const MODEL_DEFS: ModelDefs<PartType> = {
   ...dynamo.models,
   ...mechLoads.models,
   ...crank.models,
+  ...turbine.models,
   ...fan.models,
   ...heater.models,
   ...solenoid.models,

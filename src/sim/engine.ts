@@ -101,6 +101,15 @@ const INTAKE_LENGTH = 60;
 const INTAKE_SHARE = 0.25;
 const MAX_COOLING = 0.6;
 
+// Wind for a wind turbine (a part with a `rotor`): each fan's air leaves its
+// face at its flow over its area, slowing along its cone as its cooling
+// fades; a turbine catches what blows into its face (along its local up).
+// A turning turbine leaves a wake WAKE_WIDTH × its size wide behind it,
+// widening WAKE_SPREAD per px, where the air is slowed by what it took out
+// of it: the air behind cools less, and a turbine there turns slower.
+const WAKE_WIDTH = 24; // px either side of its axis, for an 80 mm rotor
+const WAKE_SPREAD = 0.15;
+
 // Enclosures (see enclosures()): how deep a box is, how big a board pixel is,
 // what a box holds per m² of wall (air, walls, boards), the heat a m³/h of
 // air carries per kelvin (ρ·c of air ÷ 3600), and how near its edge a fan
@@ -340,6 +349,7 @@ export function createEngine(circuit: Circuit) {
       return light;
     },
     temperature: around,
+    wind: (el) => winds.get(el.id) ?? 0,
     shaft(el) {
       const load = docked.get(el.id);
       return load?.model.shaftLoad && !load.open ? { load: load.model.shaftLoad(load.props, load.state), state: load.state } : null;
@@ -514,33 +524,87 @@ export function createEngine(circuit: Circuit) {
   // advance, not every step: heat moves slowly.
   const surroundings = new Map<string, number>(); // part id -> °C around it
   const coolings = new Map<string, number>(); // part id -> how much of its rise is left under forced air, 1 = none
+  const winds = new Map<string, number>(); // part id -> m/s blowing into a wind turbine's face
+
+  // A turning wind turbine, as the air behind it feels it: where it is, the
+  // way it faces (its local up), its wake's half width and how much it slows
+  // the air there (its velocity deficit, from the share of the wind's power
+  // it took at the last step).
+  interface Rotor {
+    x: number;
+    y: number;
+    ux: number;
+    uy: number;
+    half: number;
+    deficit: number;
+    id: string;
+  }
+
+  // How strong fan f's jet is at (vx, vy) from it, before its strength: in
+  // its cone, stronger near the fan and the axis; 0 outside it.
+  function jetShape(f: Fan, vx: number, vy: number): number {
+    const along = vx * f.dx + vy * f.dy;
+    const d = Math.hypot(vx, vy);
+    if (along <= 0 || d > FAN_LENGTH * f.scale) return 0;
+    const off = Math.acos(Math.min(1, along / d)); // angle off the axis
+    if (off > FAN_SPREAD) return 0;
+    return (1 - off / FAN_SPREAD) / (1 + (d / (FAN_REACH * f.scale)) ** 2);
+  }
+
+  // What's left of fan f's air at p after the wakes of the turbines it
+  // blows into on the way there (but not `except`'s own).
+  function shade(f: Fan, p: { x: number; y: number }, rotors: Rotor[], except?: string): number {
+    let left = 1;
+    for (const t of rotors) {
+      if (t.id === except || t.deficit <= 0 || t.ux * f.dx + t.uy * f.dy <= 0) continue;
+      const atT = (t.x - f.x) * f.dx + (t.y - f.y) * f.dy;
+      const behind = (p.x - f.x) * f.dx + (p.y - f.y) * f.dy - atT;
+      if (atT <= 0 || behind <= 0) continue;
+      const lateral = Math.abs((p.x - t.x) * f.dy - (p.y - t.y) * f.dx);
+      if (lateral <= t.half + WAKE_SPREAD * behind) left *= 1 - t.deficit;
+    }
+    return left;
+  }
 
   // How much a part's rise is left under the air of running fans: air reaches
   // parts in a cone in front of a fan (FAN_SPREAD either side of its axis,
   // FAN_LENGTH long), more strongly near the fan and the axis, in proportion
   // to the fan's speed. Several fans add up; full air takes MAX_COOLING of a
   // part's rise away.
-  function coolingAt(el: Element, at: { x: number; y: number }, fans: Fan[]) {
+  function coolingAt(el: Element, at: { x: number; y: number }, fans: Fan[], rotors: Rotor[]) {
     let still = 1; // share of air that doesn't reach it
     for (const f of fans) {
       if (f.id === el.id) continue;
       const [vx, vy] = [at.x - f.x, at.y - f.y];
-      const along = vx * f.dx + vy * f.dy;
       const d = Math.hypot(vx, vy);
       let air: number;
-      if (along <= 0) {
+      if (vx * f.dx + vy * f.dy <= 0) {
         // Behind it: drawn in from every side.
         if (d > INTAKE_LENGTH * f.scale) continue;
         air = INTAKE_SHARE * f.strength * (1 - d / (INTAKE_LENGTH * f.scale));
       } else {
-        if (d > FAN_LENGTH * f.scale) continue;
-        const off = Math.acos(Math.min(1, along / d)); // angle off the axis
-        if (off > FAN_SPREAD) continue;
-        air = f.strength * (1 - off / FAN_SPREAD) / (1 + (d / (FAN_REACH * f.scale)) ** 2);
+        air = f.strength * jetShape(f, vx, vy) * shade(f, at, rotors, el.id);
+        if (air === 0) continue;
       }
       still *= 1 - Math.min(1, air);
     }
     return 1 - MAX_COOLING * (1 - still);
+  }
+
+  // The wind blowing into turbine t's face (m/s): each fan's air from its
+  // face (its flow over its area), along its cone, the part of it along the
+  // way t faces, less the wakes of turbines in front of t.
+  function windAt(t: Rotor, fans: Fan[], rotors: Rotor[]): number {
+    let wind = 0;
+    for (const f of fans) {
+      if (f.id === t.id) continue;
+      const facing = f.dx * t.ux + f.dy * t.uy;
+      if (facing <= 0) continue;
+      const area = Math.PI * ((f.scale * FAN_SIZE) / 2000) ** 2; // m²
+      const face = (f.strength * FAN_FLOW) / 3600 / area; // m/s
+      wind += face * jetShape(f, t.x - f.x, t.y - f.y) * facing * shade(f, t, rotors, t.id);
+    }
+    return wind;
   }
 
   // `dt`: the time since the last call, over which enclosures' air moves
@@ -548,10 +612,11 @@ export function createEngine(circuit: Circuit) {
   function feelSurroundings(dt = 0) {
     surroundings.clear();
     coolings.clear();
+    winds.clear();
     Object.assign(air, { fans: [], boxes: [], sources: [], home: new Map() });
-    // Temperature effects off (Settings): nothing around any part but 25 °C.
-    if (!engine.temperatures) return;
-    const boxes = enclosures();
+    // Temperature effects off (Settings): nothing around any part but 25 °C;
+    // the fans still blow (a wind turbine still turns), through no walls.
+    const boxes = engine.temperatures ? enclosures() : [];
     // The innermost enclosure each part sits in; air, warmth and fans don't
     // cross walls (a fan on a wall belongs to the box it's on).
     const home = new Map<string, Enclosure | null>();
@@ -573,12 +638,24 @@ export function createEngine(circuit: Circuit) {
       const box = home.get(el.id);
       if (box && onWall(box, at)) box.exchange += flow;
     }
+    // The wind turbines: the wind each catches, and the wakes they leave.
+    const rotors: Rotor[] = [];
+    for (const el of elements) {
+      const at = placed.get(el.id);
+      if (!el.model.rotor || el.broken || !at) continue;
+      const turn = (at.rotation * Math.PI) / 180;
+      const cp = Math.min(1, Math.max(0, el.state.cp ?? 0));
+      rotors.push({ x: at.x, y: at.y, ux: Math.sin(turn), uy: -Math.cos(turn), half: (WAKE_WIDTH * el.model.rotor(el.props)) / FAN_SIZE, deficit: 1 - Math.sqrt(1 - cp), id: el.id });
+    }
+    const near = (id: string) => (f: Fan) => home.get(f.id) === home.get(id);
+    for (const t of rotors) winds.set(t.id, windAt(t, fans.filter(near(t.id)), rotors));
+    if (!engine.temperatures) return;
     // Air first: a part under a fan's air runs cooler, and so gives off less
     // warmth to its neighbours (the air carries it away) and takes in less.
     if (fans.length) {
       for (const el of elements) {
         const at = placed.get(el.id);
-        if (at) coolings.set(el.id, coolingAt(el, at, fans.filter((f) => home.get(f.id) === home.get(el.id))));
+        if (at) coolings.set(el.id, coolingAt(el, at, fans.filter(near(el.id)), rotors));
       }
     }
     const sources: { x: number; y: number; warmth: number; id: string }[] = [];

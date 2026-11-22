@@ -54,6 +54,8 @@ export interface PartState {
   vds?: number;
   segV?: number[]; // a display's segment junction voltages at the last iteration
   energized?: boolean; // a relay's coil has pulled in; a sounder is sounding
+  cp?: number; // a wind turbine's share of the wind's power it takes now, and
+  wind?: number; //   the wind it last felt (m/s)
   emf?: number; // a dynamo's EMF now (V), and the power its circuit would draw
   drag?: number; //   from it at its motor's rated speed (W)
   speed?: number; // a motor's speed, 1 = rated (negative: turning backwards)
@@ -132,6 +134,7 @@ export interface Env {
   readonly time: number; // simulated time, s
   light(el: Element): number; // light reaching it from glowing parts, 0..1+
   temperature(el: Element): number; // °C around it: the ambient plus warmth from nearby hot parts
+  wind(el: Element): number; // m/s blowing into a wind turbine's face, from the fans
   // The load docked on a motor's shaft (see src/shaft.ts), with the state the
   // motor writes its readout into; null when its shaft is free.
   shaft(el: Element): { load: ShaftLoad; state: PartState } | null;
@@ -181,6 +184,9 @@ export interface ModelDef<P> {
   active?(r: Result): boolean;
   // A part with a shaft a load docks on (a motor, a crank; see src/shaft.ts).
   drivesShaft?: boolean;
+  // A wind turbine: its rotor's diameter (mm). It feels the fans' wind
+  // (Env.wind) and leaves a wake (see the engine's air).
+  rotor?(p: P): number;
   // A mechanical load that docks on a motor's shaft: how it loads it (a
   // dynamo's from its state: what its circuit draws).
   shaftLoad?(p: P, state: PartState): ShaftLoad;

@@ -73,7 +73,8 @@ const crankModel: ModelDef<PropsByType['crank']> = {
 };
 
 // Its label to the side, clear of its shaft (on top) and its control (below).
-function crankLabel(_vertical: boolean, _p: PropsByType['crank'], rotation: number): LabelSpot {
+// (A wind turbine's too, clear of where its wind comes in.)
+export function sideLabel(_vertical: boolean, _p: unknown, rotation: number): LabelSpot {
   switch (((rotation % 360) + 360) % 360) {
     case 90:
       return [0, 34, 'middle'];
@@ -117,7 +118,7 @@ export const defs: PartDefs<'crank'> = {
     // Its control below it, opposite the shaft, however it's turned.
     actuatorAt: (_vertical, _p, rotation) => turned({ x: 0, y: 34 }, rotation),
     tag: (p) => `${p.effort} W`,
-    labelAt: crankLabel,
+    labelAt: sideLabel,
     draw: crankSymbol,
   },
 };

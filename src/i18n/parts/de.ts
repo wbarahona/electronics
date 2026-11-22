@@ -335,6 +335,16 @@ const texts: PartTexts = {
     },
     aboutOf: '1n4suqr',
   },
+  turbine: {
+    summary: 'Von der Luft eines Lüfters angetrieben, die in sie bläst: Setz einen Dynamo darauf und sieh, wie wenig von der Leistung des Lüfters zurückkommt.',
+    of: 'jzai8x',
+    about: {
+      how: 'Flügel, die der Wind dreht und die einen Generator antreiben. Die Leistung des Windes wächst mit der dritten Potenz seiner Geschwindigkeit; eine Turbine entnimmt einen Teil davon, nie mehr als 59 % (die Betz-Grenze), am meisten, wenn ihre Blattspitzen etwa viermal so schnell laufen wie der Wind.',
+      sim: 'Sie fängt die Luft der Lüfter auf, die in ihre Vorderseite blasen (von unterhalb ihres Symbols), wie deren Kühlung: am stärksten nah am Lüfter und auf seiner Achse. Ihr Drehmoment wächst mit dem Quadrat des Windes und sinkt mit ihrer Drehzahl. Ihre Welle treibt eine darauf gesetzte Last an; die Luft hinter ihr ist um das gebremst, was sie entnommen hat, sodass sie Bauteile und Turbinen dahinter abschattet.',
+      uses: 'Windkraft, und um zu sehen, warum ein Lüfter sich nicht selbst antreiben kann: Die Turbine bekommt nur einen kleinen Teil dessen zurück, was der Lüfter verbraucht.',
+    },
+    aboutOf: 'al8u9n',
+  },
   dynamo: {
     summary: 'Ein Gleichstromgenerator auf der Welle eines Motors: Er erzeugt eine Spannung aus seiner Drehzahl, und was du ihm entnimmst, bremst den Motor.',
     of: '928o7f',

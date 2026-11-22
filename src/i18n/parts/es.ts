@@ -335,6 +335,16 @@ const texts: PartTexts = {
     },
     aboutOf: '1n4suqr',
   },
+  turbine: {
+    summary: 'Movido por el aire de un ventilador que sopla hacia él: acopla una dinamo y verás qué poco vuelve de la potencia del ventilador.',
+    of: 'jzai8x',
+    about: {
+      how: 'Palas que el viento hace girar y que mueven un generador. La potencia del viento crece con el cubo de su velocidad; una turbina capta una parte, nunca más del 59 % (el límite de Betz), y la mayor cuando las puntas de sus palas van unas cuatro veces más rápido que el viento.',
+      sim: 'Capta el aire de los ventiladores que soplan hacia su frente (desde debajo de su símbolo), como lo hace su refrigeración: con más fuerza cerca del ventilador y en su eje. Su par crece con el cuadrado del viento y baja con su velocidad. Su eje mueve una carga acoplada; el aire tras ella sale frenado por lo que captó, así que hace sombra a las piezas y turbinas de detrás.',
+      uses: 'La energía eólica, y ver por qué un ventilador no puede alimentarse a sí mismo: la turbina recupera solo una pequeña parte de lo que consume el ventilador.',
+    },
+    aboutOf: 'al8u9n',
+  },
   dynamo: {
     summary: 'Un generador de corriente continua acoplado al eje de un motor: produce una tensión según la velocidad a la que gira, y lo que le pides frena el motor.',
     of: '928o7f',
