@@ -1,0 +1,698 @@
+{
+  "format": "electronics-circuit",
+  "version": 1,
+  "parts": [
+    {
+      "id": "c1",
+      "ref": "N1",
+      "usRef": "N1",
+      "type": "frame",
+      "x": 0,
+      "y": 120,
+      "rotation": 0,
+      "props": {
+        "text": "1 · Motor drives a dynamo",
+        "width": 560,
+        "height": 700,
+        "color": "blue",
+        "enclosure": false,
+        "walls": "Vented"
+      },
+      "broken": false
+    },
+    {
+      "id": "c2",
+      "ref": "N2",
+      "usRef": "N2",
+      "type": "frame",
+      "x": 640,
+      "y": 120,
+      "rotation": 0,
+      "props": {
+        "text": "2 · Hand crank",
+        "width": 560,
+        "height": 700,
+        "color": "amber",
+        "enclosure": false,
+        "walls": "Vented"
+      },
+      "broken": false
+    },
+    {
+      "id": "c3",
+      "ref": "N3",
+      "usRef": "N3",
+      "type": "frame",
+      "x": 0,
+      "y": 900,
+      "rotation": 0,
+      "props": {
+        "text": "3 · Fan and wind turbine",
+        "width": 560,
+        "height": 700,
+        "color": "teal",
+        "enclosure": false,
+        "walls": "Vented"
+      },
+      "broken": false
+    },
+    {
+      "id": "c4",
+      "ref": "N4",
+      "usRef": "N4",
+      "type": "frame",
+      "x": 640,
+      "y": 900,
+      "rotation": 0,
+      "props": {
+        "text": "4 · Water turbine",
+        "width": 560,
+        "height": 700,
+        "color": "violet",
+        "enclosure": false,
+        "walls": "Vented"
+      },
+      "broken": false
+    },
+    {
+      "id": "c5",
+      "ref": "M1",
+      "usRef": "B1",
+      "type": "motor",
+      "x": 160,
+      "y": 380,
+      "rotation": 0,
+      "props": {
+        "supply": "DC",
+        "ratedVoltage": 12,
+        "ratedPower": 10,
+        "ratedSpeed": 3000,
+        "direction": "Clockwise",
+        "ratedFrequency": 50,
+        "breakdown": 2.5
+      },
+      "broken": false
+    },
+    {
+      "id": "c6",
+      "ref": "G1",
+      "usRef": "G1",
+      "type": "dynamo",
+      "x": 160,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "ratedVoltage": 12,
+        "ratedPower": 10,
+        "ratedSpeed": 3000,
+        "inertia": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "c7",
+      "ref": "E1",
+      "usRef": "DS1",
+      "type": "lamp",
+      "x": 400,
+      "y": 260,
+      "rotation": 90,
+      "props": {
+        "color": "warm",
+        "ratedVoltage": 12,
+        "ratedPower": 10
+      },
+      "broken": false
+    },
+    {
+      "id": "c8",
+      "ref": "G2",
+      "usRef": "BT1",
+      "type": "battery",
+      "x": 160,
+      "y": 480,
+      "rotation": 0,
+      "props": {
+        "partNumber": "12 V 7 Ah lead-acid",
+        "voltage": 12,
+        "internalResistance": 0.03,
+        "maxCurrent": 20,
+        "capacity": 7,
+        "charge": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "c9",
+      "ref": "S1",
+      "usRef": "S1",
+      "type": "switch",
+      "x": 60,
+      "y": 430,
+      "rotation": 90,
+      "props": {
+        "closed": true,
+        "poles": 1,
+        "maxCurrent": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "c10",
+      "ref": "M2",
+      "usRef": "M1",
+      "type": "crank",
+      "x": 800,
+      "y": 380,
+      "rotation": 0,
+      "props": {
+        "cranking": false,
+        "effort": 20,
+        "gear": 50
+      },
+      "broken": false
+    },
+    {
+      "id": "c11",
+      "ref": "G3",
+      "usRef": "G2",
+      "type": "dynamo",
+      "x": 800,
+      "y": 300,
+      "rotation": 0,
+      "props": {
+        "ratedVoltage": 12,
+        "ratedPower": 10,
+        "ratedSpeed": 3000,
+        "inertia": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "c12",
+      "ref": "E2",
+      "usRef": "DS2",
+      "type": "lamp",
+      "x": 1040,
+      "y": 260,
+      "rotation": 90,
+      "props": {
+        "color": "warm",
+        "ratedVoltage": 12,
+        "ratedPower": 10
+      },
+      "broken": false
+    },
+    {
+      "id": "c13",
+      "ref": "M3",
+      "usRef": "B2",
+      "type": "fan",
+      "x": 160,
+      "y": 1260,
+      "rotation": 0,
+      "props": {
+        "partNumber": "12025 (120 mm)",
+        "supply": "DC",
+        "size": "120 mm",
+        "ratedVoltage": 12,
+        "ratedPower": 2.4,
+        "ratedSpeed": 1500,
+        "direction": "Clockwise"
+      },
+      "broken": false
+    },
+    {
+      "id": "c14",
+      "ref": "M4",
+      "usRef": "M2",
+      "type": "turbine",
+      "x": 160,
+      "y": 1160,
+      "rotation": 0,
+      "props": {
+        "diameter": 120,
+        "gear": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "c15",
+      "ref": "G4",
+      "usRef": "G3",
+      "type": "dynamo",
+      "x": 160,
+      "y": 1080,
+      "rotation": 0,
+      "props": {
+        "ratedVoltage": 12,
+        "ratedPower": 10,
+        "ratedSpeed": 3000,
+        "inertia": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "c16",
+      "ref": "R1",
+      "usRef": "R1",
+      "type": "resistor",
+      "x": 280,
+      "y": 960,
+      "rotation": 0,
+      "props": {
+        "resistance": 100,
+        "powerRating": 0.25,
+        "tolerance": 5,
+        "deviation": -0.012
+      },
+      "broken": false
+    },
+    {
+      "id": "c17",
+      "ref": "P1",
+      "usRef": "D1",
+      "type": "led",
+      "x": 400,
+      "y": 1040,
+      "rotation": 90,
+      "props": {
+        "partNumber": "5 mm red",
+        "color": "red",
+        "forwardVoltage": 2,
+        "maxCurrent": 0.02
+      },
+      "broken": false
+    },
+    {
+      "id": "c18",
+      "ref": "G5",
+      "usRef": "BT2",
+      "type": "battery",
+      "x": 160,
+      "y": 1360,
+      "rotation": 0,
+      "props": {
+        "partNumber": "12 V 7 Ah lead-acid",
+        "voltage": 12,
+        "internalResistance": 0.03,
+        "maxCurrent": 20,
+        "capacity": 7,
+        "charge": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "c19",
+      "ref": "S2",
+      "usRef": "S2",
+      "type": "switch",
+      "x": 60,
+      "y": 1310,
+      "rotation": 90,
+      "props": {
+        "closed": true,
+        "poles": 1,
+        "maxCurrent": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "c20",
+      "ref": "M5",
+      "usRef": "M3",
+      "type": "waterTurbine",
+      "x": 800,
+      "y": 1160,
+      "rotation": 0,
+      "props": {
+        "flow": 0.7,
+        "head": 2,
+        "diameter": 100,
+        "gear": 5
+      },
+      "broken": false
+    },
+    {
+      "id": "c21",
+      "ref": "G6",
+      "usRef": "G4",
+      "type": "dynamo",
+      "x": 800,
+      "y": 1080,
+      "rotation": 0,
+      "props": {
+        "ratedVoltage": 12,
+        "ratedPower": 10,
+        "ratedSpeed": 3000,
+        "inertia": 1
+      },
+      "broken": false
+    },
+    {
+      "id": "c22",
+      "ref": "E3",
+      "usRef": "DS3",
+      "type": "lamp",
+      "x": 1040,
+      "y": 1040,
+      "rotation": 90,
+      "props": {
+        "color": "warm",
+        "ratedVoltage": 12,
+        "ratedPower": 10
+      },
+      "broken": false
+    },
+    {
+      "id": "c23",
+      "ref": "N5",
+      "usRef": "N5",
+      "type": "note",
+      "x": 280,
+      "y": 730,
+      "rotation": 0,
+      "props": {
+        "text": "A battery runs motor {M1}, whose shaft turns dynamo {G1}: lamp {E1} lights. Switch {S1} off and it runs down. Hover the motor and dynamo: what the battery gives, the motor loses, the dynamo delivers.",
+        "color": "amber"
+      },
+      "broken": false
+    },
+    {
+      "id": "c24",
+      "ref": "N6",
+      "usRef": "N6",
+      "type": "note",
+      "x": 920,
+      "y": 730,
+      "rotation": 0,
+      "props": {
+        "text": "Hold the round control under crank {M2} to light lamp {E2}; let go to stop. Try its Effort and Gear ratio.",
+        "color": "amber"
+      },
+      "broken": false
+    },
+    {
+      "id": "c25",
+      "ref": "N7",
+      "usRef": "N7",
+      "type": "note",
+      "x": 280,
+      "y": 1510,
+      "rotation": 0,
+      "props": {
+        "text": "Fan {M3} blows into turbine {M4}, turning dynamo {G4}: LED {P1} glows. The fan uses about 3 W; a few hundredths come back. Switch it off with {S2}, or move the turbine off the fan's axis. Thermal view shows the air.",
+        "color": "amber"
+      },
+      "broken": false
+    },
+    {
+      "id": "c26",
+      "ref": "N8",
+      "usRef": "N8",
+      "type": "note",
+      "x": 920,
+      "y": 1510,
+      "rotation": 0,
+      "props": {
+        "text": "0.7 L/s falling 2 m turns {M5} and dynamo {G6}: lamp {E3} lights. Slide its Flow and Head while it runs (above about 1.1 L/s the lamp burns out).",
+        "color": "amber"
+      },
+      "broken": false
+    }
+  ],
+  "joints": [],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "part": "c6",
+        "pin": 0
+      },
+      "to": {
+        "part": "c7",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 80,
+          "y": 300
+        },
+        {
+          "x": 80,
+          "y": 180
+        },
+        {
+          "x": 400,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "id": "w2",
+      "from": {
+        "part": "c7",
+        "pin": 1
+      },
+      "to": {
+        "part": "c6",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "part": "c8",
+        "pin": 0
+      },
+      "to": {
+        "part": "c9",
+        "pin": 1
+      },
+      "via": [
+        {
+          "x": 60,
+          "y": 480
+        }
+      ]
+    },
+    {
+      "id": "w4",
+      "from": {
+        "part": "c9",
+        "pin": 0
+      },
+      "to": {
+        "part": "c5",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 60,
+          "y": 380
+        }
+      ]
+    },
+    {
+      "id": "w5",
+      "from": {
+        "part": "c5",
+        "pin": 1
+      },
+      "to": {
+        "part": "c8",
+        "pin": 1
+      },
+      "via": [
+        {
+          "x": 260,
+          "y": 380
+        },
+        {
+          "x": 260,
+          "y": 480
+        }
+      ]
+    },
+    {
+      "id": "w6",
+      "from": {
+        "part": "c11",
+        "pin": 0
+      },
+      "to": {
+        "part": "c12",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 720,
+          "y": 300
+        },
+        {
+          "x": 720,
+          "y": 180
+        },
+        {
+          "x": 1040,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "id": "w7",
+      "from": {
+        "part": "c12",
+        "pin": 1
+      },
+      "to": {
+        "part": "c11",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w8",
+      "from": {
+        "part": "c15",
+        "pin": 0
+      },
+      "to": {
+        "part": "c16",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 80,
+          "y": 1080
+        },
+        {
+          "x": 80,
+          "y": 960
+        }
+      ]
+    },
+    {
+      "id": "w9",
+      "from": {
+        "part": "c16",
+        "pin": 1
+      },
+      "to": {
+        "part": "c17",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 400,
+          "y": 960
+        }
+      ]
+    },
+    {
+      "id": "w10",
+      "from": {
+        "part": "c17",
+        "pin": 1
+      },
+      "to": {
+        "part": "c15",
+        "pin": 1
+      },
+      "via": []
+    },
+    {
+      "id": "w11",
+      "from": {
+        "part": "c18",
+        "pin": 0
+      },
+      "to": {
+        "part": "c19",
+        "pin": 1
+      },
+      "via": [
+        {
+          "x": 60,
+          "y": 1360
+        }
+      ]
+    },
+    {
+      "id": "w12",
+      "from": {
+        "part": "c19",
+        "pin": 0
+      },
+      "to": {
+        "part": "c13",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 60,
+          "y": 1260
+        }
+      ]
+    },
+    {
+      "id": "w13",
+      "from": {
+        "part": "c13",
+        "pin": 1
+      },
+      "to": {
+        "part": "c18",
+        "pin": 1
+      },
+      "via": [
+        {
+          "x": 260,
+          "y": 1260
+        },
+        {
+          "x": 260,
+          "y": 1360
+        }
+      ]
+    },
+    {
+      "id": "w14",
+      "from": {
+        "part": "c21",
+        "pin": 0
+      },
+      "to": {
+        "part": "c22",
+        "pin": 0
+      },
+      "via": [
+        {
+          "x": 720,
+          "y": 1080
+        },
+        {
+          "x": 720,
+          "y": 960
+        },
+        {
+          "x": 1040,
+          "y": 960
+        }
+      ]
+    },
+    {
+      "id": "w15",
+      "from": {
+        "part": "c22",
+        "pin": 1
+      },
+      "to": {
+        "part": "c21",
+        "pin": 1
+      },
+      "via": []
+    }
+  ]
+}

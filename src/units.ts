@@ -33,6 +33,17 @@ export function formatNumber(v: number): string {
   return withMark(`${+(v / f).toPrecision(3)}${p}`);
 }
 
+// Units whose values take no SI prefix, shown as plain numbers: a head of
+// 0.5 m, not "500m m"; 0.7 L/s, not "700m L/s".
+const PLAIN_UNITS = new Set(['m', 'mm', 'm/s', 'L/s', 'rpm', '%', '×']);
+
+// A value as a settings field shows it: with an SI prefix (4.7k Ω, 20m A),
+// or plainly for the units above.
+export function formatValue(v: number, unit: string): string {
+  if (!PLAIN_UNITS.has(unit)) return formatNumber(v);
+  return withMark(String(Math.abs(v) >= 100 ? Math.round(v) : +v.toPrecision(3)));
+}
+
 // 4700, "Ω" -> "4.7 kΩ"
 export function formatSI(v: number, unit: string): string {
   return formatNumber(v).replace(/([^\d.,-]*)$/, ' $1') + unit;

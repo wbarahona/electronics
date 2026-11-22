@@ -28,6 +28,7 @@ import type { PartProps as DynamoProps } from './parts/loads/dynamo.ts';
 import type { PartProps as MechLoadsProps } from './parts/loads/mech-loads.ts';
 import type { PartProps as CrankProps } from './parts/loads/crank.ts';
 import type { PartProps as TurbineProps } from './parts/loads/turbine.ts';
+import type { PartProps as WaterTurbineProps } from './parts/loads/water-turbine.ts';
 import type { PartProps as FanProps } from './parts/loads/fan.ts';
 import type { PartProps as HeaterProps } from './parts/loads/heater.ts';
 import type { PartProps as SolenoidProps } from './parts/loads/solenoid.ts';
@@ -103,6 +104,7 @@ export interface PropsByType
     MechLoadsProps,
     CrankProps,
     TurbineProps,
+    WaterTurbineProps,
     FanProps,
     HeaterProps,
     SolenoidProps,

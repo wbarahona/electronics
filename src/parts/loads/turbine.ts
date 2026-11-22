@@ -107,6 +107,7 @@ export const defs: PartDefs<'turbine'> = {
         sim: 'It catches the air of the fans blowing into its face (from below its symbol), as their cooling does: strongest close in and on a fan’s axis. Its torque grows with the wind squared and falls with its speed. Its shaft drives a load docked on it; the air behind it is slowed by what it took, so it shades parts and turbines behind it.',
         uses: 'Wind power, and seeing why a fan can’t power itself: the turbine gets back only a small share of what the fan uses.',
       },
+      example: 'dynamos',
     },
     letter: 'M',
     category: 'loads',

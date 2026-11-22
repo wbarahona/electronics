@@ -345,6 +345,16 @@ const texts: PartTexts = {
     },
     aboutOf: 'al8u9n',
   },
+  waterTurbine: {
+    summary: 'Fallendes Wasser dreht ihre Welle: Setz einen Dynamo darauf und ändere den Durchfluss im Betrieb, wie in einem Wasserkraftwerk.',
+    of: 'q7hmc4',
+    about: {
+      how: 'Wasser, das aus einer Höhe fällt, dreht ein Laufrad und treibt einen Generator an. Die Leistung des Wassers ist sein Durchfluss mal die Fallhöhe mal g (etwa 9,8 W je Liter pro Sekunde und Meter); eine gute Turbine macht das meiste davon zu Wellenleistung.',
+      sim: 'Ein Freistrahlrad: Ein Strahl mit der Geschwindigkeit, die die Fallhöhe ergibt, trifft die Becher; sein Drehmoment sinkt mit der Drehzahl des Laufrads, seine Leistung ist am größten (85 % der des Wassers), wenn die Becher mit halber Strahlgeschwindigkeit laufen. Durchfluss und Fallhöhe lassen sich im Betrieb ändern. Ihre Welle treibt eine darauf gesetzte Last an; eine schwerere Last bremst sie.',
+      uses: 'Wasserkraft, von Kleinwasserkraft bis zu Staudämmen, und um zu sehen, wie Durchfluss und Höhe Leistung ergeben.',
+    },
+    aboutOf: '1bvcw8q',
+  },
   dynamo: {
     summary: 'Ein Gleichstromgenerator auf der Welle eines Motors: Er erzeugt eine Spannung aus seiner Drehzahl, und was du ihm entnimmst, bremst den Motor.',
     of: '928o7f',

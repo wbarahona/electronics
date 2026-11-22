@@ -34,6 +34,13 @@ export const EXAMPLES: Example[] = [
     load: file(() => import('./motor-starter.json?raw')),
   },
   {
+    id: 'dynamos',
+    icon: 'wind_power',
+    title: 'Four ways to turn a dynamo',
+    description: 'A motor, a hand crank, a fan’s wind and falling water each turn a dynamo to light a lamp or an LED.',
+    load: file(() => import('./dynamos.json?raw')),
+  },
+  {
     id: 'bridge-rectifier',
     icon: 'power',
     title: 'Bridge rectifier',

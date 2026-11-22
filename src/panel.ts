@@ -9,7 +9,7 @@ import { refText } from './norm.ts';
 import { MODELS } from './sim/models.ts';
 import type { Part, PropValue } from './types.ts';
 import './slider.ts';
-import { formatNumber, fromShown, parseSI, shownTemps, shownUnit, toShown } from './units.ts';
+import { formatValue, fromShown, parseSI, shownTemps, shownUnit, toShown } from './units.ts';
 
 // Parts with nothing to fail: references and probes (and annotations, the
 // whole Annotate category, left out where the panel is built).
@@ -143,7 +143,7 @@ export function createPanel(
     field.suffixText = shownUnit(spec.unit);
     field.inputMode = 'decimal';
     // As shown: a temperature is in °F under the US standard, kept in °C.
-    const text = (v: number) => formatNumber(toShown(v, spec.unit));
+    const text = (v: number) => formatValue(toShown(v, spec.unit), spec.unit);
     field.value = text(value(c, key) as number);
     field.addEventListener('input', () => {
       field.error = false;
@@ -188,8 +188,8 @@ export function createPanel(
     slider.ticks = (range.max - range.min) / step <= 20;
     slider.label = t(spec.label);
     const show = (v: number) => {
-      slider.valueLabel = formatNumber(v);
-      shown.textContent = `${formatNumber(v)} ${shownUnit(spec.unit)}`.trim();
+      slider.valueLabel = formatValue(v, spec.unit);
+      shown.textContent = `${formatValue(v, spec.unit)} ${shownUnit(spec.unit)}`.trim();
     };
     slider.addEventListener('input', () => {
       const v = slider.value;

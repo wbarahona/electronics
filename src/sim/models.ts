@@ -54,6 +54,7 @@ export interface PartState {
   vds?: number;
   segV?: number[]; // a display's segment junction voltages at the last iteration
   energized?: boolean; // a relay's coil has pulled in; a sounder is sounding
+  omega?: number; // a water turbine's runner speed (rad/s), kept in real units so changing its flow or head doesn't jolt it
   cp?: number; // a wind turbine's share of the wind's power it takes now, and
   wind?: number; //   the wind it last felt (m/s)
   emf?: number; // a dynamo's EMF now (V), and the power its circuit would draw

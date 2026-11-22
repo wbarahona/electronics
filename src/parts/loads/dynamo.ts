@@ -123,6 +123,7 @@ export const defs: PartDefs<'dynamo'> = {
         sim: 'An EMF in proportion to its speed behind its armature resistance (its voltage sags a tenth at rated current), docked on a motor’s shaft by placing it there. The power it delivers, and its losses, come off the motor’s shaft, so loading it slows the motor and raises its current. Reversing the motor reverses its polarity. It doesn’t run as a motor.',
         uses: 'Motor–generator sets, bicycle dynamos, tachogenerators (a voltage that measures speed), and seeing where the energy goes.',
       },
+      example: 'dynamos',
     },
     letter: 'G',
     // US (IEEE 315): the circle reads GEN.

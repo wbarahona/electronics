@@ -14,7 +14,7 @@ const ICONS = [
   'monitoring', 'more_horiz', 'note_add', 'palette', 'pause', 'play_arrow', 'play_circle', 'power', 'print', 'redo',
   'restart_alt', 'rotate_left', 'rotate_right', 'save', 'schedule', 'schema', 'school', 'search', 'search_off', 'select_all', 'settings', 'speed',
   'stairs', 'swap_horiz', 'thermostat', 'timer', 'toggle_on', 'touch_app', 'tour', 'translate', 'tune', 'undo',
-  'visibility', 'wallpaper', 'zoom_in', 'zoom_out',
+  'visibility', 'wallpaper', 'wind_power', 'zoom_in', 'zoom_out',
 ];
 const OUT = new URL('../src/fonts/material-symbols-outlined.woff2', import.meta.url);
 

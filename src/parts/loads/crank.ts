@@ -104,6 +104,7 @@ export const defs: PartDefs<'crank'> = {
         sim: 'While you hold its control on the board, a person cranking: most torque from a standstill, falling off with speed, their power peaking at the set effort at a comfortable one turn a second. The gear ratio steps that up to the shaft’s speed. A heavier load slows it; let go and it coasts to a stop.',
         uses: 'Hand-cranked generators and torches, and feeling how much effort a load takes.',
       },
+      example: 'dynamos',
     },
     letter: 'M',
     category: 'loads',

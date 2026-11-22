@@ -345,6 +345,16 @@ const texts: PartTexts = {
     },
     aboutOf: 'al8u9n',
   },
+  waterTurbine: {
+    summary: 'El agua que cae hace girar su eje: acopla una dinamo y cambia el caudal mientras funciona, como en una central hidroeléctrica.',
+    of: 'q7hmc4',
+    about: {
+      how: 'El agua que cae desde una altura hace girar un rodete que mueve un generador. La potencia del agua es su caudal por la altura que cae por g (unos 9,8 W por litro por segundo y por metro); una buena turbina convierte la mayor parte en potencia en el eje.',
+      sim: 'Una rueda de impulso: un chorro a la velocidad que da el salto golpea las cucharas; su par baja con la velocidad del rodete y su potencia es máxima (el 85 % de la del agua) con las cucharas a la mitad de la velocidad del chorro. Cambia el caudal y el salto mientras funciona. Su eje mueve una carga acoplada; una carga mayor la frena.',
+      uses: 'La energía hidroeléctrica, de la microhidráulica a las presas, y ver cómo el caudal y la altura dan potencia.',
+    },
+    aboutOf: '1bvcw8q',
+  },
   dynamo: {
     summary: 'Un generador de corriente continua acoplado al eje de un motor: produce una tensión según la velocidad a la que gira, y lo que le pides frena el motor.',
     of: '928o7f',
